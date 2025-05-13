@@ -1,0 +1,14 @@
+[project]
+name = "hou-aibridge"
+version = "0.1.0"
+description = "Bridge between Houdini and AI"
+readme = "README.md"
+authors = [
+    { name = "Bob Kerns", email = "1154903+BobKerns@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

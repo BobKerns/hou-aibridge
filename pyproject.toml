@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Bob Kerns", email = "1154903+BobKerns@users.noreply.github.com" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 
 [build-system]
 requires = ["hatchling"]

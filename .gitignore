@@ -310,3 +310,15 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+Thumbs.db
+
+# By default, hide dotfiles, then whihtelist the ones we want.
+.*
+!.npmrc
+!.python-version
+!.gitignore
+!.vscode*
+!.cspell
+!.github
+

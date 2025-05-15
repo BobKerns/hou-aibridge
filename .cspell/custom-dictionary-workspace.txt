@@ -13,6 +13,7 @@ fastio
 fastmcp
 htmlcov
 httpx
+hython
 ipynb
 ipython
 jscoverage

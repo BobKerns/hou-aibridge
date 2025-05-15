@@ -52,10 +52,11 @@ export function activate(context: vscode.ExtensionContext) {
             };
         };
     const zabob = vscode.chat.createChatParticipant('hou-aibridge.zabob', chatHandler);
-    const icon = vscode.Uri.joinPath(context.extensionUri, 'zabob.jpg');
+    const icon_dk = vscode.Uri.joinPath(context.extensionUri, 'zabob.jpg');
+    const icon_lt = vscode.Uri.joinPath(context.extensionUri, 'zabob-neutral-bg.jpg');
     zabob.iconPath = {
-        light: icon,
-        dark: icon
+        light: icon_lt,
+        dark: icon_dk
     };
 
 

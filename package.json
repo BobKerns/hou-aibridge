@@ -20,6 +20,43 @@
         "command": "hou-aibridge.helloWorld",
         "title": "Hello World"
       }
+    ],
+    "chatParticipants": [
+      {
+        "id": "hou-aibridge.zabob",
+        "name": "zabob",
+        "fullName": "Zabob",
+        "description": "Bridge between Houdini and Copilot",
+        "isSticky": true,
+        "disambiguation": [
+          {
+            "category": "houdini",
+            "description": "The user or system needs information about Houdini nodes or API.",
+            "examples": [
+              "What is the difference between a Box and a Sphere node?",
+              "How do I use the Python API to create a new node?",
+              "Can you give me an example of using the VEX function point()?"
+            ]
+          }
+        ],
+        "commands": [
+          {
+            "name": "list_node_types",
+            "description": "The user or system needs to know the available node types in Houdini.",
+            "disambiguation": [
+              {
+                "category": "houdini",
+                "description": "The user or system needs information about Houdini nodes or API.",
+                "examples": [
+                  "What are the available node types in Houdini?",
+                  "List all the node types in Houdini.",
+                  "Show me the different types of nodes I can create."
+                ]
+              }
+            ]
+          }
+        ]
+      }
     ]
   },
   "scripts": {
@@ -34,19 +71,24 @@
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "deploy": "vsce publish --yarn"
   },
   "devDependencies": {
-    "@types/vscode": "^1.100.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "esbuild": "^0.25.3",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@types/vscode": "^1.100.0",
+    "@vscode/prompt-tsx": "0.4.0-alpha.4"
   }
 }

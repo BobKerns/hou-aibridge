@@ -1,6 +1,8 @@
 # hou-aibridge README
 
-This is the README for your extension "hou-aibridge". After writing up a brief description, we recommend including the following sections.
+This is a bridge from Copilot in VS Code, or any MCP-capable client, to knowledge about Houdini and Houdini networks.
+
+Just setting up the project; more to come.
 
 ## Features
 
@@ -69,3 +71,15 @@ You can author your README using Visual Studio Code. Here are some useful editor
 * [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**
+
+## Release
+
+This will have the [Release process](RELEASE.md) when it's ready.
+
+## Security Polixy
+
+Here is the [Security policy](SECURITY.md).
+
+## License
+
+[MIT License](LICENSE.md)

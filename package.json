@@ -7,7 +7,10 @@
     "vscode": "^1.100.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "AI",
+    "Chat",
+    "Programming Languages"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",

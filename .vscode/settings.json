@@ -1,12 +1,13 @@
 {
     "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
         "**/.DS_Store": true,
-        "**/Thumbs.db": true,
+        "**/.git": true,
+        "**/.hg": true,
+        "**/.ruby-lsp": true,
+        "**/.svn": true,
         "**/CVS": true,
-        "**/.ruby-lsp": true
+        "**/Thumbs.db": true,
+        "typings/**": true
     },
     "search.exclude": {
         "out": true, // set this to false to include "out" folder in search results
@@ -25,5 +26,23 @@
         }
     },
     "debug.javascript.usePreview": false,
-    "files.trimTrailingWhitespace": true
+    "files.trimTrailingWhitespace": true,
+    "ruff.exclude": [
+        ".venv"
+    ],
+    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.ignore": [
+        ".venv/"
+    ],
+    "explorer.compactFolders": false,
+    "explorer.autoRevealExclude": {
+        "**/.venv": true
+    },
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs",
+        "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
+        "pyproject.toml": ".python-version,uv.lock,",
+        "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md"
+    }
 }

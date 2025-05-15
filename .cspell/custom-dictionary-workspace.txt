@@ -54,4 +54,5 @@ vuepress
 webassets
 whihtelist
 wscript
+yarnrc
 Zabob

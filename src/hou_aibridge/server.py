@@ -1,3 +1,19 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "aiofile",
+#     "aiofiles",
+#     "aiohttp",
+#     "aiopath",
+#     "anyio",
+#     "fastapi",
+#     "httpx",
+#     "mcp",
+#     "pedantic",
+#     "sqlite-vec",
+#     "uvicorn",
+# ]
+# ///
 
 from collections.abc import Awaitable
 import json

@@ -15,9 +15,9 @@
 # ]
 # ///
 
-from collections.abc import Awaitable
+from collections.abc import AsyncGenerator, AsyncIterable, Awaitable
 import json
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, TypeVar, cast
 import asyncio
 
 from anyio import AsyncFile # type: ignore[import]  # noqa: F401
@@ -37,16 +37,20 @@ It should use the 'mcp' library rather than reimplementing it on top of FastAPI,
 
 '''
 
-RESPONSES_DIR = Path(__file__).parent / "responses"
+RESPONSES_DIR = Path(Path(__file__).parent / "responses")
+PROMPTS_DIR = Path(Path(__file__).parent / "prompts")
 mcp = FastMCP("hou-aibridge", "0.1.0")
 
 
 JsonAtomic: TypeAlias = str | int | float | bool | None
-JsonArray: TypeAlias = list[JsonAtomic | 'JsonArray' | 'JsonObject']
+JsonArray: TypeAlias = list['JsonAtomic | JsonArray | JsonObject']
 JsonObject: TypeAlias = dict[str, 'JsonData']
 JsonData: TypeAlias = JsonArray | JsonObject | str | int | float | bool | None
 
 RESPONSES: dict[str, Awaitable[JsonData|str]] =  {}
+PROMPTS: dict[str, Awaitable[JsonData|str]] =  {}
+
+
 
 async def load_responses():
     """Load response JSON and Markdown files."""
@@ -58,25 +62,48 @@ async def load_responses():
         text = await load_text(f)
         if text:
             return json.loads(text)
-    async for f in await RESPONSES_DIR.glob("*.json"):
-        if f.suffix == '.json':
-            RESPONSES[f.stem] = load_json(f)
-        else:
-            RESPONSES[f.stem] = load_text(f)
+    async for f in cast(AsyncIterable[Path], RESPONSES_DIR.glob("*.json")):
+        RESPONSES[f.stem] = load_json(f)
+    async for f in cast(AsyncIterable[Path], RESPONSES_DIR.glob("*.md")):
+        RESPONSES[f.stem] = load_text(f)
+    async for f in cast(AsyncIterable[Path], PROMPTS_DIR.glob("*.md")):
+        PROMPTS[f.stem] = load_text(f)
 
+
+T = TypeVar("T")
+def awaitable_value(value: T) -> Awaitable[T]:
+    async def wrapper() -> AsyncGenerator[T, None]:
+        yield  value
+    return anext(aiter(wrapper()))
 
 @mcp.tool("query_response")
-async def query_response(data: dict[str, Any]) -> dict[str, Any]:
+async def query_response(query: str):
     """Handle a query and return a canned response."""
-    query = data.get("query")
     if not query:
         return {"error": "No query provided."}
-    return {"response": RESPONSES.get(query, "No response found.")}
+    return {"response": await RESPONSES.get(query, awaitable_value("No response found."))}
 
 @mcp.resource("status://status")
 async def status() -> dict[str, Any]:
     """Return server status."""
     return {"status": "ok"}
+
+@mcp.resource('sop://info')
+def sop_info():
+    """Return SOP info."""
+    return {
+        "name": "SOP",
+        "version": "1.0.0",
+        "description": "Standard Operating Procedure for AIBridge.",
+        "author": "AIBridge Team"
+    }
+
+@mcp.prompt("prompt://prompt")
+async def prompt(prompt: str, data: dict[str, Any]) -> dict[str, Any]:
+    """Handle a prompt and return a canned response."""
+    if not prompt:
+        return {"error": "No prompt provided."}
+    return {"response": await PROMPTS.get(prompt, awaitable_value("No response found."))}
 
 asyncio.run(load_responses())
 

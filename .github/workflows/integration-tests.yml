@@ -1,0 +1,77 @@
+on:
+    workflow_dispatch:
+        inputs:
+            # Optional input to specify Houdini versions
+            houdini-versions:
+                description: 'Houdini versions to test (comma-separated)'
+                required: false
+                default: '20.5'
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      houdini-versions: ${{ steps.set-matrix.outputs.houdini-versions }}
+    environment: Test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      # Cache uv installation
+      - name: Cache uv
+        id: cache-uv
+        uses: actions/cache@v3
+        with:
+          path: ~/.uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') || hashFiles('**/pyproject.toml') || github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      # Install uv only if cache missed
+      - name: Install uv
+        if: steps.cache-uv.outputs.cache-hit != 'true'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      # Add uv to PATH whether it was cached or freshly installed
+      - name: Add uv to PATH
+        run: echo "$HOME/.uv/bin" >> $GITHUB_PATH
+
+      # Cache the Houdini versions
+      - name: Cache Houdini versions
+        id: cache-versions
+        uses: actions/cache@v3
+        with:
+          path: houdini_versions_cache.json
+          # Cache key includes date to refresh daily and min version
+          key: houdini-versions-${{ vars.HOUDINI_MIN_VERSION || '20.5' }}-${{ github.run_id }}-${{ github.run_number }}
+          restore-keys: |
+            houdini-versions-${{ vars.HOUDINI_MIN_VERSION || '20.5' }}-
+
+      # Run the version detection script with uv
+      - id: set-matrix
+        env:
+          SIDEFX_USERNAME: ${{ secrets.SIDEFX_USERNAME }}
+          SIDEFX_PASSWORD: ${{ secrets.SIDEFX_PASSWORD }}
+          HOUDINI_MIN_VERSION: "20.5"
+        run: |
+          # Run the script using uv
+          versions=$(uv run scripts/get_houdini_versions.py)
+
+          # Save to output for matrix
+          echo "houdini-versions=$versions" >> $GITHUB_OUTPUT
+
+  test-hython:
+    needs: prepare-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        houdini-version: ${{ fromJson(needs.prepare-matrix.outputs.houdini-versions) }}
+    steps:
+      # Your test steps here, using matrix.houdini-version
+      - name: Checkout
+        uses: actions/checkout@v3

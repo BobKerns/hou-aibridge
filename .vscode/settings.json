@@ -44,7 +44,7 @@
         "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs",
         "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
         "pyproject.toml": ".python-version,uv.lock,",
-        "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md"
+        "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,.markdownlint.*"
     },
     "explorer.excludeGitIgnore": true,
     "git.repositoryScanIgnoredFolders": [

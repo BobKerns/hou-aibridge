@@ -321,6 +321,7 @@ Thumbs.db
 !.vscode*
 !.cspell
 !.github
+!.markdownlint.*
 
 .aibridge-cache/
 houdini_versions_cache.json

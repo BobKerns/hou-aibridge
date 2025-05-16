@@ -1,3 +1,5 @@
+![Zabob and city banner](images/zabob-banner.jpg)
+
 # Contributions are welcome
 
 There are 3 layers here, many contributions can be focused on a single layer.

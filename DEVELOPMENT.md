@@ -1,3 +1,5 @@
+![Zabob and city banner](images/zabob-banner.jpg)
+
 # Houdini MCP Integration Development Overview
 
 ## Architecture

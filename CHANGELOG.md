@@ -1,3 +1,5 @@
+![Zabob and city banner](images/zabob-banner.jpg)
+
 # Change Log
 
 All notable changes to the "hou-aibridge" extension will be documented in this file.
@@ -9,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Date:  \[Unreleased]
 
-
 ## 0.0.1 Added
 
 - Add MCP server
@@ -19,4 +20,3 @@ Date:  \[Unreleased]
 ## Project Initiated
 
 Date: 2025-05-13.
-

@@ -1,3 +1,5 @@
+![Zabob and city banner](images/zabob-banner.jpg)
+
 # Welcome to your VS Code Extension
 
 ## What's in the folder

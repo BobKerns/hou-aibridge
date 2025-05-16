@@ -1,3 +1,5 @@
+![Zabob and city banner](images/zabob-banner.jpg)
+
 # Contributor Covenant Code of Conduct
 
 ## Caveat

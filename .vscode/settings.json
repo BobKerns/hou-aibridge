@@ -1,12 +1,13 @@
 {
     "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
+        ".cspell/": true,
         "**/.DS_Store": true,
-        "**/Thumbs.db": true,
-        "**/CVS": true,
+        "**/.git": true,
+        "**/.hg": true,
         "**/.ruby-lsp": true,
+        "**/.svn": true,
+        "**/CVS": true,
+        "**/Thumbs.db": true,
         "typings/**": true
     },
     "search.exclude": {
@@ -43,6 +44,43 @@
         "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs",
         "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
         "pyproject.toml": ".python-version,uv.lock,",
-        "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md"
-    }
+        "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md"
+    },
+    "explorer.excludeGitIgnore": true,
+    "git.repositoryScanIgnoredFolders": [
+        "node_modules",
+        ".venv"
+    ],
+    "latex-workshop.latex.watch.files.ignore": [
+        "**/*.bbx",
+        "**/*.bbl",
+        "**/*.cbx",
+        "**/*.cfg",
+        "**/*.clo",
+        "**/*.cnf",
+        "**/*.def",
+        "**/*.dfu",
+        "**/*.enc",
+        "**/*.fd",
+        "**/*.fmt",
+        "**/*.lbx",
+        "**/*.map",
+        "**/*.mkii",
+        "**/*.pfb",
+        "**/*.tfm",
+        "**/*.vf",
+        "**/*.code.tex",
+        "**/*.sty",
+        "**/texmf-{dist,var}/**",
+        "**/Local/MiKTeX/**",
+        "**/Local/Programs/MiKTeX/**",
+        "**/Roaming/MiKTeX/**",
+        "**/Program*/MiKTeX*/**",
+        "**/.miktex/texmfs/**",
+        "/var/cache/miktex-texmf/**",
+        "/usr/local/share/miktex-texmf/**",
+        "**/Library/Application Support/MiKTeX/texmfs/**",
+        "/dev/null",
+        "**/*.pyc"
+    ]
 }

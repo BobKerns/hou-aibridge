@@ -26,28 +26,18 @@ For example:
 
 This extension contributes the following settings:
 
+\[TBD]
+
 * `myExtension.enable`: Enable/disable this extension.
 * `myExtension.thing`: Set to `blah` to do something.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Need to return real data...
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+See [CHANGELOG.md](CHANGELOG.md) for release notes
 
 ---
 
@@ -72,11 +62,17 @@ You can author your README using Visual Studio Code. Here are some useful editor
 
 **Enjoy!**
 
-## Release
+## Development
+
+This is still in early-stage development, but you can read the [development plan](DEVELOPMENT.md)
+
+Contributions are encouraged! You can read the [contribution policy](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Release Prodcess
 
 This will have the [Release process](RELEASE.md) when it's ready.
 
-## Security Polixy
+## Security Policy
 
 Here is the [Security policy](SECURITY.md).
 

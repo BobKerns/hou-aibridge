@@ -322,3 +322,6 @@ Thumbs.db
 !.cspell
 !.github
 
+.aibridge-cache/
+houdini_versions_cache.json
+

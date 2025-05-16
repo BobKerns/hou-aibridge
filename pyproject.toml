@@ -34,3 +34,10 @@ hou_aibridge = [
     "responses/*.md",
     "zabob.jpg",
 ]
+
+[dependency-groups]
+dev = [
+    "click>=8.2.0",
+    "requests>=2.32.3",
+    "semver>=3.0.4",
+]

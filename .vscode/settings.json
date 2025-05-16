@@ -1,12 +1,12 @@
 {
     "files.exclude": {
-        "**/.DS_Store": true,
         "**/.git": true,
-        "**/.hg": true,
-        "**/.ruby-lsp": true,
         "**/.svn": true,
-        "**/CVS": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
         "**/Thumbs.db": true,
+        "**/CVS": true,
+        "**/.ruby-lsp": true,
         "typings/**": true
     },
     "search.exclude": {

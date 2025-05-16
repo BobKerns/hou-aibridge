@@ -82,5 +82,22 @@
         "**/Library/Application Support/MiKTeX/texmfs/**",
         "/dev/null",
         "**/*.pyc"
-    ]
+    ],
+    "python.analysis.exclude": [
+        "*.pyi",
+        ",venv/**",
+        "typings/**"
+    ],
+    "cSpell.ignorePaths": [
+        "package-lock.json",
+        "node_modules",
+        "vscode-extension",
+        ".git/{info,lfs,logs,refs,objects}/**",
+        ".git/{index,*refs,*HEAD}",
+        ".vscode",
+        ".vscode-insiders",
+        "**/*.log"
+    ],
+    "cSpell.noConfigSearch": false,
+    "cSpell.spellCheckOnlyWorkspaceFiles": true
 }

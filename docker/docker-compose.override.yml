@@ -1,0 +1,21 @@
+# docker-compose.override.yml for local development
+version: '3.8'
+
+services:
+  houdini-20-5-oldest:
+    build:
+      context: .
+      dockerfile: Dockerfile.houdini
+      args:
+        - HOUDINI_VERSION=20.5.506
+    environment:
+      - TEST_LABEL=houdini-20-5-oldest
+
+  houdini-20-5-newest:
+    build:
+      context: .
+      dockerfile: Dockerfile.houdini
+      args:
+        - HOUDINI_VERSION=20.5.547
+    environment:
+      - TEST_LABEL=houdini-20-5-newest

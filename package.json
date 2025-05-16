@@ -90,5 +90,13 @@
   "dependencies": {
     "@types/vscode": "^1.100.0",
     "@vscode/prompt-tsx": "0.4.0-alpha.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BobKerns/hou-aibridge"
+    },
+    "bugs": {
+      "url": "https://github.com/BobKerns/hou-aibridge/issues"
+    },
+    "homepage": "https://github.com/BobKerns/hou-aibridge?tab=readme-ov-file#zabob-the-ai-bridge-to-houdini-sfx"
 }

@@ -1,4 +1,6 @@
-# hou-aibridge README
+# Zabob: The AI Bridge to Houdini SFX
+
+![Zabob in front of a future city](images/zabob-holodeck-text.jpg)
 
 This is a bridge from Copilot in VS Code, or any MCP-capable client, to knowledge about Houdini and Houdini networks.
 
@@ -6,13 +8,7 @@ Just setting up the project; more to come.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+* Connects Copilot and other MCP-aware chat interfaces to Houdini knowledge.
 
 ## Requirements
 
@@ -68,7 +64,7 @@ This is still in early-stage development, but you can read the [development plan
 
 Contributions are encouraged! You can read the [contribution policy](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md)
 
-## Release Prodcess
+## Release Process
 
 This will have the [Release process](RELEASE.md) when it's ready.
 

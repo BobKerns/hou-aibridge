@@ -1,7 +1,10 @@
 # Custom Dictionary Words
 aibridge
 aiofile
+aiofiles
+aiohttp
 aiopath
+anyio
 celerybeat
 Connor
 cython

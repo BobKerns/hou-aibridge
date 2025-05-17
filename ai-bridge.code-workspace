@@ -1,0 +1,206 @@
+{
+	"folders": [
+        {
+            "name": "hou-ai-bridge",
+            "path": "."
+        },
+        {
+            "name": "vscode-chat",
+            "path": "vscode-chat"
+        },
+        {
+            "name": "mcp-server",
+            "path": "mcp-server"
+        },
+        {
+            "name": "h20.5",
+            "path": "houdini/h20.5"
+        },
+        {
+            "name": "h21.0",
+            "path": "houdini/h21.0"
+        },
+        {
+            "name": "docs",
+            "path": "docs"
+        },
+        {
+            "name": "docker",
+            "path": "docker"
+        },
+        {
+            "name": "scripts",
+            "path": "scripts"
+        }
+    ],
+    "settings": {
+        "typescript.tsc.autoDetect": "off",
+        "explorer.compactFolders": false,
+        "explorer.autoRevealExclude": {
+            "**/.venv": true,
+            "**/node_modules": true,
+            "**/dist": true,
+            "**/out": true,
+        },
+        "files.trimTrailingWhitespace": true,
+        "ruff.exclude": [
+            ".venv"
+        ],
+        "cSpell.noConfigSearch": false,
+        "explorer.fileNesting.enabled": true,
+        "explorer.fileNesting.patterns": {
+            "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs",
+            "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
+            "pyproject.toml": ".python-version,uv.lock,",
+            "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md"
+        },
+        "explorer.excludeGitIgnore": true,
+        "git.repositoryScanIgnoredFolders": [
+            "node_modules",
+            ".venv"
+        ],
+        "latex-workshop.latex.watch.files.ignore": [
+            "**/*.bbx",
+            "**/*.bbl",
+            "**/*.cbx",
+            "**/*.cfg",
+            "**/*.clo",
+            "**/*.cnf",
+            "**/*.def",
+            "**/*.dfu",
+            "**/*.enc",
+            "**/*.fd",
+            "**/*.fmt",
+            "**/*.lbx",
+            "**/*.map",
+            "**/*.mkii",
+            "**/*.pfb",
+            "**/*.tfm",
+            "**/*.vf",
+            "**/*.code.tex",
+            "**/*.sty",
+            "**/texmf-{dist,var}/**",
+            "**/Local/MiKTeX/**",
+            "**/Local/Programs/MiKTeX/**",
+            "**/Roaming/MiKTeX/**",
+            "**/Program*/MiKTeX*/**",
+            "**/.miktex/texmfs/**",
+            "/var/cache/miktex-texmf/**",
+            "/usr/local/share/miktex-texmf/**",
+            "**/Library/Application Support/MiKTeX/texmfs/**",
+            "/dev/null",
+            "**/*.pyc"
+        ],
+        "cSpell.spellCheckOnlyWorkspaceFiles": true,
+        "cSpell.ignorePaths": [
+            "package-lock.json",
+            "node_modules",
+            "vscode-extension",
+            ".git/{info,lfs,logs,refs,objects}/**",
+            ".git/{index,*refs,*HEAD}",
+            ".vscode",
+            ".vscode-insiders",
+            "**/*.log",
+            "*.code-workspace",
+        ],
+        "shebang.associations": [
+            {
+                "pattern": "^#!/bin/bash$",
+                "language": "shellscript"
+            },
+            {
+                "pattern": "^#!/usr/bin/env python3$",
+                "language": "python"
+            },
+            {
+                "pattern": "^#!/usr/bin/env python$",
+                "language": "python"
+            },
+            {
+                "pattern": "^#!/usr/bin/env node$",
+                "language": "javascript"
+            },
+            {
+                "pattern": "^#!/usr/bin/env uv run --script$",
+                "language": "python"
+            },
+            {
+                "pattern": "^#!/usr/bin/env devtool(\\s+[\\w|-]+)*\\s*$",
+                "language": "bash"
+            }
+        ],
+        "files.exclude": {
+            "vscode-chat/": true,
+            "mcp-server/": true,
+            "houdini/h*.*/": true,
+            "dist": true,
+            "out": true,
+            "node_modules/*": true,
+            "scripts/": true,
+            "docs/": true,
+            "docker/": true,
+            "*/docs/": true,
+        },
+        "cSpell.workspaceRootPath": "${workspaceFolder}",
+        "cSpell.customDictionaries": {
+            "workspace dictionary": {
+                "addWords": true,
+                "name": "Project",
+                "description": "Workspace dictionary for hou-ai-bridge",
+                "scope": "workspace",
+            }
+        },
+        "cSpell.dictionaryDefinitions": [
+            {
+                "name": "Project",
+                "path": "${workspaceFolder:docs}/.cspell/workspace.txt",
+                "description": "Workspace dictionary for hou-ai-bridge",
+                "scope": "workspace",
+            }
+        ],
+        "cSpell.dictionaries": [
+            "Project",
+            "python",
+            "latex",
+            "cpp",
+            "markdown",
+            "javascript",
+            "typescript",
+            "jsonc",
+            "yaml",
+            "shell",
+            "html",
+            "css",
+            "dockerfile",
+            "git",
+            "gitignore"
+        ],
+        "python.analysis.exclude": [
+            "*.pyi",
+            "**/.venv/**",
+            "**/typings/**"
+        ],
+        "python.analysis.ignore": [
+            ".venv/"
+        ],
+        "python.analysis.typeCheckingMode": "standard",
+        "search.exclude": {
+            "out": true, // set this to false to include "out" folder in search results
+            "dist": true // set this to false to include "dist" folder in search results
+        },
+        "markdownlint.config": {
+            "MD041": false,
+            "MD013": false,
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "elypia.magick-image-reader",
+            "dbaeumer.vscode-eslint",
+            "connor4312.esbuild-problem-matchers",
+            "ms-vscode.extension-test-runner",
+            "davidhewitt.shebang-language-associator",
+            "YuTengjing.open-in-external-app"
+        ]
+    },
+}

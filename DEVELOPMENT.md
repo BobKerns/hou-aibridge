@@ -1,4 +1,4 @@
-![Zabob and city banner](images/zabob-banner.jpg)
+![Zabob and city banner](docs/images/zabob-banner.jpg)
 
 # Houdini MCP Integration Development Overview
 

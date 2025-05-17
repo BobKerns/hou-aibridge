@@ -1,11 +1,13 @@
-![Zabob and city banner](images/zabob-banner.jpg)
+![Zabob and city banner](docs/images/zabob-banner.jpg)
 
 # Security Policy
 
 ## Supported Versions
 
 This is under active development with no users yet. Only the latest 0.x release is supported.
+
 At the time of this writing:
+
 | Version | Supported          |
 | ------- | ------------------ |
 | 0.1.x   | :x:                |
@@ -21,4 +23,3 @@ python code, however, should be reported to rwk@alum.mit.edu.
 
 I am old and infirm, so you might be on your own. In that case, feel free to fork and
 take over the project.
-

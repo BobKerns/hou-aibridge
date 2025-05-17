@@ -1,4 +1,4 @@
-![Zabob and city banner](images/zabob-banner.jpg)
+![Zabob and city banner](docs/images/zabob-banner.jpg)
 
 # Welcome to your VS Code Extension
 
@@ -13,9 +13,22 @@
 
 ## Setup
 
-* install the recommended extensions (amodio.tsl-problem-matcher, ms-vscode.extension-test-runner, and dbaeumer.vscode-eslint)
+### Install the recommended extensions
 
-## Get up and running straight away
+* amodio.tsl-problem-matcher
+* ms-vscode.extension-test-runner,
+* dbaeumer.vscode-eslint
+* davidhewitt.shebang-language-associator
+
+### Set up environments
+
+This project provides a unified development tool, `devtool`. One of the first ways you'll use it is to initialize the development environments.
+
+```bash
+devtool setup
+```
+
+### Get up and running straight away
 
 * Press `F5` to open a new window with your extension loaded.
 * Run your command from the command palette by pressing (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac) and typing `Hello World`.

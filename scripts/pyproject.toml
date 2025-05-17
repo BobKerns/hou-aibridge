@@ -1,7 +1,7 @@
 [project]
-name = "hou-aibridge"
+name = "scripts"
 version = "0.1.0"
-description = "Bridge between Houdini and AI"
+description = "Dev scripts for Bridge between Houdini and AI"
 readme = "README.md"
 authors = [
     { name = "Bob Kerns", email = "1154903+BobKerns@users.noreply.github.com" }
@@ -25,13 +25,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 
-[tool.setuptools.package-data]
+[tool.hatch.build.targets.wheel]
+include = [ "*" ]
 
-hou_aibridge = [
-    "responses/*.json",
-    "responses/*.md",
-    "zabob.jpg",
-]
+[tool.setuptools.package-data]
+include=[ '*' ]
 
 [dependency-groups]
 dev = [

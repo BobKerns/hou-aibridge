@@ -56,3 +56,4 @@ More info:
 
 - Read [RELEASE.md](RELEASE.md) for information about how releases are done.
 - Read [test/README.md](test/README.md) for information about testing.
+- [Instructions for LLMs contributing or commenting](.prompt.md) (but good advice for humans, too).

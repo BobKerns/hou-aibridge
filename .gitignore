@@ -323,6 +323,10 @@ Thumbs.db
 !.github
 !.markdownlint.*
 !.gitattributes
+!.envrc
+!.npmrc
+!.*.md
+
 
 .aibridge-cache/
 houdini_versions_cache.json

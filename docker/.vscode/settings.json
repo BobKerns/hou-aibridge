@@ -1,0 +1,8 @@
+{
+    "files.exclude": {
+        "docker/": false,
+        "houdini/h*/*": false,
+        "mcp-server/": false,
+        "docs/": true,
+    }
+}

@@ -61,7 +61,7 @@ You can author your README using Visual Studio Code. Here are some useful editor
 
 ## Development
 
-This is still in early-stage development, but you can read the [development plan](DEVELOPMENT.md)
+This is still in early-stage development, but you can read the [development plan](DEVELOPMENT.md) and details about how the development environment works.
 
 Contributions are encouraged! You can read the [contribution policy](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md)
 

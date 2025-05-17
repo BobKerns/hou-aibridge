@@ -26,6 +26,49 @@ Extracts information directly from Houdini
 Enables interaction with Houdini instances (local or remote)
 Must maintain compatibility with specific Houdini Python versions
 
+## Development Environment Setup
+
+### Prerequisites
+
+- [direnv](https://direnv.net/)
+- [uv](https://docs.astral.sh/uv/)
+- [nvm](https://github.com/nvm-sh/nvm)
+- [pnpm](https://pnpm.io/) (for Node projects)
+- Python (see `.python-version`)
+- Node.js (see `.nvmrc`)
+
+### Initial Setup
+
+1. Install all prerequisites above.
+2. Clone the repository.
+3. In the project root, run:
+
+```sh
+direnv allow
+```
+
+   Repeat in any subproject directory if needed.
+4. The environment will auto-configure based on `.envrc`, `.python-version`, and `.nvmrc`.
+
+### Environment Details
+
+- The `.envrc` file manages Python and Node environments per subproject.
+- Subproject `.envrc` files are symlinks to the top-level one and respect local `.python-version`/`.nvmrc`.
+- The `bin/` directory may contain a global Node symlink for CLI convenience—this is for development only.
+
+### Running and Testing
+
+- To run the MCP server: ...
+- To run Houdini adaptors: ...
+- To run the VSCode extension: ...
+- To run tests: ...
+
+### Troubleshooting
+
+- If `direnv` doesn’t activate, check that it’s installed and enabled in your shell.
+- If dependencies are missing, ensure you’ve run `direnv allow` and installed all prerequisites.
+- For Node/Python version issues, check `.nvmrc` and `.python-version` in the relevant subproject.
+
 ### Testing Strategy
 
 Testing is implemented across multiple environments:
@@ -53,57 +96,56 @@ Dynamically identify available versions via SideFX's API
 
 The GitHub Actions workflow handles:
 
-* **Build Matrix**
+- **Build Matrix**
+  - Dynamically builds test matrix based on available Houdini versions
+  - Caches version information to minimize API calls to SideFX
+  - Uses repository variables for configuration
 
-  * Dynamically builds test matrix based on available Houdini versions
-  * Caches version information to minimize API calls to SideFX
-  * Uses repository variables for configuration
+- **Dependency Management**
 
-* **Dependency Management**
+  - Uses uv with caching for reproducible builds
+  - Leverages standardized Docker containers for consistent environments
 
-  * Uses uv with caching for reproducible builds
-  * Leverages standardized Docker containers for consistent environments
+- **Containerization**
 
-* **Containerization**
-
-  * Utilizes Docker for isolated testing environments
-  * Follows SideFX's official container approach for dependencies
-  * Separates Python version requirements across components
+  - Utilizes Docker for isolated testing environments
+  - Follows SideFX's official container approach for dependencies
+  - Separates Python version requirements across components
 
 ### Development Workflow
 
 #### Local Development
 
-* Use Docker containers for consistent development environments
-* Leverage caching for efficient testing
-* Maintain separation between MCP server and Houdini environments
+- Use Docker containers for consistent development environments
+- Leverage caching for efficient testing
+- Maintain separation between MCP server and Houdini environments
 
 #### Contribution Model
 
-* Contributions can focus on a single layer
-* Documentation improvements are particularly welcome
-* MIT license for all components
+- Contributions can focus on a single layer
+- Documentation improvements are particularly welcome
+- MIT license for all components
 
 #### Design Principles
 
-* Maintain clear separation between layers
-* Handle version compatibility explicitly
-* Focus on Houdini 20.5+ with Python 3.11+
+- Maintain clear separation between layers
+- Handle version compatibility explicitly
+- Focus on Houdini 20.5+ with Python 3.11+
 
 ## Key Technologies
 
-* Model Context Protocol (MCP): Foundation for AI assistant integration
-* Docker: Containerization for consistent environments
-* GitHub Actions: CI/CD pipeline automation
-* uv: Modern Python package management
-* Houdini Python API: Core interaction with Houdini
+- Model Context Protocol (MCP): Foundation for AI assistant integration
+- Docker: Containerization for consistent environments
+- GitHub Actions: CI/CD pipeline automation
+- uv: Modern Python package management
+- Houdini Python API: Core interaction with Houdini
 
 ## Future Directions
 
-* Support for upcoming Houdini 21.0 release
-* Extended node information extraction
-* Live Houdini session integration
-* Network visualization capabilities
+- Support for upcoming Houdini 21.0 release
+- Extended node information extraction
+- Live Houdini session integration
+- Network visualization capabilities
 
 ### Integration Approaches with Houdini's HTTP Server
 
@@ -115,32 +157,32 @@ We'd bring our own complete MCP server. This would give full compatibility and a
 
 Leveraging Houdini's built-in HTTP server as transport for the MCP protocol offers significant advantages:
 
-* Native Integration: Uses Houdini's own mechanism for web communication
-* Simplified Architecture: Reduces the number of separate services to maintain
-* Authentication Reuse: May leverage Houdini's existing authentication mechanisms
-* Stable Transport: Benefits from SideFX's maintenance of the HTTP server component
-* Resource Efficiency: Avoids running redundant web servers
+- Native Integration: Uses Houdini's own mechanism for web communication
+- Simplified Architecture: Reduces the number of separate services to maintain
+- Authentication Reuse: May leverage Houdini's existing authentication mechanisms
+- Stable Transport: Benefits from SideFX's maintenance of the HTTP server component
+- Resource Efficiency: Avoids running redundant web servers
 
 This approach would involve:
 
-* Creating MCP endpoints within Houdini's HTTP server
-* Implementing the MCP protocol handlers on these endpoints
-* Maintaining the separation of concerns while sharing transport
+- Creating MCP endpoints within Houdini's HTTP server
+- Implementing the MCP protocol handlers on these endpoints
+- Maintaining the separation of concerns while sharing transport
 
 Considerations for Implementation When implementing Option 2:
 
-* Stability Assessment: Test Houdini's HTTP server under various loads to ensure reliability
-* Version Compatibility: Verify consistent HTTP server behavior across Houdini versions
-* Extension Points: Identify the proper extension mechanisms in Houdini's server
-* Isolation: Ensure MCP functionality doesn't interfere with existing Houdini HTTP services
-* Error Handling: Design robust error recovery that respects both MCP and Houdini protocols
+- Stability Assessment: Test Houdini's HTTP server under various loads to ensure reliability
+- Version Compatibility: Verify consistent HTTP server behavior across Houdini versions
+- Extension Points: Identify the proper extension mechanisms in Houdini's server
+- Isolation: Ensure MCP functionality doesn't interfere with existing Houdini HTTP services
+- Error Handling: Design robust error recovery that respects both MCP and Houdini protocols
 
 Development Strategy
 
-* Create a proof-of-concept implementation to validate feasibility
-* Design clean abstraction layers that separate MCP protocol concerns from transport
-* Implement comprehensive testing for the integrated solution
-* Document the approach for contributors
+- Create a proof-of-concept implementation to validate feasibility
+- Design clean abstraction layers that separate MCP protocol concerns from transport
+- Implement comprehensive testing for the integrated solution
+- Document the approach for contributors
 
 #### Option 3: Ignore MCP, add rest endpoints on Houdini's server
 
@@ -150,8 +192,8 @@ Houdini would be a backend for
 
 As noted, the core value comes from:
 
-* AI-Powered Introspection: Understanding Houdini networks and providing insights
-* Interactive Updates: Allowing modifications via natural language
-* Knowledge Integration: Combining Houdini documentation with contextual understanding
+- AI-Powered Introspection: Understanding Houdini networks and providing insights
+- Interactive Updates: Allowing modifications via natural language
+- Knowledge Integration: Combining Houdini documentation with contextual understanding
 
 Visualization enhancements should remain secondary to these core benefits, serving primarily as demonstration tools rather than primary development goals.

@@ -30,6 +30,8 @@ Must maintain compatibility with specific Houdini Python versions
 
 ### Prerequisites
 
+Development should work in any of Linux, MacOS, or Windows WSL. Development in a Windows environment without WSL will not be supported. (So far only tested on MacOS).
+
 - [direnv](https://direnv.net/)
 - [uv](https://docs.astral.sh/uv/)
 - [nvm](https://github.com/nvm-sh/nvm)

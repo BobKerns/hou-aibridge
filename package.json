@@ -61,19 +61,6 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "cd vscode-chat && pnpm run vscode:prepublish",
-    "compile": "cd vscode-chat && pnpm run compile",
-    "watch": "cd vscode-chat && pnpm run watch",
-    "watch:esbuild": "cd vscode-chat && pnpm run watch:esbuild",
-    "watch:tsc": "cd vscode-chat && pnpm run watch:tsc",
-    "package": "cd vscode-chat && pnpm run package",
-    "compile-tests": "cd vscode-chat && pnpm run compile-tests",
-    "watch-tests": "cd vscode-chat && pnpm watch-tests",
-    "pretest": "cd vscode-chat && pnpm run pretest",
-    "check-types": "cd vscode-chat && pnpm run check-types",
-    "lint": "cd vscode-chat && pnpm run lint",
-    "test": "cd vscode-chat && pnpm run test",
-    "deploy": "cd vscode-chat && pnpm run deploy"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

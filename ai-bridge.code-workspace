@@ -191,7 +191,10 @@
         "markdownlint.config": {
             "MD041": false,
             "MD013": false,
-        }
+        },
+        "python.testing.pytestEnabled": false,
+        "python.testing.unittestEnabled": false,
+        "python.testing.nosetestsEnabled": false
     },
     "extensions": {
         "recommendations": [
@@ -202,5 +205,6 @@
             "davidhewitt.shebang-language-associator",
             "YuTengjing.open-in-external-app"
         ]
+
     },
 }

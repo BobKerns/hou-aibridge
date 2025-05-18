@@ -1,2 +1,6 @@
 {
+        "files.exclude": {
+            "dist": false,
+            "out": false,
+        }
 }

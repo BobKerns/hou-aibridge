@@ -317,6 +317,7 @@ Thumbs.db
 .*
 !.npmrc
 !.python-version
+!.node-version
 !.gitignore
 !.vscode*
 !.cspell
@@ -330,4 +331,6 @@ Thumbs.db
 
 .aibridge-cache/
 houdini_versions_cache.json
+
+.vscode-test/
 

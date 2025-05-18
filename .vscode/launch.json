@@ -36,6 +36,21 @@
                 "${workspaceFolder:vscode-chat}/dist/**/*.js"
             ],
             "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "name": "Extension Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "program": "${workspaceFolder}/out/test/runTest.js"
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder:vscode-chat}",
+                "--extensionTestsPath=${workspaceFolder:vscode-chat}/out/test/runTest.js"
+            ],
+            "autoAttachChildProcesses": true,
+            "trace": true,
+            "outFiles": [
+                "${workspaceFolder:vscode-chat}/out/test/**/*.js"
+            ]
         }
     ]
 }

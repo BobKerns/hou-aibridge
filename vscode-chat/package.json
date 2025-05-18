@@ -71,7 +71,7 @@
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test",
+    "test": "node ./out/test/runTest.js",
     "deploy": "vsce publish --yarn"
   },
   "dependencies": {

@@ -20,11 +20,11 @@
         {
             "type": "npm",
             "script": "watch:esbuild",
-            "path": "${workspaceFolder:vscode-chat}",
             "group": "build",
             "problemMatcher": "$esbuild-watch",
             "isBackground": true,
             "label": "npm: watch:esbuild",
+            "path": "vscode-chat",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
@@ -33,11 +33,11 @@
 		{
             "type": "npm",
             "script": "watch:tsc",
-            "path": "${workspaceFolder:vscode-chat}",
             "group": "build",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
             "label": "npm: watch:tsc",
+            "path": "vscode-chat",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
@@ -46,7 +46,7 @@
 		{
 			"type": "npm",
 			"script": "watch-tests",
-            "path": "${workspaceFolder:vscode-chat}",
+            "path": "vscode-chat",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"presentation": {

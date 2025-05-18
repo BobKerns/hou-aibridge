@@ -8,7 +8,17 @@
             "dom"
 		],
 		"sourceMap": true,
+        "types": [
+            "node",
+            "mocha",
+            "vscode"
+        ],
+        "outDir": "out"
     },
+    "include": [
+        "src",
+        "test"
+    ],
     "rootDir": "src",
     // "strict": true,   /* enable all strict type-checking options */
     "jsx": "react",

@@ -26,7 +26,7 @@ const esbuildProblemMatcherPlugin = {
 async function main() {
 	const ctx = await esbuild.context({
 		entryPoints: [
-			'vscode-chat/extension.ts'
+			'src/extension.ts'
 		],
 		bundle: true,
 		format: 'cjs',

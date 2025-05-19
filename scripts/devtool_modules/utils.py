@@ -172,14 +172,16 @@ def flatten_tree(*dirs: Path):
 
 
 def rmdir(*dirs: Path,
-          level: Level=VERBOSE) -> None:
+          level: Level=VERBOSE,
+          dry_run: bool=False) -> None:
     "Remove the given directories (or files) and contents."
     for f in flatten_tree(*dirs):
         level(f"Removing {f}")
-        if f.is_symlink():
-            f.unlink(missing_ok=True)
-        elif f.is_dir():
-            f.rmdir()
-        else:
-            f.unlink(missing_ok=True)
+        if not dry_run:
+            if f.is_symlink():
+                f.unlink(missing_ok=True)
+            elif f.is_dir():
+                f.rmdir()
+            else:
+                f.unlink(missing_ok=True)
 

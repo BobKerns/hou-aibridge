@@ -28,13 +28,16 @@ def run(*cmds: Any,
         shell: bool=False,
         stdout: '_FILE'=None,
         stderr: '_FILE'=None,
+        dry_run: bool=False,
     ) -> subprocess.CompletedProcess:
     "Run the given command."
     cmd = [str(arg) for arg in cmds]
     cmd[0] = which(cmd[0]) or cmd[0]
-    DEBUG(f"Running command: {' '.join(cmd)}")
+    cwd = Path(cwd or Path.cwd())
+    DEBUG(f"Running {cwd.name}> {' '.join(cmd)}")
+    if dry_run:
+        return subprocess.CompletedProcess(cmd, 0)
     env = env or os.environ.copy()
-    cwd = cwd or Path.cwd()
     result: subprocess.CompletedProcess = subprocess.run(cmd,
                                                         cwd=str(cwd),
                                                         env=env,

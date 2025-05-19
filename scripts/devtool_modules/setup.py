@@ -22,8 +22,13 @@ from devtool_modules.main import main
 @click.option('--force',
               is_flag=True,
               help="Force setup, removing existing directories.")
-def setup(force: bool=False,
-        ) -> None:
+@click.option('--dry-run',
+              is_flag=True,
+              help="Show what would be done, but do not actually do it.")
+def setup(
+    force: bool=False,
+    dry_run: bool=False,
+) -> None:
     "Set up the project. This includes installing dependencies and setting up the server."
     if not QUIET.enabled:
         output = subprocess.DEVNULL
@@ -39,6 +44,7 @@ def setup(force: bool=False,
         cwd=PROJECT_ROOT,
         stdout=output,
         stderr=output,
+        dry_run=dry_run,
     )
     nvm_node = node_path()
     BIN = PROJECT_ROOT / 'bin'
@@ -56,10 +62,11 @@ def setup(force: bool=False,
         PROJECT_ROOT / 'uv.lock',
         PROJECT_ROOT / 'houdini_versions_cache.json',
         PROJECT_ROOT / 'requirements.txt',
+        dry_run=dry_run,
     )
     uv_env = os.environ.copy()
     del uv_env['VIRTUAL_ENV']
-    for subproject in (PROJECT_ROOT, *SUBPROJECTS):
+    for subproject in SUBPROJECTS:
         QUIET(f"Setting up {subproject.stem}...")
         pyproject = subproject / 'pyproject.toml'
         package = subproject / 'package.json'
@@ -69,18 +76,15 @@ def setup(force: bool=False,
                   for d in ('node_modules', 'dist', 'build')),
                 *(subproject.glob('**/*.egg-info')),
                 *(subproject.glob('__pycache__')),
+                dry_run=dry_run,
             )
-        # We don't want to install dependencies in the root directory
-        # as this will lead to conflicts with the subprojects, which are designed around
-        # isolating dependencies.
-        if subproject == PROJECT_ROOT:
-            continue
         if pyproject.exists():
             run('uv', 'sync',
                 cwd=subproject,
                 env=uv_env,
                 stdout=output,
                 stderr=output,
+                dry_run=dry_run,
             )
         if package.exists() and subproject != PROJECT_ROOT:
             run('pnpm', 'install',
@@ -88,4 +92,5 @@ def setup(force: bool=False,
                 env=node_env,
                 stdout=output,
                 stderr=output,
+                dry_run=dry_run,
             )

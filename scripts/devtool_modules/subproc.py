@@ -23,7 +23,7 @@ from devtool_modules.utils import DEBUG
 from devtool_modules.paths import PROJECT_ROOT
 
 def run(*cmds: Any,
-        cwd: os.PathLike|str=PROJECT_ROOT,
+        cwd: os.PathLike|str=Path.cwd(),
         env: dict[str,str]|None=None,
         shell: bool=False,
         stdout: '_FILE'=None,
@@ -34,7 +34,7 @@ def run(*cmds: Any,
     cmd = [str(arg) for arg in cmds]
     cmd[0] = which(cmd[0]) or cmd[0]
     cwd = Path(cwd or Path.cwd())
-    DEBUG(f"Running {cwd.name}> {' '.join(cmd)}")
+    DEBUG(f"{cwd.name}> {' '.join(cmd)}")
     if dry_run:
         return subprocess.CompletedProcess(cmd, 0)
     env = env or os.environ.copy()

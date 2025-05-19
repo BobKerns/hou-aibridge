@@ -1,24 +1,29 @@
-# docker-compose.yml
-
 services:
   houdini:
     build:
-      context: .
-      dockerfile: houdini-20.5/Dockerfile
+      context: ./houdini-20.5
+      dockerfile: Dockerfile
       args:
-        HOUDINI_VERSION: 20.0.547
+        HOUDINI_VERSION: 20.5.584
+        HOUDINI_ARCH: arm64
+        HOUDINI_BUILD_TYPE: gcc9.3
         BUILDKIT_INLINE_CACHE: 1
+      secrets:
+        - sidefx_credentials
+      target: final
     volumes:
-      - .:/app
-      - houdini-downloads:/tmp/downloads
+      - ..:/app
       - pip-cache:/root/.cache/pip
       - apt-cache:/var/cache/apt
       - apt-lib:/var/lib/apt
     ports:
-      - "5678:5678"  # For debugpy
+      - "5678:5678"
+
+secrets:
+  sidefx_credentials:
+    file: ./sidefx_credentials.env
 
 volumes:
-  houdini-downloads: # Persists the Houdini installer across builds
-  pip-cache:  # Persists pip downloads
-  apt-cache:  # Persists apt package cache
-  apt-lib:    # Persists apt database
+  pip-cache:
+  apt-cache:
+  apt-lib:

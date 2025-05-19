@@ -93,6 +93,7 @@ scrapy
 sdata
 sdist
 setuptools
+shlvl
 SIDEFX
 Spyder
 spyderproject

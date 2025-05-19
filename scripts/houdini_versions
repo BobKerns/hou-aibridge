@@ -20,11 +20,9 @@ import time
 from datetime import datetime
 from collections import defaultdict
 # Add dotenv support
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # Load from .env if available
-except ImportError:
-    pass  # dotenv not essential
+from dotenv import load_dotenv
+
+load_dotenv()  # Load from .env if available]
 
 HOUDINI_FALLBACK_VERSION: Final[str] = os.getenv("HOUDINI_FALLBACK_VERSION", "20.5.584")
 HOUDINI_DEFAULT_MIN_VERSION: Final[str] = "20.5"
@@ -409,8 +407,9 @@ def versions_command(cache_dir: Path|str=HOUDINI_VERSIONS_CACHE,
     # Output as JSON
     print(json.dumps(versions))
 
+# Add this to your imports
+# dotenv already imported at the top
 
-# Second subcommand - download installer
 @cli.command('download')
 @click.option('--version',
               default=os.getenv("HOUDINI_VERSION", HOUDINI_FALLBACK_VERSION),
@@ -423,14 +422,23 @@ def versions_command(cache_dir: Path|str=HOUDINI_VERSIONS_CACHE,
               help='Build type (gcc9.3, gcc11.2, etc).')
 @click.option('--output-path',
               help='Path to save the downloaded file (for Docker integration).')
+@click.option('--credentials',
+              help='Path to .env file with SIDEFX_USERNAME and SIDEFX_PASSWORD')
 def download_command(version: str=HOUDINI_FALLBACK_VERSION,
                    arch: str="arm64",
                    build_type: str="gcc9.3",
-                   output_path: str|Path|None=None):
+                   output_path: str|Path|None=None,
+                   credentials: str|Path|None=None,
+                ):
     """Download a Houdini installer."""
     try:
+        # Load credentials file if provided
+        if credentials:
+            load_dotenv(dotenv_path=credentials, override=True)
+
         session = requests.Session()
         login_session(session)
+        # Rest of your download code...
         installer_path = download_houdini_installer(
             version=version,
             arch=arch,

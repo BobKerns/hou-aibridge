@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT/docker/houdini-20.5" || exit 1
+# Build Houdini 20.5 image
+docker build \
+  --secret id=sidefx_credentials,src=sidefx_credentials.env \
+  -t houdini:20.5 \
+  -f houdini-20.5/Dockerfile .

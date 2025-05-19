@@ -16,6 +16,7 @@ dependencies = [
     "httpx>=0.28.1",
     "mcp[cli]>=1.8.1",
     "pedantic>=2.1.9",
+    "python-dotenv>=1.1.0",
     "sqlite-vec>=0.1.7a2",
     "uvicorn>=0.34.2",
 ]

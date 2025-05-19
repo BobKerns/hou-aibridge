@@ -33,6 +33,11 @@ hou_aibridge = [
     "zabob.jpg",
 ]
 
+[tool.uv.workspace]
+members = [
+    "houdini/h20.5",
+]
+
 [dependency-groups]
 dev = [
     "click>=8.0.0,<8.2.0",

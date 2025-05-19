@@ -1,0 +1,24 @@
+# docker-compose.yml
+
+services:
+  houdini:
+    build:
+      context: .
+      dockerfile: houdini-20.5/Dockerfile
+      args:
+        HOUDINI_VERSION: 20.0.547
+        BUILDKIT_INLINE_CACHE: 1
+    volumes:
+      - .:/app
+      - houdini-downloads:/tmp/downloads
+      - pip-cache:/root/.cache/pip
+      - apt-cache:/var/cache/apt
+      - apt-lib:/var/lib/apt
+    ports:
+      - "5678:5678"  # For debugpy
+
+volumes:
+  houdini-downloads: # Persists the Houdini installer across builds
+  pip-cache:  # Persists pip downloads
+  apt-cache:  # Persists apt package cache
+  apt-lib:    # Persists apt database

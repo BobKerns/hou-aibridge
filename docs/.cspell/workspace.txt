@@ -25,9 +25,15 @@ fastapi
 fastio
 fastmcp
 fontconfig
+gplay
+happrentice
 hdas
+heducation
+houdinicore
+houdinifx
 htmlcov
 httpx
+hview
 hython
 icccm
 infile
@@ -69,6 +75,7 @@ mypy
 nosetests
 nuxt
 nvmrc
+oudini
 pids
 pipenv
 Pipfile

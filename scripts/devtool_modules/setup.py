@@ -8,8 +8,12 @@ This command is used to set up the development environment for the project.
 import os
 from pathlib import Path
 import subprocess
+from typing import cast
 
 import click
+import tomlkit
+import tomlkit.container
+from tomlkit.toml_file import TOMLFile
 
 from devtool_modules.node import node_path, node_version
 from devtool_modules.paths import PROJECT_ROOT, SUBPROJECTS
@@ -81,12 +85,25 @@ def setup(
                 dry_run=dry_run,
             )
         if pyproject.exists():
-            run('uv', 'venv', '--no-project', '.venv',
+            file = TOMLFile(pyproject)
+            toml = file.read()
+            project = cast(tomlkit.container.Container, toml['project'])
+            use_hython = project.get('use-hython', False)
+            if use_hython:
+                # Use hython to create the virtual environment.
+                run('hython', '-m', 'venv', '.venv', '--without-pip',
+                    cwd=subproject,
+                    env=uv_env,
+                    stdout=output,
+                    stderr=output,
+                    dry_run=dry_run,
+                )
+            dry_run_flag = ('--dry-run',) if dry_run else ()
+            run('uv', 'sync', *dry_run_flag,
                 cwd=subproject,
                 env=uv_env,
                 stdout=output,
                 stderr=output,
-                dry_run=dry_run,
             )
         if package.exists():
             run('pnpm', 'install',

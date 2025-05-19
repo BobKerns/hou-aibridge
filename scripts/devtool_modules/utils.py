@@ -1,5 +1,5 @@
 '''
-Commmon utility functions for the devtool modules.
+Common utility functions for the devtool modules.
 These functions are used for logging, running commands,
 capturing output, and handling errors. They are designed
 to be used in the context of a command line interface (CLI).
@@ -12,6 +12,7 @@ from os import PathLike
 from pathlib import Path
 from shutil import which
 from typing import Final, Literal
+from time import sleep
 
 from devtool_modules.paths import PROJECT_ROOT
 
@@ -173,15 +174,26 @@ def flatten_tree(*dirs: Path):
 
 def rmdir(*dirs: Path,
           level: Level=VERBOSE,
-          dry_run: bool=False) -> None:
+          dry_run: bool=False,
+          retries: int=3) -> None:
     "Remove the given directories (or files) and contents."
-    for f in flatten_tree(*dirs):
-        level(f"Removing {f}")
-        if not dry_run:
-            if f.is_symlink():
-                f.unlink(missing_ok=True)
-            elif f.is_dir():
-                f.rmdir()
-            else:
-                f.unlink(missing_ok=True)
+    while retries > 0:
+        failures: bool = False
+        for f in flatten_tree(*dirs):
+            try:
+                level(f"Removing {f}")
+                if not dry_run:
+                    if f.is_symlink():
+                        f.unlink(missing_ok=True)
+                    elif f.is_dir():
+                        f.rmdir()
+                    else:
+                        f.unlink(missing_ok=True)
+            except OSError as e:
+                failures = True
+                QUIET(f"Failed to remove {f}: {e}")
+        if not failures:
+            break
+        retries -= 1
+        sleep(0.5)
 

@@ -282,6 +282,7 @@ dependencies = [
     { name = "httpx" },
     { name = "mcp", extra = ["cli"] },
     { name = "pedantic" },
+    { name = "semver" },
     { name = "sqlite-vec" },
     { name = "uvicorn" },
 ]
@@ -305,6 +306,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.8.1" },
     { name = "pedantic", specifier = ">=2.1.9" },
+    { name = "semver", specifier = ">=3.0.4" },
     { name = "sqlite-vec", specifier = ">=0.1.7a2" },
     { name = "uvicorn", specifier = ">=0.34.2" },
 ]

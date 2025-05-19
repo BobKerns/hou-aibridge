@@ -59,7 +59,7 @@ def setup(
     # We remove them to avoid conflicts with the subprojects.
     rmdir(
         PROJECT_ROOT / '.venv',
-        PROJECT_ROOT / '_node_modules',
+        PROJECT_ROOT / 'node_modules',
         PROJECT_ROOT / 'pnpm-lock.yaml',
         PROJECT_ROOT / 'uv.lock',
         PROJECT_ROOT / 'houdini_versions_cache.json',
@@ -81,14 +81,14 @@ def setup(
                 dry_run=dry_run,
             )
         if pyproject.exists():
-            run('uv', 'sync',
+            run('uv', 'venv', '--no-project', '.venv',
                 cwd=subproject,
                 env=uv_env,
                 stdout=output,
                 stderr=output,
                 dry_run=dry_run,
             )
-        if package.exists() and subproject != PROJECT_ROOT:
+        if package.exists():
             run('pnpm', 'install',
                 cwd=subproject,
                 env=node_env,

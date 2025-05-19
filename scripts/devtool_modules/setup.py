@@ -49,8 +49,10 @@ def setup(
     nvm_node = node_path()
     BIN = PROJECT_ROOT / 'bin'
     bin_node = BIN / 'node'
-    bin_node.unlink(missing_ok=True)
-    bin_node.symlink_to(nvm_node)
+    QUIET("Symlinking node to bin directory...")
+    if not dry_run:
+        bin_node.unlink(missing_ok=True)
+        bin_node.symlink_to(nvm_node)
 
     # None of these should be in the repository root.
     # They are all in the subprojects.

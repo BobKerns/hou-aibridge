@@ -35,13 +35,13 @@ def show_node_version(range) -> None:
 
 
 def node_version(range: bool=False) -> str:
-    root_pkg = PROJECT_ROOT / 'package.json'
+    root_pkg = PROJECT_ROOT / 'vscode-chat/package.json'
     with root_pkg.open('r') as f:
         pkg = json.load(f)
     version= pkg.get('engines', {}).get('node', '23.11.0')
     if not range:
         # If we are not in range mode, we want to use the exact version.
-        # We remove the prefix and suffixes, qne pick the minimum version
+        # We remove the prefix and suffixes, and pick the minimum version
         # of the first element of the range.
         version = version.strip().lstrip('^>=<')
         version = version.split(',', 1)[0]

@@ -12,7 +12,15 @@ import sys
 DEVTOOL_DIR: Final[Path] = Path(__file__).resolve().parent
 SCRIPTS_DIR: Final[Path] = DEVTOOL_DIR.parent
 PROJECT_ROOT: Final[Path] = SCRIPTS_DIR.parent
-PACKAGE_PATH: Final[Path] = SCRIPTS_DIR.parent / "package.json"
+CHAT_DIR: Final[Path] = PROJECT_ROOT / "vscode-chat"
+PACKAGE_PATH: Final[Path] = CHAT_DIR / "package.json"
+
+PROJECT_CHECKSUMS: Final[Path] = PROJECT_ROOT / ".checksums"
+'''
+Checksums for the project files.
+This is used to check if the project files have changed.
+'''
+
 
 # Add useful path constants
 DOCKER_DIR: Final[Path] = PROJECT_ROOT / "docker"
@@ -37,7 +45,7 @@ if VENV_DIR.is_dir():
     # If the virtual environment is already created, we need to
     # activate it.
 
-    os.environ['VIRTUAL_ENV'] = '.venv'
+    os.environ['VIRTUAL_ENV'] = str(VENV_DIR)
     os.environ['PATH'] = str(VENV_DIR / 'bin') + os.pathsep + os.environ['PATH']
     sys.path.insert(0, str(VENV_DIR / 'bin'))
     pyversion = sys.version_info
@@ -68,6 +76,14 @@ SUBPROJECTS: Final[tuple[Path, ...]] =tuple(
 Paths to all the subproject directories.
 '''
 
+ALLPROJECTS: Final[tuple[Path, ...]] = (
+    PROJECT_ROOT,
+    *SUBPROJECTS,
+)
+'''
+Paths to all the subproject directories, including the root project directory.
+'''
+
 __all__: Final[tuple[str, ...]] = (
     "DEVTOOL_DIR",
     "SCRIPTS_DIR",
@@ -76,6 +92,7 @@ __all__: Final[tuple[str, ...]] = (
     "DOCKER_DIR",
     "HOUDINI_PROJECTS",
     "SUBPROJECTS",
+    "ALLPROJECTS",
     "HOUDINI_20_5_DIR",
     "DOCS_DIR",
     "IMAGES_DIR",

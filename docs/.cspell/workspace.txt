@@ -21,6 +21,7 @@ envrc
 esbuild
 eslintcache
 excs
+fanout
 fastapi
 fastio
 fastmcp

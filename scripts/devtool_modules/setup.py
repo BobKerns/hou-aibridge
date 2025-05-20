@@ -6,6 +6,7 @@ This command is used to set up the development environment for the project.
 
 
 from collections.abc import Iterator
+from contextlib import suppress
 from itertools import count
 import os
 from pathlib import Path
@@ -108,22 +109,31 @@ def setup(
             toml = file.read()
             project = cast(tomlkit.container.Container, toml['project'])
             use_hython = project.get('use-hython', False)
+            dry_run_flag     = ('--dry-run',) if dry_run else ()
             if use_hython:
-                # Use hython to create the virtual environment.
-                run('hython', '-m', 'venv', '.venv', '--without-pip',
+                 # Use hython to create the virtual environment.
+                 with suppress(RuntimeError):
+                     # This currently fails. Ignore the error for now.
+                     run('hython', '-m', 'venv', '.venv', '--without-pip',
+                         cwd=subproject,
+                         env=uv_env,
+                         stdout=output,
+                         stderr=output,
+                         dry_run=dry_run,
+                     )
+                     run('uv', 'sync', *dry_run_flag,
+                         cwd=subproject,
+                         env=uv_env,
+                         stdout=output,
+                         stderr=output,
+                     )
+            else:
+                run('uv', 'sync', *dry_run_flag,
                     cwd=subproject,
                     env=uv_env,
                     stdout=output,
                     stderr=output,
-                    dry_run=dry_run,
                 )
-            dry_run_flag = ('--dry-run',) if dry_run else ()
-            run('uv', 'sync', *dry_run_flag,
-                cwd=subproject,
-                env=uv_env,
-                stdout=output,
-                stderr=output,
-            )
         if package.exists():
             run('pnpm', 'install',
                 cwd=subproject,
@@ -301,6 +311,13 @@ def checksum_command() -> None:
     write_checksums(sys.stdout)
 
 @checksum.command(name='save')
+def checksum_save_command() -> None:
+    """
+    Save the checksum of the project's configuration files to a file.
+    """
+    checksum_save()
+
+
 def checksum_save() -> None:
     """
     Save the checksum of the project's configuration files to a file.
@@ -358,16 +375,17 @@ def checksum_diff_command() -> set[Path]:
     if diff:
         sys.exit(1)
     else:
-        sys.exit(0) 
+        sys.exit(0)
 
-def checksum_diff() -> set[Path]:
+def checksum_diff(old: ChecksumMap|None=None,
+                  new: ChecksumMap|None=None) -> set[Path]:
     """
     Compare the checksums of the project and its subprojects.
     Returns:
         set[Path]: A set of subproject paths that have changed.
     """
-    old = read_checksums(PROJECT_CHECKSUMS)
-    new = checksum_project_dict()
+    old = old or read_checksums(PROJECT_CHECKSUMS)
+    new = new or checksum_project_dict()
     diff = diff_checksums(old, new)
     SELF = Path('SELF')
     projects: set[Path] = set()

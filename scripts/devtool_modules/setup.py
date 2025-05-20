@@ -22,9 +22,9 @@ from tomlkit.toml_file import TOMLFile
 if __name__ == '__main__':
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from devtool_modules.node import node_version, node_path  # type: ignore # noqa: E402
-from devtool_modules.paths import ALLPROJECTS, PROJECT_ROOT, SUBPROJECTS
+from devtool_modules.paths import ALLPROJECTS, PROJECT_CHECKSUMS, PROJECT_ROOT, SUBPROJECTS
 from devtool_modules.subproc import run
-from devtool_modules.utils import QUIET, rmdir
+from devtool_modules.utils import QUIET, INFO, VERBOSE, rmdir
 from devtool_modules.main import main
 
 
@@ -40,10 +40,23 @@ def setup(
     dry_run: bool=False,
 ) -> None:
     "Set up the project. This includes installing dependencies and setting up the server."
+
+    old = read_checksums(PROJECT_CHECKSUMS)
+    new = {
+        path: chksum.hex()
+        for path, chksum in checksum_project()
+        if path is not None
+    }
+    added, removed, changed = diff_checksums(old, new)
+    if not added and not removed and not changed:
+        INFO("Checksums are identical, skipping setup.")
+        return
     if not QUIET.enabled:
         output = subprocess.DEVNULL
     else:
         output = None
+    if VERBOSE.enabled:
+        checksum_diff(old, new)
     node_env = os.environ.copy()
     version = node_version()
     nvm_dir = Path.home() / '.nvm'
@@ -119,9 +132,14 @@ def setup(
                 stderr=output,
                 dry_run=dry_run,
             )
+    checksum_save()
 
-type Offsets = tuple[Iterator[int], Iterator[int], Iterator[int]]
+type _Offsets = tuple[Iterator[int], Iterator[int], Iterator[int]]
 type ChecksumMap = dict[Path, str]
+'''
+A dictionary of checksums for the project and its subprojects.
+The keys are the paths to the files, and the values are the checksums as strings
+'''
 
 class DiffMaps(NamedTuple):
     """
@@ -143,6 +161,7 @@ _DEPTH: Final[int] = 3
 _DIGEST_SIZE: Final[int] = 64
 _INNER_DIGEST_SIZE: Final[int] = 64
 _LEAF_SIZE: Final[int] = 0
+
 
 def blake(person: bytes,
           node_depth: int,
@@ -170,7 +189,8 @@ def end_node(node_depth: int,
             last_node=True)
     return hash.digest()
 
-def checksum_file(file: Path, offsets: Offsets, /,
+
+def checksum_file(file: Path, offsets: _Offsets, /,
                   node_depth: int=0):
     """
     Get the checksum of a file.
@@ -193,7 +213,8 @@ def checksum_file(file: Path, offsets: Offsets, /,
             file_digest(f, lambda: hash)
     yield None, hash.digest()
 
-def checksum_subproject(subproject: Path, offsets: Offsets, /):
+
+def checksum_subproject(subproject: Path, offsets: _Offsets, /):
     """
     Get the checksum of a subproject.
     This is used to check if the subproject has changed since the last time it was built.
@@ -212,6 +233,7 @@ def checksum_subproject(subproject: Path, offsets: Offsets, /):
             yield path, chksum
     hash.update(end_node(0, next(offsets[0])))
     yield rel_file, hash.digest()
+
 
 def checksum_project() :
     """
@@ -243,6 +265,18 @@ def checksum_project() :
     yield Path('SELF'), self_hash.digest()
     hash.update(self_hash.digest())
     yield Path('PROJECT'), hash.digest()
+
+
+def checksum_project_dict() -> ChecksumMap:
+    """
+    Get the checksum of the project as a dictionary.
+    """
+    return {
+        path: chksum.hex()
+        for path, chksum in checksum_project()
+        if path is not None
+    }
+
 
 def write_checksums(out: IO[str], /):
     """
@@ -276,10 +310,18 @@ def checksum_save() -> None:
         write_checksums(out)
 
 
-def read_checksums(in_: IO[str], /) -> ChecksumMap:
+def read_checksums(in_: IO[str]|Path, /) -> ChecksumMap:
     """
     Read the checksums from a file.
+
+    Args:
+        in_ (IO[str]|Path): The file to read the checksums from.
+    Returns:
+        ChecksumMap: A dictionary of the checksums.
     """
+    if isinstance(in_, Path):
+        with in_.open('r') as f:
+            return read_checksums(f)
     return {
         Path(label): chksum
         for line in in_
@@ -306,30 +348,55 @@ def diff_checksums(old: ChecksumMap, new: ChecksumMap, /) -> DiffMaps:
     )
 
 @checksum.command(name='diff')
-def checksum_diff() -> None:
+def checksum_diff_command() -> set[Path]:
     """
     Compare the checksums of the project and its subprojects.
+
+    Exits with 0 if the checksums are identical, 1 if they differ.
     """
-    file = PROJECT_ROOT / '.checksums'
-    with file.open('r') as in_:
-        old = read_checksums(in_)
-    new = {
-        path: hash.hex()
-        for path, hash in checksum_project()
-        if path is not None
-    }
+    diff = checksum_diff()
+    if diff:
+        sys.exit(1)
+    else:
+        sys.exit(0) 
+
+def checksum_diff() -> set[Path]:
+    """
+    Compare the checksums of the project and its subprojects.
+    Returns:
+        set[Path]: A set of subproject paths that have changed.
+    """
+    old = read_checksums(PROJECT_CHECKSUMS)
+    new = checksum_project_dict()
     diff = diff_checksums(old, new)
+    SELF = Path('SELF')
+    projects: set[Path] = set()
     if diff.added or diff.removed or diff.changed:
         print("Checksums differ:")
         for path in sorted(diff.added, key=str):
             print(f"  + {path}")
+            if path in ALLPROJECTS or path == SELF:
+                projects.add(path)
         for path in sorted(diff.removed, key=str):
             print(f"  - {path}")
+            if path in ALLPROJECTS or path == SELF:
+                projects.add(path)
         for path in sorted(diff.changed, key=str):
             print(f"  ~ {path}")
+            if path in ALLPROJECTS or path == SELF:
+                projects.add(path)
+        if projects:
+            if SELF in projects:
+                print('All projects need to be rebuilt due to changes in setup or checksum')
+                return set(ALLPROJECTS)
+            else:
+                print("The following projects need to be rebuilt:")
+                for project in sorted(projects, key=str):
+                    print(f"  - {project}")
+        return projects
     else:
         print("Checksums are identical.")
-        sys.exit(1)
+        return set()
 
 if __name__ == '__main__':
     checksum_command()

@@ -336,3 +336,9 @@ houdini_versions_cache.json
 
 *.env
 !*.example.env
+
+# Emacs-related
+*~
+*\#
+\#*
+

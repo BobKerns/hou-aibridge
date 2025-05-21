@@ -416,5 +416,38 @@ def checksum_diff(old: ChecksumMap|None=None,
         print("Checksums are identical.")
         return set()
 
+@main.command()
+@click.argument('name', type=click.Path(exists=False))
+def find_up(name: str) -> None:
+    """
+    Find the path to a file in the project and output it to stdout.
+
+    This can be evaluated in the shell simulate sourcing the script.
+
+    The search terminates at:
+    1) The first matching file found.
+    2) The first directory that is not a subdirectory of the project root.
+    3) The first directory that is not a subdirectory of the home directory.
+    Args:
+        name (str): The name of the file to find. This can be a relative path.
+    """
+    dir = Path.cwd()
+    while True:
+        path = dir / name
+        if path.exists():
+            import shutil
+            with path.open('r') as f:
+                # Copy the file to stdout
+                shutil.copyfileobj(f, sys.stdout)
+                return
+        if dir == PROJECT_ROOT or dir == Path.home():
+            break
+        if (dir / '.gkt').exists():
+            return
+        if dir.parent == dir:
+            return
+        dir = dir.parent
+    return None
+
 if __name__ == '__main__':
     checksum_command()

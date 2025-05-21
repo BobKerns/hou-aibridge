@@ -277,11 +277,13 @@ dependencies = [
     { name = "aiohttp" },
     { name = "aiopath" },
     { name = "anyio" },
+    { name = "click" },
     { name = "fastapi" },
     { name = "fastmcp" },
     { name = "httpx" },
     { name = "mcp", extra = ["cli"] },
     { name = "pedantic" },
+    { name = "scripts" },
     { name = "semver" },
     { name = "sqlite-vec" },
     { name = "uvicorn" },
@@ -301,11 +303,13 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.11.18" },
     { name = "aiopath", specifier = ">=0.7.7" },
     { name = "anyio", specifier = ">=4.9.0" },
+    { name = "click", specifier = ">=8.1.8" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "fastmcp", specifier = ">=2.3.4" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.8.1" },
     { name = "pedantic", specifier = ">=2.1.9" },
+    { name = "scripts", editable = "../scripts" },
     { name = "semver", specifier = ">=3.0.4" },
     { name = "sqlite-vec", specifier = ">=0.1.7a2" },
     { name = "uvicorn", specifier = ">=0.34.2" },
@@ -642,6 +646,50 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a1/53/830aa4c3066a8ab0ae9a9955976fb770fe9c6102117c8ec4ab3ea62d89e8/rich-14.0.0.tar.gz", hash = "sha256:82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725", size = 224078, upload-time = "2025-03-30T14:15:14.23Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl", hash = "sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0", size = 243229, upload-time = "2025-03-30T14:15:12.283Z" },
+]
+
+[[package]]
+name = "scripts"
+version = "0.1.0"
+source = { editable = "../scripts" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "aiopath" },
+    { name = "anyio" },
+    { name = "click" },
+    { name = "fastapi" },
+    { name = "fastmcp" },
+    { name = "httpx" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "pedantic" },
+    { name = "python-dotenv" },
+    { name = "sqlite-vec" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.11.18" },
+    { name = "aiopath", specifier = ">=0.7.7" },
+    { name = "anyio", specifier = ">=4.9.0" },
+    { name = "click", specifier = ">=8.1.8" },
+    { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "fastmcp", specifier = ">=2.3.4" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "mcp", extras = ["cli"], specifier = ">=1.8.1" },
+    { name = "pedantic", specifier = ">=2.1.9" },
+    { name = "python-dotenv", specifier = ">=1.1.0" },
+    { name = "sqlite-vec", specifier = ">=0.1.7a2" },
+    { name = "uvicorn", specifier = ">=0.34.2" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "click", specifier = ">=8.0.0,<8.2.0" },
+    { name = "psutil", specifier = ">=7.0.0" },
+    { name = "requests", specifier = ">=2.32.3" },
+    { name = "semver", specifier = ">=3.0.4" },
+    { name = "tomlkit", specifier = ">=0.13.2" },
 ]
 
 [[package]]

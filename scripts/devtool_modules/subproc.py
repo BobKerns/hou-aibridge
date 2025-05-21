@@ -53,8 +53,9 @@ def run(*cmds: Any,
 def capture(*cmds: Any,
             env: dict[str,str]|None=None,
             shell: bool=False,
-        stdout: '_FILE'=None,
-        stderr: '_FILE'=None,
+            stdout: '_FILE'=None,
+            stderr: '_FILE'=None,
+            cwd: os.PathLike|str=PROJECT_ROOT,
             **kwargs) -> str:
     "Capture the output of the given command."
     cmd = [str(arg) for arg in cmds]
@@ -62,7 +63,7 @@ def capture(*cmds: Any,
     env = env or os.environ.copy()
     DEBUG(f"Running command: {' '.join(cmd)}")
     result: subprocess.CompletedProcess = subprocess.run(cmd,
-                                                        cwd=str(PROJECT_ROOT),
+                                                        cwd=cwd,
                                                         capture_output=True,
                                                         text=True,
                                                         env=env,

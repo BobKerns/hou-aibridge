@@ -20,10 +20,9 @@ if TYPE_CHECKING:
     from subprocess import _FILE
 
 from devtool_modules.utils import DEBUG
-from devtool_modules.paths import PROJECT_ROOT
 
 def run(*cmds: Any,
-        cwd: os.PathLike|str=Path.cwd(),
+        cwd: os.PathLike|str|None=None,
         env: dict[str,str]|None=None,
         shell: bool=False,
         stdout: '_FILE'=None,
@@ -35,6 +34,8 @@ def run(*cmds: Any,
     cmd[0] = which(cmd[0]) or cmd[0]
     cwd = Path(cwd or Path.cwd())
     DEBUG(f"{cwd.name}> {' '.join(cmd)}")
+    if cwd:
+        DEBUG(f"Working directory: {cwd}")
     if dry_run:
         return subprocess.CompletedProcess(cmd, 0)
     env = env or os.environ.copy()
@@ -55,13 +56,15 @@ def capture(*cmds: Any,
             shell: bool=False,
             stdout: '_FILE'=None,
             stderr: '_FILE'=None,
-            cwd: os.PathLike|str=PROJECT_ROOT,
+            cwd: os.PathLike|str|None=None,
             **kwargs) -> str:
     "Capture the output of the given command."
     cmd = [str(arg) for arg in cmds]
     cmd[0] = which(cmd[0]) or cmd[0]
     env = env or os.environ.copy()
     DEBUG(f"Running command: {' '.join(cmd)}")
+    if cwd:
+        DEBUG(f"Working directory: {cwd}")
     result: subprocess.CompletedProcess = subprocess.run(cmd,
                                                         cwd=cwd,
                                                         capture_output=True,
@@ -81,7 +84,7 @@ def capture(*cmds: Any,
 
 
 def spawn(*cmds: Any,
-            cwd: os.PathLike|str=PROJECT_ROOT,
+            cwd: os.PathLike|str|None=None,
             env: dict[str,str]|None=None,
             shell: bool=False,
             stdout: '_FILE'=None,
@@ -93,6 +96,8 @@ def spawn(*cmds: Any,
     cmd[0] = which(cmd[0]) or cmd[0]
     env = env or os.environ.copy()
     DEBUG(f"Running command: {' '.join(cmd)}")
+    if cwd:
+        DEBUG(f"Working directory: {cwd}")
     proc = subprocess.Popen(cmd,
                             cwd=str(cwd),
                             env=env,

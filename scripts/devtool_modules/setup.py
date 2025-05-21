@@ -5,17 +5,18 @@ This command is used to set up the development environment for the project.
 '''
 
 
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from contextlib import suppress
 from itertools import count
 import os
 from pathlib import Path
 import subprocess
 import sys
-from typing import IO, Final, NamedTuple, cast
+from typing import IO, Any, Final, Literal, NamedTuple, cast
 from hashlib import blake2b, file_digest
 
 import click
+
 import tomlkit
 import tomlkit.container
 from tomlkit.toml_file import TOMLFile
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from devtool_modules.node import node_version, node_path  # type: ignore # noqa: E402
 from devtool_modules.paths import ALLPROJECTS, PROJECT_CHECKSUMS, PROJECT_ROOT, SUBPROJECTS
-from devtool_modules.subproc import run
+from devtool_modules.subproc import capture, run
 from devtool_modules.utils import QUIET, INFO, VERBOSE, rmdir
 from devtool_modules.main import main
 
@@ -449,5 +450,220 @@ def find_up(name: str) -> None:
         dir = dir.parent
     return None
 
-if __name__ == '__main__':
-    checksum_command()
+@main.command()
+@click.option('--shell',
+              type=click.Choice(['bash', 'zsh', 'fish'], case_sensitive=False),
+              default='bash',
+              help="The shell to use. This should be the same as the one used to run the script.")
+@click.option('--cwd', type=click.Path(exists=True, file_okay=False),
+              default=Path.cwd(),
+              help="The directory to run the script in.")
+@click.argument('script')
+def dump_source_env(script: str,
+                    cwd: Path=Path.cwd(),
+                    shell: Literal['bash', 'zsh', 'fish']='bash',
+                    ) -> None:
+    """
+    Dump the environment variables that are set by a script to be sourced.
+
+    This can be evaluated in the shell to simulate sourcing the script
+    but that just sets the environment variables.
+
+    The variables should be dumped in the format:
+
+    ```bash
+        export VAR=value
+        export PATH=...
+    ```
+
+    Lines that start with #, are blank, or begin with whitespace are ignored.
+    Lines that do not fit the identifier=value format are ignored.
+    Surrounding quotes are removed.
+
+    Only values which are changed from the default are included.
+
+    The [export] is optional.
+    Args:
+        file (Path): The file to dump the environment variables to.
+    """
+    shell = cast(Literal['bash', 'zsh', 'fish'], shell.lower())
+    if shell == 'bash':
+        noprofile = '--noprofile'
+    elif shell == 'zsh':
+        noprofile = '--no-rcs'
+    elif shell == 'fish':
+        noprofile = '--no-config'
+    else:
+        raise ValueError(f"Unknown shell: {shell}")
+    script = shellquote(script)
+
+    cmd =[shell, noprofile, '-c', f'source "{script}" && env']
+    value = capture(cmd, shell=True, cwd=cwd)
+    for line in generate_env_script(*scrape_env(value)):
+        print(line)
+
+def shellquote(value: str) -> str:
+    """
+    Quote a string for use in a shell command.
+    This is used to escape special characters in the string.
+    """
+    if not value:
+        return ''
+    # No guarantee of security here, just avoiding the most common pitfalls.
+    # Avoid the shell if injection attacks are a concern.
+    value = value.replace("\\", '\\\\')
+    value = value.replace('"', r'\"')
+    value = value.replace("'", r"\'")
+    value = value.replace('$', r'\$')
+    value = value.replace('`', r'\`')
+    value = value.replace('\n', r'\n')
+    value = value.replace('\r', r'\r')
+    value = value.replace('\t', r'\t')
+    value = value.replace(' ', r'\ ')
+    return value
+    # Escape single quotes
+    # value = value.replace("'", r"\'")
+    # return f"'{value}'"
+
+@main.command()
+@click.option('--cwd',
+              type=click.Path(exists=True, file_okay=False),
+              help="The directory to run the command in.")
+@click.option('--assignment',
+              default='=',
+              help='The assignment operator used in the output. Usually "=", but hconfig uses " := ".')
+@click.argument('cmd', nargs=-1)
+def dump_env(cmd: list[str],
+            cwd: Path=Path.cwd(),
+            assignment: str='=',
+             ) -> None:
+    """
+    Dump the environment variables that are set by a script to be sourced.
+
+    This can be evaluated in the shell to simulate sourcing the script
+    but that just sets the environment variables.
+
+    The variables should be dumped in the format:
+
+    ```bash
+        export VAR=value
+        export PATH=...
+    ```
+
+    Lines that start with #, are blank, or begin with whitespace are ignored.
+    Lines that do not fit the identifier=value format are ignored.
+    Surrounding quotes are removed.
+
+    Only values which are changed from the default are included.
+
+    The [export] is optional.
+    Args:
+        file (Path): The file to dump the environment variables to.
+    """
+
+    value = capture(*cmd, shell=True, cwd=cwd)
+    for line in generate_env_script(*scrape_env(value, assignment=assignment)):
+        print(line)
+
+def scrape_env(value: str,
+               assignment: str='=') -> tuple[
+        dict[str, list[str]],
+        dict[str, list[str]],
+        dict[str, str],
+    ]:
+    '''
+    Scrape the environment variables from a script or program.
+
+    This computes the difference between the current environment and the
+    environment after running the script or program.
+    The output is in the format:
+
+    ```bash
+        export VAR=value
+        export PATH=...
+    ```
+    Lines that start with #, are blank, or begin with whitespace are ignored.
+    Lines that do not fit the identifier=value format are ignored.
+    Surrounding quotes are removed.
+
+    For PATH-like variables, the difference is computed between the
+    current environment and the environment after running the script or program.
+    The additions are returned as a list of strings in the first dictionary.
+    The removals are returned as a list of strings in the second dictionary.
+    The environment variables that were changed are returned as a dictionary
+
+    Args:
+        value (str): The output of the script or program.
+    Returns:
+        tuple[dict[str, list[str]], dict[str, list[str]], dict[str, str]]:
+            A tuple of three dictionaries:
+            1. The PATH-like variables that had values added.
+            2. The PATH-like variables that had values removed.
+            3. The environment variables that were changed.
+    '''
+    adds = {}
+    removes = {}
+    changes = {}
+    for line in value.splitlines():
+        line = line.strip()
+        if line.startswith('export '):
+            line = line[7:].lstrip()
+        if not line or line.startswith('#'):
+            continue
+        if assignment not in line:
+            continue
+        name, value = line.split(assignment, 1)
+        name = name.strip()
+        value = value.strip()
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+        elif value.startswith("'") and value.endswith("'"):
+            value = value[1:-1]
+        if name.endswith('PATH'):
+            new = value.split(os.pathsep)
+            old = os.environ.get(name, '').split(os.pathsep)
+            add = set(new) - set(old)
+            remove = set(old) - set(new)
+            adds[name] = list(add)
+            removes[name] = list(remove)
+        elif name in ('VIRTUAL_ENV', 'VIRTUAL_ENV_PROMPT', '_'):
+            # Ignore these variables, they are set by the virtualenv
+            continue
+        elif value != os.environ.get(name, ''):
+        # Stupid shell quoting rules.
+            changes[name] = shellquote(value)
+    return adds, removes, changes
+
+def generate_env_script(
+    adds: dict[str, list[str]],
+    removes: dict[str, list[str]],
+    changes: dict[str, str],
+    ) -> Generator[str, Any, None]:  # noqa: F821
+    """
+    Generate a script to set the environment variables.
+    This is used to set the environment variables in the current shell.
+    Args:
+        adds (dict[str, list[str]]): The PATH-like variables that had values added.
+        removes (dict[str, list[str]]): The PATH-like variables that had values removed.
+        changes (dict[str, str]): The environment variables that were changed.
+    Returns:
+        str: The script to set the environment variables.
+    """
+    s = os.pathsep
+    yield from (
+        f'export {name}="{s.join(values)}{s}${{{name}}}"'
+        for name, values in adds.items()
+    )
+    L, R='${', '}'
+    yield from (
+        f'export {name}="{L}{name}/{s}{v}{s}/{s}{R}'
+        for name, values in removes.items()
+        for v in values
+    )
+    yield from (
+        f'export {name}="{value}"'
+        for name, value in changes.items()
+    )
+
+    if __name__ == '__main__':
+        checksum_command()

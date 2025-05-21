@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: hconfig",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder:scripts}/devtool",
+            "console": "integratedTerminal",
+            "args": [
+                "dump-env", "--assignment", " := ", "--",
+                "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/bin/hconfig",  "-pa"
+            ]
+        },
+        {
+            "name": "Python Debugger: Python File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder:scripts}/devtool",
+            "console": "integratedTerminal",
+            "args": [
+                "dump-script-env",
+                "cd /Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/; source ./houdini_setup_bash; env"
+            ]
+        }
+    ]
+}

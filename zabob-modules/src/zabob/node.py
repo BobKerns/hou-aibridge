@@ -9,9 +9,9 @@ import sys
 
 import click
 
-from devtools.paths import BIN_DIR, PROJECT_ROOT, SUBPROJECTS
-from devtools.subproc import run
-from devtools.main import main
+from zabob.paths import ZABOB＿BIN_DIR, ZABOB_ROOT, SUBPROJECTS
+from zabob.subproc import run
+from zabob.main import main
 
 
 @main.group(name='node')
@@ -35,7 +35,7 @@ def show_node_version(range) -> None:
 
 
 def node_version(range: bool=False) -> str:
-    root_pkg = PROJECT_ROOT / 'vscode-chat/package.json'
+    root_pkg = ZABOB_ROOT / 'zabob-chat/package.json'
     with root_pkg.open('r') as f:
         pkg = json.load(f)
     version= pkg.get('engines', {}).get('node', '23.11.0')
@@ -53,13 +53,13 @@ def node_update() -> None:
     Update the node version to match the package.json file..
     """
     version = node_version()
-    bin_node = BIN_DIR / 'node'
+    bin_node = ZABOB＿BIN_DIR / 'node'
     bin_node.unlink(missing_ok=True)
     bin_node.symlink_to(version)
-    for subproject in (PROJECT_ROOT, *SUBPROJECTS):
+    for subproject in (ZABOB_ROOT, *SUBPROJECTS):
         package = subproject / 'package.json'
         if package.exists():
-            nvmrc = PROJECT_ROOT / '.nvmrc'
+            nvmrc = ZABOB_ROOT / '.nvmrc'
             with nvmrc.open('w') as f:
                 f.write(version)
             print(f"{subproject.stem}: Updated .nvmrc to {version}")
@@ -95,5 +95,5 @@ def node_path(version: str|None=None) -> Path:
 @click.argument('args', nargs=-1)
 def node_run(args: tuple[str,...]) -> None:
     "Run the node command."
-    node = BIN_DIR / 'node'
+    node = ZABOB＿BIN_DIR / 'node'
     run(node, *args, shell=False)

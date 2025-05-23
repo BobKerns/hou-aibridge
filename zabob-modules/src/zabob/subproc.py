@@ -1,5 +1,5 @@
 '''
-Subprocess utilities for devtool.
+Subprocess utilities for zabob-modules.
 
 This module provides a set of functions for running subprocesses
 and handling their output. It includes functions for running
@@ -19,7 +19,7 @@ import psutil
 if TYPE_CHECKING:
     from subprocess import _FILE
 
-from devtools.utils import DEBUG
+from zabob.utils import DEBUG
 
 def run(*cmds: Any,
         cwd: os.PathLike|str|None=None,

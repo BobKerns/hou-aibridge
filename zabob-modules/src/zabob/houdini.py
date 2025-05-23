@@ -2,8 +2,8 @@
 Commands relating to Houdini
 '''
 
-from devtools.houdini_versions import cli as houdini_cli
-from devtools.main import main
+from zabob.houdini_versions import cli as houdini_cli
+from zabob.main import main
 
 @main.group('houdini')
 def houdini_commands():

@@ -1,5 +1,5 @@
 '''
-Support for the `devtools update` command line tool.
+Support for the `zabob update` command line tool.
 '''
 
 from collections.abc import Collection
@@ -13,10 +13,10 @@ import tomlkit
 import tomlkit.container
 from tomlkit.toml_file import TOMLFile
 
-from devtools.utils import needs_update, VERBOSE
-from devtools.main import main, sync_dependencies
-from devtools.paths import IMAGES_DIR, PROJECT_ROOT
-from devtools.subproc import run
+from zabob.utils import needs_update, VERBOSE
+from zabob.main import main, sync_dependencies
+from zabob.paths import ZABOB＿IMAGES_DIR, ZABOB_ROOT
+from zabob.subproc import run
 
 @main.group(name='update')
 def update() -> None:
@@ -48,11 +48,11 @@ def run_all():
 
 BACKGROUND_COLOR = 'fdf2e4'
 DIAGRAMS: list[tuple[Path, *tuple[str,...]]] = [
-        (IMAGES_DIR / 'compiler_classes.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
-        (IMAGES_DIR / 'input_classes.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
-        (IMAGES_DIR / 'erDiagram.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
-        (IMAGES_DIR / 'erDiagramUserSubset.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
-        (IMAGES_DIR / 'erDiagramGeometry.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
+        (ZABOB＿IMAGES_DIR / 'compiler_classes.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
+        (ZABOB＿IMAGES_DIR / 'input_classes.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
+        (ZABOB＿IMAGES_DIR / 'erDiagram.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
+        (ZABOB＿IMAGES_DIR / 'erDiagramUserSubset.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
+        (ZABOB＿IMAGES_DIR / 'erDiagramGeometry.mmd', '-t', 'default', '--backgroundColor', BACKGROUND_COLOR, '-s', '1'),
 ]
 
 @update.command(name='diagram')
@@ -85,7 +85,7 @@ def update_diagram(diagram: PathLike|str, *params: str,
         else:
             params = diagram_spec[1:]
 
-    infile = PROJECT_ROOT / diagram
+    infile = ZABOB_ROOT / diagram
     outfile = infile.with_suffix(fmt)
     if not infile.exists():
         raise FileNotFoundError(f"Diagram {diagram} not found.")
@@ -158,7 +158,7 @@ def update_diagrams(suffixes: Collection[str]=('.svg'),
 def update_version() -> None:
     "Update the version in the pyproject.toml file."
 
-    pyproject = PROJECT_ROOT / 'pyproject.toml'
+    pyproject = ZABOB_ROOT / 'pyproject.toml'
     if not pyproject.exists():
         raise FileNotFoundError("pyproject.toml not found.")
     file = TOMLFile(pyproject)

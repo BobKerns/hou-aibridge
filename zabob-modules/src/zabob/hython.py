@@ -2,10 +2,8 @@
 Hython invoker
 '''
 
-from pathlib import Path
-
 import click
-from devtools.main import main
+from zabob.main import main
 
 
 @main.command(
@@ -13,11 +11,11 @@ from devtools.main import main
     help='Run hython with the given arguments.',
 )
 @click.argument(
-    'hiop',
+    'arguments',
     type=str,
     help='Arguments to pass to hython.',
 )
-def hython(hip_files: list[Path]):
+def hython(arguments: list[str]):
     """
     Run hython with the given arguments.
     """
@@ -32,4 +30,4 @@ def hython(hip_files: list[Path]):
         sys.exit(1)
 
     # Run hython with the given arguments
-    subprocess.run(['hython'] + args.split())
+    subprocess.run(['hython', *arguments])

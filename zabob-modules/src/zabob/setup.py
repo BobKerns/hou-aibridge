@@ -23,11 +23,11 @@ from tomlkit.toml_file import TOMLFile
 
 if __name__ == '__main__':
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from devtools.node import node_version, node_path  # type: ignore # noqa: E402
-from devtools.paths import ALLPROJECTS, PROJECT_CHECKSUMS, PROJECT_ROOT, SUBPROJECTS
-from devtools.subproc import capture, run
-from devtools.utils import DEBUG, QUIET, INFO, VERBOSE, rmdir
-from devtools.main import main
+from zabob.node import node_version, node_path  # type: ignore # noqa: E402
+from zabob.paths import ALLPROJECTS, ZABOB_CHECKSUMS, ZABOB_ROOT, SUBPROJECTS
+from zabob.subproc import capture, run
+from zabob.utils import DEBUG, QUIET, INFO, VERBOSE, rmdir
+from zabob.main import main
 
 
 @main.command(name='setup')
@@ -43,7 +43,7 @@ def setup(
 ) -> None:
     "Set up the project. This includes installing dependencies and setting up the server."
 
-    old = read_checksums(PROJECT_CHECKSUMS)
+    old = read_checksums(ZABOB_CHECKSUMS)
     new = {
         path: chksum.hex()
         for path, chksum in checksum_project()
@@ -66,13 +66,13 @@ def setup(
     node_env['NODE_VERSION'] = version
     nvm_setup = nvm_dir / 'nvm.sh'
     run('bash', '-c', nvm_setup, ';', 'nvm', 'install', version,
-        cwd=PROJECT_ROOT,
+        cwd=ZABOB_ROOT,
         stdout=output,
         stderr=output,
         dry_run=dry_run,
     )
     nvm_node = node_path()
-    BIN = PROJECT_ROOT / 'bin'
+    BIN = ZABOB_ROOT / 'bin'
     bin_node = BIN / 'node'
     QUIET("Symlinking node to bin directory...")
     if not dry_run:
@@ -83,18 +83,18 @@ def setup(
     # They are all in the subprojects.
     # We remove them to avoid conflicts with the subprojects.
     rmdir(
-        PROJECT_ROOT / '.venv',
-        PROJECT_ROOT / 'node_modules',
-        PROJECT_ROOT / 'pnpm-lock.yaml',
-        PROJECT_ROOT / 'uv.lock',
-        PROJECT_ROOT / 'houdini_versions_cache.json',
-        PROJECT_ROOT / 'requirements.txt',
+        ZABOB_ROOT / '.venv',
+        ZABOB_ROOT / 'node_modules',
+        ZABOB_ROOT / 'pnpm-lock.yaml',
+        ZABOB_ROOT / 'uv.lock',
+        ZABOB_ROOT / 'houdini_versions_cache.json',
+        ZABOB_ROOT / 'requirements.txt',
         dry_run=dry_run,
     )
     uv_env = os.environ.copy()
     del uv_env['VIRTUAL_ENV']
     for subproject in SUBPROJECTS:
-        relative = subproject.relative_to(PROJECT_ROOT)
+        relative = subproject.relative_to(ZABOB_ROOT)
         QUIET(f"Setting up {relative}...")
         pyproject = subproject / 'pyproject.toml'
         package = subproject / 'package.json'
@@ -214,7 +214,7 @@ def checksum_file(file: Path, offsets: _Offsets, /,
         offsets (Offsets): The offsets to use for the checksum.
     """
     file = file.resolve()
-    rel_file = file.relative_to(PROJECT_ROOT)
+    rel_file = file.relative_to(ZABOB_ROOT)
     person = str(rel_file.name).encode()[:16]
     hash = blake2b(digest_size=_DIGEST_SIZE, inner_size=_INNER_DIGEST_SIZE, leaf_size=_LEAF_SIZE,
                   fanout=_FANOUT, depth=_DEPTH,
@@ -234,7 +234,7 @@ def checksum_subproject(subproject: Path, offsets: _Offsets, /):
     This is used to check if the subproject has changed since the last time it was built.
     """
     file = subproject.resolve()
-    rel_file = file.relative_to(PROJECT_ROOT)
+    rel_file = file.relative_to(ZABOB_ROOT)
     person = str(rel_file).encode()
     hash = blake2b(digest_size=64, inner_size=64, leaf_size=0,
                    fanout=0, depth=3,
@@ -326,7 +326,7 @@ def checksum_save() -> None:
     """
     Save the checksum of the project's configuration files to a file.
     """
-    file = PROJECT_ROOT / '.checksums'
+    file = ZABOB_ROOT / '.checksums'
     with file.open('w') as out:
         write_checksums(out)
 
@@ -388,7 +388,7 @@ def checksum_diff(old: ChecksumMap|None=None,
     Returns:
         set[Path]: A set of subproject paths that have changed.
     """
-    old = old or read_checksums(PROJECT_CHECKSUMS)
+    old = old or read_checksums(ZABOB_CHECKSUMS)
     new = new or checksum_project_dict()
     diff = diff_checksums(old, new)
     SELF = Path('SELF')
@@ -444,7 +444,7 @@ def find_up(name: str) -> None:
                 # Copy the file to stdout
                 shutil.copyfileobj(f, sys.stdout)
                 return
-        if dir == PROJECT_ROOT or dir == Path.home():
+        if dir == ZABOB_ROOT or dir == Path.home():
             break
         if (dir / '.gkt').exists():
             return

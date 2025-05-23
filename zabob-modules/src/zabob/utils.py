@@ -1,5 +1,5 @@
 '''
-Common utility functions for the devtool modules.
+Common utility functions for the zabob-modules modules.
 These functions are used for logging, running commands,
 capturing output, and handling errors. They are designed
 to be used in the context of a command line interface (CLI).
@@ -17,7 +17,7 @@ from time import sleep
 from click import ParamType
 import semver
 
-from devtools.paths import PROJECT_ROOT
+from zabob.paths import ZABOB_ROOT
 
 
 class Level(StrEnum):
@@ -72,9 +72,9 @@ def repo_relative(f: PathLike|str) -> Path:
     '''
     Return a path relative to the repository root.
     '''
-    f = PROJECT_ROOT / f
+    f = ZABOB_ROOT / f
     f = f.resolve()
-    f = f.relative_to(PROJECT_ROOT)
+    f = f.relative_to(ZABOB_ROOT)
     return f
 
 _git: Path|None = None
@@ -102,7 +102,7 @@ def same_commit(files: Sequence[PathLike|str]) -> bool:
         bool: True if all files are at the same commit, False otherwise.
     '''
 
-    from devtools.subproc import capture
+    from zabob.subproc import capture
     git = find_git()
     matches  = capture(git, 'log', '--name-only', '-n', 1, '--format=', '--',
                        *(repo_relative(f) for f in files)).strip()
@@ -117,7 +117,7 @@ def is_clean(file: PathLike|str) -> bool:
         bool: True if the file is clean, False otherwise.
     '''
 
-    from devtools.subproc import capture
+    from zabob.subproc import capture
     git = find_git()
     matches  = capture(git, 'status', '--porcelain', '--', repo_relative(file))
     return not matches.strip()
@@ -135,7 +135,7 @@ def needs_update(*files: PathLike|str) -> bool:
         # Nothing to update.
         return False
     # Check 1, if all the files exist.
-    if not all((PROJECT_ROOT / f).exists() for f in files):
+    if not all((ZABOB_ROOT / f).exists() for f in files):
         DEBUG("Not all files exist, rebuilding")
         return True
     # Check 2, if all the files are at the same commit.

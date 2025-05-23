@@ -1,5 +1,5 @@
 '''
-Top level command line interface for the devtools package.
+Top level command line interface for the zabob package.
 '''
 
 from os import PathLike
@@ -10,9 +10,9 @@ import webbrowser
 import click
 import os
 
-from devtools.paths import MARKSERV, PROJECT_ROOT
-from devtools.utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
-from devtools.subproc import run
+from zabob.paths import ZABOB＿MARKSERV, ZABOB_ROOT
+from zabob.utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
+from zabob.subproc import run
 
 
 @click.group()
@@ -101,28 +101,28 @@ def shell(args: list[str],
 
 
 @main.command(name='browse')
-@click.argument('file', type=click.Path(exists=True), default=PROJECT_ROOT / 'README.md')
-def browse_docs(file: PathLike|str = PROJECT_ROOT / 'README.md') -> None:
+@click.argument('file', type=click.Path(exists=True), default=ZABOB_ROOT / 'README.md')
+def browse_docs(file: PathLike|str = ZABOB_ROOT / 'README.md') -> None:
     "[<PATH>] Open the documentation in a browser."
 
-    from devtools.server import get_server_status, start_server
+    from zabob.server import get_server_status, start_server
 
     file = Path(file).resolve()
     if not file.exists():
         print(f"File {file} not found, browsing directory.", file=sys.stderr)
         file = file.parent
 
-    if PROJECT_ROOT not in file.parents and file != PROJECT_ROOT:
+    if ZABOB_ROOT not in file.parents and file != ZABOB_ROOT:
         # Onn general security principles, we should not allow
         # browsing outside the project directory. It's not really a
         # security issue here.
         print(f"File {file} is not in the project directory.", file=sys.stderr)
         sys.exit(1)
 
-    file = file.relative_to(PROJECT_ROOT)
+    file = file.relative_to(ZABOB_ROOT)
 
-    if not MARKSERV.exists():
-        print(f"Markserv not found at {MARKSERV}. Please run 'build setup' first.", file=sys.stderr)
+    if not ZABOB＿MARKSERV.exists():
+        print(f"Markserv not found at {ZABOB＿MARKSERV}. Please run 'build setup' first.", file=sys.stderr)
         sys.exit(1)
 
     (pid, html_port, reload_port) = get_server_status()

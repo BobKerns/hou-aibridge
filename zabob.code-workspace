@@ -1,12 +1,8 @@
 {
 	"folders": [
         {
-            "name": "hou-ai-bridge",
+            "name": "zabob",
             "path": "."
-        },
-        {
-            "name": "vscode-chat",
-            "path": "vscode-chat"
         },
         {
             "name": "mcp-server",
@@ -21,16 +17,24 @@
             "path": "houdini/h21.0"
         },
         {
-            "name": "docs",
-            "path": "docs"
+            "name": "hdas",
+            "path": "houdini/hdas"
+        },
+        {
+            "name": "zabob-modules",
+            "path": "zabob-modules"
+        },
+        {
+            "name": "zabob-chat",
+            "path": "zabob-chat"
         },
         {
             "name": "docker",
             "path": "docker"
         },
         {
-            "name": "scripts",
-            "path": "scripts"
+            "name": "docs",
+            "path": "docs"
         }
     ],
     "settings": {
@@ -41,6 +45,8 @@
             "**/node_modules": true,
             "**/dist": true,
             "**/out": true,
+            ".vscode-test": true,
+            ".vscode-test-insiders": true,
         },
         "files.trimTrailingWhitespace": true,
         "ruff.exclude": [
@@ -57,7 +63,11 @@
         "explorer.excludeGitIgnore": true,
         "git.repositoryScanIgnoredFolders": [
             "node_modules",
-            ".venv"
+            ".venv",
+            ".vscode-test",
+            ".vscode-test-insiders",
+            "dist",
+            "out",
         ],
         "latex-workshop.latex.watch.files.ignore": [
             "**/*.bbx",
@@ -89,6 +99,8 @@
             "/usr/local/share/miktex-texmf/**",
             "**/Library/Application Support/MiKTeX/texmfs/**",
             "/dev/null",
+            ".vscode-test",
+            ".vscode-test-insiders",
             "**/*.pyc"
         ],
         "cSpell.spellCheckOnlyWorkspaceFiles": true,
@@ -100,8 +112,11 @@
             ".git/{index,*refs,*HEAD}",
             ".vscode",
             ".vscode-insiders",
+            ".vscode-test",
+            ".vscode-test-insiders",
             "**/*.log",
             "*.code-workspace",
+            "*.lock",
         ],
         "shebang.associations": [
             {
@@ -130,23 +145,26 @@
             }
         ],
         "files.exclude": {
-            "vscode-chat/": true,
+            "zabob-chat/": true,
             "mcp-server/": true,
             "houdini/h*.*/": true,
+            "houdini/hdas/": true,
             "dist": true,
             "out": true,
             "node_modules/*": true,
-            "scripts/": true,
+            "zabob-modules/": true,
             "docs/": true,
             "docker/": true,
             "*/docs/": true,
+            ".vscode-test/": true,
+            ".vscode-test-insiders/": true,
         },
         "cSpell.workspaceRootPath": "${workspaceFolder}",
         "cSpell.customDictionaries": {
             "workspace dictionary": {
                 "addWords": true,
                 "name": "Project",
-                "description": "Workspace dictionary for hou-ai-bridge",
+                "description": "Workspace dictionary for zabob",
                 "scope": "workspace",
             }
         },
@@ -154,7 +172,7 @@
             {
                 "name": "Project",
                 "path": "${workspaceFolder:docs}/.cspell/workspace.txt",
-                "description": "Workspace dictionary for hou-ai-bridge",
+                "description": "Workspace dictionary for zabob",
                 "scope": "workspace",
             }
         ],
@@ -181,12 +199,24 @@
             "**/typings/**"
         ],
         "python.analysis.ignore": [
-            ".venv/"
+            ".venv/",
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/out/**",
+            "**/.vscode-test/**",
+            "**/.vscode-test-insiders/**",
+            "**/.git/**",
         ],
         "python.analysis.typeCheckingMode": "standard",
         "search.exclude": {
             "out": true, // set this to false to include "out" folder in search results
-            "dist": true // set this to false to include "dist" folder in search results
+            "dist": true, // set this to false to include "dist" folder in search results
+            "**/node_modules": true,
+            "**/.vscode-test": true,
+            "**/.vscode-test-insiders": true,
+            "**/.git": true,
+            "**/.venv": true,
+            "*.lock": true
         },
         "markdownlint.config": {
             "MD041": false,

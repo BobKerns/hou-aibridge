@@ -1,5 +1,5 @@
 '''
-Server subcommands of the devtool utility.
+Server subcommands of the zabob-modules utility.
 '''
 
 from contextlib import suppress
@@ -12,12 +12,13 @@ from time import sleep
 
 import psutil
 
-from devtools.paths import (
-    LOG_FILE, MARKSERV, PID_FILE, PORT_FILE, PROJECT_ROOT, RELOAD_FILE,
+from zabob.paths import (
+    ZABOB_BROWSE_LOG_FILE, ZABOB_MARKSERV, ZABOB_BROWSE_PID_FILE,
+    ZABOB_BROWSE_PORT_FILE, ZABOB_ROOT, ZABOB_BROWSE_RELOAD_FILE,
 )
-from devtools.utils import DEBUG
-from devtools.subproc import check_pid, spawn
-from devtools.main import main
+from zabob.utils import DEBUG
+from zabob.subproc import check_pid, spawn
+from zabob.main import main
 
 
 @main.group(name='server')
@@ -81,7 +82,7 @@ def check_port(port: int|None):
 
 def read_id_file(file: PathLike|str) -> int | None:
     "Read the id from the given file."
-    file = PROJECT_ROOT / file
+    file = ZABOB_ROOT / file
     with suppress(Exception):
         if not file.exists():
             return None
@@ -91,7 +92,7 @@ def read_id_file(file: PathLike|str) -> int | None:
 
 def save_id_file(file: PathLike|str, value: int|None) -> None:
     "Save the id to the given file."
-    file = PROJECT_ROOT / file
+    file = ZABOB_ROOT / file
     if value is None or value <= 0:
         value = 0
     with file.open('w') as f:
@@ -123,9 +124,9 @@ def get_server_status() -> ServerStatus:
     Returns:
         ServerStatus: A named tuple containing the status of the server.
     '''
-    html_port = read_id_file(PORT_FILE)
-    reload_port = read_id_file(RELOAD_FILE)
-    pid = read_id_file(PID_FILE)
+    html_port = read_id_file(ZABOB_BROWSE_PORT_FILE)
+    reload_port = read_id_file(ZABOB_BROWSE_RELOAD_FILE)
+    pid = read_id_file(ZABOB_BROWSE_PID_FILE)
     html_port_ok = check_port(html_port)
     reload_port_ok = check_port(reload_port)
     pid_ok = check_pid(pid)
@@ -169,13 +170,13 @@ def stop_server(pid: int|None) -> None:
         # it is the key for the VSCode Explorer's collapsing related files together, so it
         # declutters the explorer view. We keep the port files in place so that we can
         # reuse the ports if the server is restarted, allowing stale browser tabs to reconnect.
-        save_id_file(PID_FILE, 0)
+        save_id_file(ZABOB_BROWSE_PID_FILE, 0)
 
 
 @server.command(name='stop')
 def stop_server_command() -> None:
     "Stop the server if it is running."
-    pid = read_id_file(PID_FILE)
+    pid = read_id_file(ZABOB_BROWSE_PID_FILE)
     stop_server(pid)
     print("Server killed.")
 
@@ -195,8 +196,8 @@ def start_server() -> ServerStatus:
         html_port = find_free_port()
     if not reload_port:
         reload_port = find_free_port()
-    save_id_file(PORT_FILE, html_port)
-    save_id_file(RELOAD_FILE, reload_port)
+    save_id_file(ZABOB_BROWSE_PORT_FILE, html_port)
+    save_id_file(ZABOB_BROWSE_RELOAD_FILE, reload_port)
     if DEBUG.enabled:
         DEBUG(f"Starting server on port {html_port} with reload port {reload_port}.")
         silent_flag = ()
@@ -205,10 +206,10 @@ def start_server() -> ServerStatus:
         silent_flag = ('--silent',)
         # Open a stream to the log file. We don't close it as we pass ownership to the spawned
         # process. We don't want to close it, as the process will be writing to it.
-        logstream = open(LOG_FILE, 'w')
+        logstream = open(ZABOB_BROWSE_LOG_FILE, 'w')
 
         output_flags = {'stdout': logstream, 'stderr': logstream}
-    proc: subprocess.Popen = spawn(MARKSERV,
+    proc: subprocess.Popen = spawn(ZABOB_MARKSERV,
         '-p', str(html_port),
         '-b', str(reload_port),
         '--browser', 'false',
@@ -223,9 +224,9 @@ def start_server() -> ServerStatus:
     pid = proc.pid
     if not pid:
         print("Failed to get the process ID.", file=sys.stderr)
-        save_id_file(PID_FILE, 0)
+        save_id_file(ZABOB_BROWSE_PID_FILE, 0)
         return ServerStatus(None, html_port, reload_port)
-    save_id_file(PID_FILE, pid)
+    save_id_file(ZABOB_BROWSE_PID_FILE, pid)
     for i in range(10):
         if check_port(html_port):
             break

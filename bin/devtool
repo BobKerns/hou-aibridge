@@ -1,1 +1,35 @@
-../scripts/devtool
+#!/usr/bin/env uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "click",
+#     "tomlkit",
+#     "psutil",
+#     "semver",
+#     "zabob",
+# ]
+#
+# [tool.uv.sources]
+# zabob = { path = "../zabob-modules" }
+#
+# ///
+# The above comment is managed by uv, do not edit it manually.
+# It enables uv to manage the dependencies and the Python version.
+# See PEP 723 for more information.
+# https://peps.python.org/pep-0723/
+
+
+from pathlib import Path
+import sys
+from typing import Final
+
+# Make sure modules can be imported
+SCRIPT = Path(__file__).resolve()
+SCRIPT_DIR = SCRIPT.parent
+PROJECT_DIR = SCRIPT_DIR.parent
+MODULES_DIR: Final[Path] = PROJECT_DIR / 'zabob-modules/src'
+sys.path.insert(0, str(MODULES_DIR))
+
+if __name__ == "__main__":
+    from zabob import main  # type: ignore # noqa: E402
+    main()

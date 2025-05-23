@@ -31,10 +31,10 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder:vscode-chat}"
+                "--extensionDevelopmentPath=${workspaceFolder:zabob-chat}"
             ],
             "outFiles": [
-                "${workspaceFolder:vscode-chat}/dist/**/*.js"
+                "${workspaceFolder:zabob-chat}/dist/**/*.js"
             ],
             "preLaunchTask": "${defaultBuildTask}"
         },
@@ -44,13 +44,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/out/test/runTest.js",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder:vscode-chat}",
-                "--extensionTestsPath=${workspaceFolder:vscode-chat}/out/test/runTest.js"
+                "--extensionDevelopmentPath=${workspaceFolder:zabob-chat}",
+                "--extensionTestsPath=${workspaceFolder:zabob-chat}/out/test/runTest.js"
             ],
             "autoAttachChildProcesses": true,
             "trace": true,
             "outFiles": [
-                "${workspaceFolder:vscode-chat}/out/test/**/*.js"
+                "${workspaceFolder:zabob-chat}/out/test/**/*.js"
             ]
         }
     ]

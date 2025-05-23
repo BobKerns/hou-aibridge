@@ -60,7 +60,7 @@ jobs:
           HOUDINI_MIN_VERSION: "20.5"
         run: |
           # Run the script using uv
-          versions=$(uv run scripts/get_houdini_versions.py)
+          versions=$(uv run zabob-modules/get_houdini_versions.py)
 
           # Save to output for matrix
           echo "houdini-versions=$versions" >> $GITHUB_OUTPUT

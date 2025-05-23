@@ -5,7 +5,7 @@
             "name": "Python Debugger: hconfig",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder:scripts}/devtool",
+            "program": "${workspaceFolder:bin}/devtool",
             "console": "integratedTerminal",
             "args": [
                 "dump-env", "--assignment", " := ", "--",
@@ -16,7 +16,7 @@
             "name": "Python Debugger: Python File",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder:scripts}/devtool",
+            "program": "${workspaceFolder:bin}/devtool",
             "console": "integratedTerminal",
             "args": [
                 "dump-source-env",

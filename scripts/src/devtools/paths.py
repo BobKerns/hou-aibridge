@@ -10,7 +10,8 @@ import sys
 
 # Shared constants
 DEVTOOL_DIR: Final[Path] = Path(__file__).resolve().parent
-SCRIPTS_DIR: Final[Path] = DEVTOOL_DIR.parent
+SRC_DIR: Final[Path] = DEVTOOL_DIR.parent
+SCRIPTS_DIR: Final[Path] = SRC_DIR.parent
 PROJECT_ROOT: Final[Path] = SCRIPTS_DIR.parent
 CHAT_DIR: Final[Path] = PROJECT_ROOT / "vscode-chat"
 PACKAGE_PATH: Final[Path] = CHAT_DIR / "package.json"

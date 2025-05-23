@@ -17,7 +17,7 @@ dependencies = [
     "httpx>=0.28.1",
     "mcp[cli]>=1.8.1",
     "pedantic>=2.1.9",
-    "scripts",
+    "devtools",
     "semver>=3.0.4",
     "sqlite-vec>=0.1.7a2",
     "uvicorn>=0.34.2",
@@ -37,7 +37,7 @@ hou_aibridge = [
 ]
 
 [tool.uv.sources]
-scripts = { path = "../scripts", editable = true }
+devtools = { path = "../scripts", editable = true }
 
 [dependency-groups]
 dev = [

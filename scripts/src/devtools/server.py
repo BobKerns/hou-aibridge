@@ -12,12 +12,12 @@ from time import sleep
 
 import psutil
 
-from devtool_modules.paths import (
+from devtools.paths import (
     LOG_FILE, MARKSERV, PID_FILE, PORT_FILE, PROJECT_ROOT, RELOAD_FILE,
 )
-from devtool_modules.utils import DEBUG
-from devtool_modules.subproc import check_pid, spawn
-from devtool_modules.main import main
+from devtools.utils import DEBUG
+from devtools.subproc import check_pid, spawn
+from devtools.main import main
 
 
 @main.group(name='server')

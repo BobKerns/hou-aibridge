@@ -1,5 +1,5 @@
 '''
-Top level command line interface for the devtool_modules package.
+Top level command line interface for the devtools package.
 '''
 
 from os import PathLike
@@ -10,9 +10,9 @@ import webbrowser
 import click
 import os
 
-from devtool_modules.paths import MARKSERV, PROJECT_ROOT
-from devtool_modules.utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
-from devtool_modules.subproc import run
+from devtools.paths import MARKSERV, PROJECT_ROOT
+from devtools.utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
+from devtools.subproc import run
 
 
 @click.group()
@@ -105,7 +105,7 @@ def shell(args: list[str],
 def browse_docs(file: PathLike|str = PROJECT_ROOT / 'README.md') -> None:
     "[<PATH>] Open the documentation in a browser."
 
-    from devtool_modules.server import get_server_status, start_server
+    from devtools.server import get_server_status, start_server
 
     file = Path(file).resolve()
     if not file.exists():

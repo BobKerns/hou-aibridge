@@ -14,7 +14,10 @@ from shutil import which
 from typing import Final, Literal
 from time import sleep
 
-from devtool_modules.paths import PROJECT_ROOT
+from click import ParamType
+import semver
+
+from devtools.paths import PROJECT_ROOT
 
 
 class Level(StrEnum):
@@ -99,7 +102,7 @@ def same_commit(files: Sequence[PathLike|str]) -> bool:
         bool: True if all files are at the same commit, False otherwise.
     '''
 
-    from devtool_modules.subproc import capture
+    from devtools.subproc import capture
     git = find_git()
     matches  = capture(git, 'log', '--name-only', '-n', 1, '--format=', '--',
                        *(repo_relative(f) for f in files)).strip()
@@ -114,7 +117,7 @@ def is_clean(file: PathLike|str) -> bool:
         bool: True if the file is clean, False otherwise.
     '''
 
-    from devtool_modules.subproc import capture
+    from devtools.subproc import capture
     git = find_git()
     matches  = capture(git, 'status', '--porcelain', '--', repo_relative(file))
     return not matches.strip()
@@ -197,3 +200,85 @@ def rmdir(*dirs: Path,
         retries -= 1
         sleep(0.5)
 
+
+class SemVerParamType(ParamType):
+    """Provide a custom click type for semantic versions.
+
+    This custom click type provides validity checks for semantic versions.
+    """
+    name = 'semver'
+    _min_parts: int = 3
+    _max_parts: int = 3
+
+    _min_version: semver.Version|None = None
+    _max_version: semver.Version|None = None
+
+    def __init__(self,
+                 min_parts: int = 3,
+                 max_parts: int = 3,
+                 min_version: semver.Version|None = None,
+                 max_version: semver.Version|None = None,
+    ) -> None:
+        """
+        Initialize the SemVerParamType.
+
+        :param min_parts: If True, the minor version is optional.
+        :type min_parts: int
+        :param max_parts: If True, the patch version is optional.
+        :type max_parts: int
+        :param min_version: The minimum version allowed.
+        :type min_version: semver.Version|None
+        :param max_version: The maximum version allowed.
+        :type max_version: semver.Version|None
+        """
+        super().__init__()
+        self._min_parts = min(min_parts, max_parts)
+        self._max_parts = max(max_parts, min_parts)
+        self._min_version = min_version
+        self._max_version = max_version
+
+
+    def convert(self, value, param, ctx) -> semver.Version:
+        """Converts the value from string into semver type.
+
+        This method takes a string and check if this string belongs to semantic version definition.
+        If the test is passed the value will be returned. If not a error message will be prompted.
+
+        :param value: the value passed
+        :type value: str
+        :param param: the parameter that we declared
+        :type param: str
+        :param ctx: context of the command
+        :type ctx: str
+        :return: the passed value as a checked semver
+        :rtype: str
+        """
+        parts = value.count('.') + 1
+        if parts > self._max_parts:
+            segments = ('major', 'minor', 'patch', 'prerelease', 'build')
+            expect = '.'.join(segments[:self._max_parts])
+            self.fail(f"Not a valid version, expected at most {expect}", param, ctx)
+        elif parts < self._min_parts:
+            segments = ('major', 'minor', 'patch', 'prerelease', 'build')
+            expect = '.'.join(segments[:self._min_parts])
+            self.fail(f"Not a valid version, expected at least {expect}", param, ctx)
+        else:
+            try:
+                result = semver.VersionInfo.parse(value,
+                                                  optional_minor_and_patch=True)
+                if self._min_version and self._max_version:
+                    if result > self._max_version or result < self._min_version:
+                        self.fail(f"Version {result} is not in range {self._min_version} - {self._max_version}",
+                                  param,
+                                  ctx)
+                if self._min_version and result < self._min_version:
+                    self.fail(f"Version {result} is less than minimum version {self._min_version}",
+                              param,
+                              ctx)
+                if self._max_version and result > self._max_version:
+                    self.fail(f"Version {result} is greater than maximum version {self._max_version}",
+                              param,
+                              ctx)
+                return result
+            except ValueError as e:
+                self.fail('Not a valid version, {0}'.format(str(e)), param, ctx)

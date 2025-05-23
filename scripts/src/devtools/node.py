@@ -9,9 +9,9 @@ import sys
 
 import click
 
-from devtool_modules.paths import BIN_DIR, PROJECT_ROOT, SUBPROJECTS
-from devtool_modules.subproc import run
-from devtool_modules.main import main
+from devtools.paths import BIN_DIR, PROJECT_ROOT, SUBPROJECTS
+from devtools.subproc import run
+from devtools.main import main
 
 
 @main.group(name='node')

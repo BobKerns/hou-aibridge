@@ -13,10 +13,10 @@ import tomlkit
 import tomlkit.container
 from tomlkit.toml_file import TOMLFile
 
-from devtool_modules.utils import needs_update, VERBOSE
-from devtool_modules.main import main, sync_dependencies
-from devtool_modules.paths import IMAGES_DIR, PROJECT_ROOT
-from devtool_modules.subproc import run
+from devtools.utils import needs_update, VERBOSE
+from devtools.main import main, sync_dependencies
+from devtools.paths import IMAGES_DIR, PROJECT_ROOT
+from devtools.subproc import run
 
 @main.group(name='update')
 def update() -> None:

@@ -19,8 +19,9 @@
             "program": "${workspaceFolder:scripts}/devtool",
             "console": "integratedTerminal",
             "args": [
-                "dump-script-env",
-                "cd /Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/; source ./houdini_setup_bash; env"
+                "dump-source-env",
+                "--cwd", "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/",
+                "./houdini_setup_bash",
             ]
         }
     ]

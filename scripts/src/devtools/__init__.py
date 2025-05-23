@@ -6,7 +6,7 @@ from typing import Final
 import json
 from contextlib import suppress
 
-from devtool_modules.utils import (
+from devtools.utils import (
     Level,
     LEVELS,
     DEBUG,
@@ -15,7 +15,7 @@ from devtool_modules.utils import (
     QUIET,
     SILENT,
 )
-from devtool_modules.paths import (
+from devtools.paths import (
     SCRIPTS_DIR,
     PROJECT_ROOT,
     PACKAGE_PATH,
@@ -36,23 +36,25 @@ from devtool_modules.paths import (
     PID_FILE,
     LOG_FILE,
 )
-from devtool_modules.subproc import (
+from devtools.subproc import (
     run,
     capture,
     spawn,
     check_pid,
 )
-from devtool_modules.main import main
-from devtool_modules.update import update
-from devtool_modules.setup import setup
-from devtool_modules.server import server
-from devtool_modules.node import node_group
+from devtools.main import main
+from devtools.update import update
+from devtools.setup import setup
+from devtools.server import server
+from devtools.node import node_group
+from devtools.houdini import houdini_commands
+from devtools.houdini_versions import cli as houdini_cli
 
 def version():
     with suppress(ImportError):
         # This will fail unless we build it as a package first.
         from importlib.metadata import version as get_version
-        return get_version("devtool")
+        return get_version("devtools")
     try:
         with open(PACKAGE_PATH, "r", encoding="utf-8") as f:
             package_data = json.load(f)
@@ -102,5 +104,5 @@ __all__: Final[tuple[str, ...]] = (
     "RELOAD_FILE",
     "PID_FILE",
     "LOG_FILE",
-    'update', 'server', 'node_group', 'main', 'setup',
+    'update', 'server', 'node_group', 'main', 'setup', 'houdini_commands', 'houdini_cli',
 )

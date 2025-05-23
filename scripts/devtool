@@ -1,12 +1,17 @@
 #!/usr/bin/env uv run --script
 # /// script
-# requires-python = ">=3.11"
+# requires-python = ">=3.13"
 # dependencies = [
 #     "click",
 #     "tomlkit",
 #     "psutil",
 #     "semver",
+#     "devtools",
 # ]
+#
+# [tool.uv.sources]
+# devtools = { path = "../scripts/dist/devtools-0.1.0-py3-none-any.whl" }
+#
 # ///
 # The above comment is managed by uv, do not edit it manually.
 # It enables uv to manage the dependencies and the Python version.
@@ -21,12 +26,13 @@ from typing import Final
 # Make sure modules can be imported
 SCRIPT = Path(__file__).resolve()
 SCRIPT_DIR = SCRIPT.parent
-MODULES_DIR: Final[Path] = SCRIPT_DIR / f'{SCRIPT.stem}_modules'
-sys.path.insert(0, str(SCRIPT_DIR))
-import devtool_modules # type: ignore # noqa: E402
+PROJECT_DIR = SCRIPT_DIR.parent
+MODULES_DIR: Final[Path] = PROJECT_DIR / 'scripts/src'
+sys.path.insert(0, str(MODULES_DIR))
+import devtools # type: ignore # noqa: E402
 
 if __name__ == "__main__":
-    from devtool_modules import main  # type: ignore # noqa: E402
+    from devtools import main  # type: ignore # noqa: E402
     main()
 
-__all__ = ('devtool_modules', )
+__all__ = ('devtools', )

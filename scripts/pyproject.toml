@@ -1,5 +1,5 @@
 [project]
-name = "scripts"
+name = "devtools"
 version = "0.1.0"
 description = "Dev scripts for Bridge between Houdini and AI"
 readme = "README.md"
@@ -13,9 +13,9 @@ dependencies = [
     "anyio>=4.9.0",
     "click>=8.1.8",
     "fastapi>=0.115.12",
-    "fastmcp>=2.3.4",
+    "fastmcp>=2.4.0",
     "httpx>=0.28.1",
-    "mcp[cli]>=1.8.1",
+    "mcp[cli]>=1.9.1",
     "pedantic>=2.1.9",
     "python-dotenv>=1.1.0",
     "sqlite-vec>=0.1.7a2",
@@ -27,15 +27,20 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 
+
 [tool.hatch.build.targets.wheel]
-packages = [ "devtool", "devtool_modules/*", "houdini_versions" ]
+packages = [ "devtool", "src/devtools/*", "houdini_versions" ]
 
 [tool.setuptools.package-data]
 include=[ '*' ]
 
+[tool.uv.sources]
+devtools = { workspace = true }
+
 [dependency-groups]
 dev = [
     "click>=8.0.0,<8.2.0",
+    "devtools",
     "psutil>=7.0.0",
     "requests>=2.32.3",
     "semver>=3.0.4",

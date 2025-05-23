@@ -19,7 +19,7 @@ import psutil
 if TYPE_CHECKING:
     from subprocess import _FILE
 
-from devtool_modules.utils import DEBUG
+from devtools.utils import DEBUG
 
 def run(*cmds: Any,
         cwd: os.PathLike|str|None=None,

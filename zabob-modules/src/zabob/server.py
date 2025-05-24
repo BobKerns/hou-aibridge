@@ -252,6 +252,12 @@ def start_server_command() -> None:
         print("Failed to start the server.", file=sys.stderr)
         sys.exit(1)
 
+if __name__ == '__main__':
+    # If this file is run directly, we want to start the server.
+    # This is useful for debugging.
+    server()
+
+    
 __all__: Final[tuple[str, ...]] = (
     'server',
     'start_server',

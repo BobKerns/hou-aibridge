@@ -5,53 +5,5 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
-            "name": "Launch Extension",
-            "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
-            "preLaunchTask": "npm",
-            "request": "launch",
-            "type": "extensionHost"
-        },
-        {
-            "name": "Python Debugger: Current File with Arguments",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "args": "${command:pickArgs}",
-            "cwd": "${fileDirname}"
-        },
-        {
-            "name": "Run Extension",
-            "type": "extensionHost",
-            "request": "launch",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder:zabob-chat}"
-            ],
-            "outFiles": [
-                "${workspaceFolder:zabob-chat}/dist/**/*.js"
-            ],
-            "preLaunchTask": "${defaultBuildTask}"
-        },
-        {
-            "name": "Extension Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "program": "${workspaceFolder}/out/test/runTest.js",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder:zabob-chat}",
-                "--extensionTestsPath=${workspaceFolder:zabob-chat}/out/test/runTest.js"
-            ],
-            "autoAttachChildProcesses": true,
-            "trace": true,
-            "outFiles": [
-                "${workspaceFolder:zabob-chat}/out/test/**/*.js"
-            ]
-        }
     ]
 }

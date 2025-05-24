@@ -2,14 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File (zabob env)",
+            "name": "Python: Current File (mcp-server env)",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "python": "${workspaceFolder:zabob-modules}/.venv/bin/python",
+            "python": "${workspaceFolder:mcp-server}/.venv/bin/python",
             "env": {
-                "PYTHONPATH": "${workspaceFolder:zabob-modules}/src${pathSeparator}${env:PYTHONPATH}"
+                "PYTHONPATH": "${workspaceFolder:mcp-server}/src${pathSeparator}${env:PYTHONPATH}"
             },
             "args": "${command:pickArgs}",
         }

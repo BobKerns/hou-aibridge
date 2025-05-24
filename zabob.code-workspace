@@ -57,7 +57,7 @@
         "explorer.fileNesting.patterns": {
             "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs",
             "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
-            "pyproject.toml": ".python-version,uv.lock,",
+            "pyproject.toml": ".houdini-version,.python-version,uv.lock,.envrc",
             "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore",
             "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md"
         },
@@ -152,13 +152,14 @@
             "houdini/hdas/": true,
             "dist": true,
             "out": true,
-            "node_modules/*": true,
+            "node_modules": true,
             "zabob-modules/": true,
             "docs/": true,
             "docker/": true,
             "*/docs/": true,
             ".vscode-test/": true,
             ".vscode-test-insiders/": true,
+            "**/__pycache__": true,
         },
         "cSpell.workspaceRootPath": "${workspaceFolder}",
         "cSpell.customDictionaries": {
@@ -211,9 +212,6 @@
         "python.analysis.typeCheckingMode": "standard",
         "python.terminal.activateEnvironment": true,
         "python.terminal.activateEnvInCurrentTerminal": true,
-        "[zabob-modules]": {
-        "python.defaultInterpreterPath": "${workspaceFolder:zabob-modules}/.venv/bin/python"
-        },
         "python.testing.pytestEnabled": false,
         "python.testing.unittestEnabled": false,
         "search.exclude": {
@@ -224,7 +222,8 @@
             "**/.vscode-test-insiders": true,
             "**/.git": true,
             "**/.venv": true,
-            "*.lock": true
+            "*.lock": true,
+            "__pycache__": true,
         },
         "markdownlint.config": {
             "MD041": false,

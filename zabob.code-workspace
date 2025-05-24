@@ -55,7 +55,7 @@
         "cSpell.noConfigSearch": false,
         "explorer.fileNesting.enabled": true,
         "explorer.fileNesting.patterns": {
-            "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs",
+            "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs,.envrc",
             "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
             "pyproject.toml": ".houdini-version,.python-version,uv.lock,.envrc",
             "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore",
@@ -160,6 +160,10 @@
             ".vscode-test/": true,
             ".vscode-test-insiders/": true,
             "**/__pycache__": true,
+            "*~": true,
+            "*.bak": true,
+            "#*": true,
+            "*#": true,
         },
         "cSpell.workspaceRootPath": "${workspaceFolder}",
         "cSpell.customDictionaries": {

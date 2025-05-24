@@ -9,7 +9,7 @@ import sys
 
 import click
 
-from zabob.paths import ZABOB＿BIN_DIR, ZABOB_ROOT, SUBPROJECTS
+from zabob.paths import ZABOB_BIN_DIR, ZABOB_ROOT, SUBPROJECTS
 from zabob.subproc import run
 from zabob.main import main
 
@@ -53,7 +53,7 @@ def node_update() -> None:
     Update the node version to match the package.json file..
     """
     version = node_version()
-    bin_node = ZABOB＿BIN_DIR / 'node'
+    bin_node = ZABOB_BIN_DIR / 'node'
     bin_node.unlink(missing_ok=True)
     bin_node.symlink_to(version)
     for subproject in (ZABOB_ROOT, *SUBPROJECTS):

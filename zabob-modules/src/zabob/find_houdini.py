@@ -108,6 +108,22 @@ def show_houdini(version: Version|None):
     except FileNotFoundError as e:
         print(e)
 
+@click.command()
+def list_houdini_installations():
+    """
+    List all installed Houdini versions on the system.
+    """
+    installations = find_houdini_installations()
+    if not installations:
+        print("No Houdini installations found.")
+        return
+
+    for version, install in sorted(installations.items(), key=lambda x: x[0]):
+        if version.patch != 0:
+            # MM.nn.0 versions are generic, not specific builds
+            print(f"{version}: (Python {install.python_version})")
+            print(f"    {install.version_dir}")
+
 
 if __name__ == "__main__":
     show_houdini()

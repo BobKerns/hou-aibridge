@@ -57,8 +57,24 @@ if VENV_DIR.is_dir():
     libs = VENV_DIR / 'lib' / python_lib / 'site-packages'
     sys.path.insert(-2, str(libs))
 
+
+def _version(version: Version|str) -> Version:
+    """
+    Convert a version to a semver.Version object.
+
+    Args:
+        version (Version|str): The version to convert.
+
+    Returns:
+        Version: The converted version.
+    """
+    if isinstance(version, Version):
+        return version
+    return Version.parse(version, optional_minor_and_patch=True)
+
+
 HOUDINI_PROJECTS: Final[Mapping[Version, Path]] = {
-    Version.parse(p.name[1:]): p
+    _version(p.name[1:]): p
     for p in ZABOB_HOUDINI_DIR.glob("h*.*")
     if p.is_dir()
 }

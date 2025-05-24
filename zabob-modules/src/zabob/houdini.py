@@ -14,7 +14,7 @@ from semver import Version
 
 
 from zabob.houdini_versions import cli as houdini_cli
-from zabob.find_houdini import show_houdini
+from zabob.find_houdini import list_houdini_installations, show_houdini
 from zabob.main import main
 from zabob.paths import HOUDINI_PROJECTS, ZABOB_HOUDINI_DIR
 from zabob.subproc import run
@@ -199,9 +199,11 @@ def setup_houdini_venv_cmd(directory: Path|None=None,
         print(f"Error: {e}")
         sys.exit(1)
 
+houdini_commands.add_command(show_houdini, 'show')
+houdini_commands.add_command(list_houdini_installations, 'installations')
 for name, command in houdini_cli.commands.items():
     # Register the command with the main group
     houdini_commands.add_command(command, name)
-    houdini_commands.add_command(show_houdini, 'show')
+
 
     # Add the command to the Houdini commands gr

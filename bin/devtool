@@ -24,9 +24,9 @@ import sys
 from typing import Final
 
 # Make sure modules can be imported
-SCRIPT = Path(__file__).resolve()
-SCRIPT_DIR = SCRIPT.parent
-PROJECT_DIR = SCRIPT_DIR.parent
+SCRIPT: Final[Path] = Path(__file__).resolve()
+SCRIPT_DIR: Final[Path] = SCRIPT.parent
+PROJECT_DIR: Final[Path] = SCRIPT_DIR.parent
 MODULES_DIR: Final[Path] = PROJECT_DIR / 'zabob-modules/src'
 sys.path.insert(0, str(MODULES_DIR))
 

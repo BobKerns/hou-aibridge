@@ -56,7 +56,7 @@ direnv allow
 
 - The `.envrc` file manages Python and Node environments per subproject.
 - Subproject `.envrc` files are symlinks to the top-level one and respect local `.python-version`/`.nvmrc`.
-- The `bin/` directory may contain a global Node symlink for CLI convenience—this is for development only.
+- The `bin/` directory holds command-line tools. More information is available i [bin/README.md](bin/README.md).
 
 ### Running and Testing
 

@@ -96,6 +96,7 @@ Pyro
 pytest
 PYTHONPATH
 pytype
+pyvenv
 randr
 Referer
 ropeproject

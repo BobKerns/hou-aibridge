@@ -1,0 +1,20 @@
+import os
+import sys
+import configparser
+
+# Read pyenv.cfg to get Houdini location
+config = configparser.ConfigParser()
+venv_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+config.read(os.path.join(venv_dir, "pyvenv.cfg"))
+
+# Extract Houdini path from config
+houdini_path = config.get("hython", "home", fallback=None)
+if not houdini_path:
+    print("Error: No Houdini path configured in pyvenv.cfg", file=sys.stderr)
+    sys.exit(1)
+
+# Build path to actual hython executable
+hython_path = os.path.join(houdini_path, "bin", "hython")
+
+# Execute hython with all arguments
+os.execv(hython_path, [hython_path] + sys.argv[1:])

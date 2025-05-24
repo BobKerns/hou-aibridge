@@ -33,6 +33,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+packages = ["zabob", "zabob.data"]
+
+[tool.setuptools.package-data]
+"zabob.data" = ["*"]  # Include all files in the data directory
 
 [tool.hatch.build]
 packages = [ "zabob" ]
@@ -41,6 +45,14 @@ package-dir = { "" = "src" }
 [tool.hatch.build.targets.wheel]
 #packages = [ "src/zabob/**"]
 only-include = [ "src/zabob" ]
+
+# This is how you include data files with hatchling
+[tool.hatch.build.targets.wheel.sources]
+"src/zabob" = {target = "zabob"}
+
+# Make sure non-Python files are included
+[tool.hatch.build.targets.wheel.include]
+"src/zabob/data" = ["**/*"]
 
 [tool.hatch.build.targets.editable]
 dev-mode-exact = true

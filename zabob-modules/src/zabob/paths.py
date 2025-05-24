@@ -8,6 +8,8 @@ from collections.abc import Mapping
 import os
 import sys
 
+from semver import Version
+
 # Shared constants
 ZABOB_PKG_DIR: Final[Path] = Path(__file__).resolve().parent
 ZABOB_SRC_DIR: Final[Path] = ZABOB_PKG_DIR.parent
@@ -25,7 +27,8 @@ This is used to check if the project files have changed.
 
 # Add useful path constants
 ZABOB_DOCKER_DIR: Final[Path] = ZABOB_ROOT / "docker"
-ZABOB_HOUDINI_20_5_DIR: Final[Path] = ZABOB_DOCKER_DIR / "houdini-20.5"
+ZABOB_HOUDINI_DIR: Final[Path] = ZABOB_ROOT / "houdini"
+ZABOB_HOUDINI_20_5_DIR: Final[Path] = ZABOB_HOUDINI_DIR / "h20.5"
 ZABOB_DOCS_DIR: Final[Path] = ZABOB_ROOT / "docs"
 ZABOB_IMAGES_DIR: Final[Path] = ZABOB_DOCKER_DIR / "images"
 ZABOB_DEFAULT_CREDENTIALS: Final[Path] = ZABOB_DOCKER_DIR / "sidefx_credentials.env"
@@ -54,9 +57,9 @@ if VENV_DIR.is_dir():
     libs = VENV_DIR / 'lib' / python_lib / 'site-packages'
     sys.path.insert(-2, str(libs))
 
-HOUDINI_PROJECTS: Final[Mapping[str, Path]] = {
-    p.name[1:]: p
-    for p in ZABOB_ROOT.glob("houdini/h*.*")
+HOUDINI_PROJECTS: Final[Mapping[Version, Path]] = {
+    Version.parse(p.name[1:]): p
+    for p in ZABOB_HOUDINI_DIR.glob("h*.*")
     if p.is_dir()
 }
 

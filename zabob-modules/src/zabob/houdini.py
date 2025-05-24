@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from configparser import ConfigParser
 
+import click
 from semver import Version
 
 
@@ -178,10 +179,21 @@ def setup_houdini_venv_from_current(directory: Path|None=None,
         directory = parent_dir
 
 @houdini_commands.command('setup-venv')
-def setup_houdini_venv_cmd():
+@click.option('--directory', '-d',
+              type=click.Path(exists=True, file_okay=False, path_type=Path),
+              default=Path.cwd(),
+              help="Directory to start.")
+@click.option('--install/--no-install', '-i/-n', default=False,
+              help="Install the virtual environment if it doesn't exist (default: no install)")
+def setup_houdini_venv_cmd(directory: Path|None=None,
+                          install: bool=False):
     """Setup a virtual environment for Houdini based on .houdini-version file."""
+    directory = directory or Path.cwd()
     try:
-        hython_path = setup_houdini_venv_from_current()
+        hython_path = setup_houdini_venv_from_current(
+            directory=directory,
+            install=install
+        )
         print(f"Houdini virtual environment setup complete. Hython launcher: {hython_path}")
     except RuntimeError as e:
         print(f"Error: {e}")

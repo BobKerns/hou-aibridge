@@ -15,7 +15,7 @@ from typing import Final, Literal
 from time import sleep
 
 from click import ParamType
-import semver
+from semver import Version
 
 from zabob.paths import ZABOB_ROOT
 
@@ -210,14 +210,14 @@ class SemVerParamType(ParamType):
     _min_parts: int = 3
     _max_parts: int = 3
 
-    _min_version: semver.Version|None = None
-    _max_version: semver.Version|None = None
+    _min_version: Version|None = None
+    _max_version: Version|None = None
 
     def __init__(self,
                  min_parts: int = 3,
                  max_parts: int = 3,
-                 min_version: semver.Version|None = None,
-                 max_version: semver.Version|None = None,
+                 min_version: Version|None = None,
+                 max_version: Version|None = None,
     ) -> None:
         """
         Initialize the SemVerParamType.
@@ -238,7 +238,7 @@ class SemVerParamType(ParamType):
         self._max_version = max_version
 
 
-    def convert(self, value, param, ctx) -> semver.Version:
+    def convert(self, value, param, ctx) -> Version:
         """Converts the value from string into semver type.
 
         This method takes a string and check if this string belongs to semantic version definition.
@@ -264,8 +264,7 @@ class SemVerParamType(ParamType):
             self.fail(f"Not a valid version, expected at least {expect}", param, ctx)
         else:
             try:
-                result = semver.VersionInfo.parse(value,
-                                                  optional_minor_and_patch=True)
+                result = _version(value)
                 if self._min_version and self._max_version:
                     if result > self._max_version or result < self._min_version:
                         self.fail(f"Version {result} is not in range {self._min_version} - {self._max_version}",

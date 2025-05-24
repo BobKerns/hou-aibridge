@@ -204,7 +204,8 @@
         "python.analysis.exclude": [
             "*.pyi",
             "**/.venv/**",
-            "**/typings/**"
+            "**/typings/**",
+            "**/build/**",
         ],
         "python.analysis.ignore": [
             ".venv/",
@@ -214,6 +215,7 @@
             "**/.vscode-test/**",
             "**/.vscode-test-insiders/**",
             "**/.git/**",
+            "**/build/**",
         ],
         "python.analysis.typeCheckingMode": "standard",
         "python.terminal.activateEnvironment": true,
@@ -223,6 +225,7 @@
         "search.exclude": {
             "out": true, // set this to false to include "out" folder in search results
             "dist": true, // set this to false to include "dist" folder in search results
+            "**/build/**": true,
             "**/node_modules": true,
             "**/.vscode-test": true,
             "**/.vscode-test-insiders": true,

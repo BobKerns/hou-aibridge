@@ -9,7 +9,7 @@ import re
 
 from semver import Version
 
-from hou_aibridge._find.types import (
+from zabob._find.types import (
     HoudiniInstall,
     _get_houdini_version,
     _group_by_major_minor,
@@ -17,7 +17,7 @@ from hou_aibridge._find.types import (
 )
 
 
-_RE_APP_NAME = re.compile(r'^(?:Houdini ?)(.*) *(\d+\.\d+.\d+).app$')
+_RE_APP_NAME = re.compile(r'^(?:Houdini ?)(.*\D) *(\d+\.\d+\.\d+).app$')
 
 
 def find_installations() -> dict[Version, HoudiniInstall]:

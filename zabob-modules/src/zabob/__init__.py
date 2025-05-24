@@ -49,6 +49,9 @@ from zabob.server import server
 from zabob.node import node_group
 from zabob.houdini import houdini_commands
 from zabob.houdini_versions import cli as houdini_cli
+from zabob.find_houdini import (
+    find_houdini_installations, get_houdini,
+)
 
 def version():
     with suppress(ImportError):
@@ -87,7 +90,6 @@ __all__: Final[tuple[str, ...]] = (
     "SUBPROJECTS",
     "ZABOB_DEFAULT_CREDENTIALS",
     "ZABOB_DEFAULT_COMPOSE",
-    "main",
     "Level",
     "LEVELS",
     'run',
@@ -104,5 +106,7 @@ __all__: Final[tuple[str, ...]] = (
     "ZABOB_BROWSE_RELOAD_FILE",
     "ZABOB_BROWSE_PID_FILE",
     "ZABOB_BROWSE_LOG_FILE",
-    'update', 'server', 'node_group', 'main', 'setup', 'houdini_commands', 'houdini_cli',
+    'update', 'server', 'node_group',
+    'main', 'setup', 'houdini_commands', 'houdini_cli',
+    'find_houdini_installations', 'get_houdini',
 )

@@ -11,12 +11,12 @@ import os
 
 from semver import Version
 
-from hou_aibridge._find._macos import suppress
-from hou_aibridge._find.types import (
+from zabob._find._macos import suppress
+from zabob._find.types import (
     HoudiniInstall,
     _get_houdini_version, _group_by_major_minor, _if_exists, _parse_pyversion,
 )
-from hou_aibridge._find.types import _get_major_minor
+from zabob._find.types import _get_major_minor
 
 def _by_regkey():
     try:

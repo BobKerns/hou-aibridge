@@ -9,19 +9,21 @@
 import sys
 from pathlib import Path
 
+import click
 from semver import Version
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import shared types and utilities
-from hou_aibridge._find.types import HoudiniInstall, _version
+from zabob.utils import OptionalType, SemVerParamType
+from zabob._find.types import HoudiniInstall, _version
 
 # Conditionally import the platform-specific module
 if sys.platform == 'linux':
-    from hou_aibridge._find._linux import find_installations # type: ignore
+    from zabob._find._linux import find_installations # type: ignore
 elif sys.platform == 'darwin':
-    from hou_aibridge._find._macos import find_installations # type: ignore
+    from zabob._find._macos import find_installations # type: ignore
 elif sys.platform == 'win32':
-    from hou_aibridge._find._windows import find_installations # type: ignore
+    from zabob._find._windows import find_installations # type: ignore
 else:
     def find_installations():
         """Placeholder for unsupported platforms."""
@@ -38,7 +40,7 @@ def find_houdini_installations() -> dict[Version, HoudiniInstall]:
     return find_installations()
 
 
-def get_houdini(version: str|None = None) -> HoudiniInstall:
+def get_houdini(version: Version|None = None) -> HoudiniInstall:
     """
     Get a specific Houdini installation, or latest if version is None.
 
@@ -67,22 +69,45 @@ def get_houdini(version: str|None = None) -> HoudiniInstall:
 
     raise FileNotFoundError(f"No Houdini installation matching version {v} found")
 
+
+
+@click.command()
+@click.argument('version',
+                type=OptionalType(SemVerParamType(min_parts=2)),
+                default=None,
+                required=False)
+def show_houdini(version: Version|None):
+    """
+    Command-line interface to find Houdini installations.
+
+    Args:
+        version: Specific version to get ("20.5" or "20.5.584")
+    """
+    try:
+        houdini = get_houdini(version)
+        print(f"Found Houdini installation: {houdini}")
+        print('Installed applications:')
+        for key, path in houdini.app_paths.items():
+            print(f"  {key}")
+        title = 'Python Version'
+        print(f"  {title:>14s}: {houdini}")
+        title = 'Version Dir'
+        version_dir = houdini.version_dir
+        print(f"  {title:>14s}: {version_dir}")
+        for key in (
+                    'bin_dir',
+                    'hython',
+                    'hfs_dir',
+                    'lib_dir',
+                ):
+
+            title = key.replace('_', ' ').title()
+            title = title.replace('hfs', 'HFS')
+            print(f"  {title:>14s}: {Path(getattr(houdini, key)).relative_to(version_dir)}")
+
+    except FileNotFoundError as e:
+        print(e)
+
+
 if __name__ == "__main__":
-    import click
-    @click.command()
-    @click.argument('version', required=False)
-    def cli(version: str|None):
-        """
-        Command-line interface to find Houdini installations.
-
-        Args:
-            version: Specific version to get ("20.5" or "20.5.584")
-        """
-        try:
-            houdini = get_houdini(version)
-            print(f"Found Houdini installation: {houdini}")
-        except FileNotFoundError as e:
-            print(e)
-
-    cli()
-
+    show_houdini()

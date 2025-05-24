@@ -3,7 +3,9 @@ Commands relating to Houdini
 '''
 
 from importlib import resources
+import os
 import shutil
+import site
 import stat
 import sys
 from pathlib import Path
@@ -72,7 +74,8 @@ def install_hython_launcher(venv_path, system_python=None) -> tuple[Path, Path]:
 
 def configure_houdini_venv(venv_path: Path,
                            houdini_path: Path,
-                           exec_prefix: Path,
+                           site_libs_path: Path,
+                           lib_path: Path,
                            system_python=None):
     """
     Configure a virtual environment for Houdini.
@@ -104,28 +107,29 @@ def configure_houdini_venv(venv_path: Path,
         config.add_section('hython')
 
     config.set('hython', 'hython', str(houdini_path))
-    config.set('hython', 'exec_prefix', str(exec_prefix))
     config.set(UNNAMED_SECTION, 'home', str(houdini_path.parent ))
  # Remove existing home if it exists
 
 
     # Write back to pyenv.cfg without the [DEFAULT] section
-    with open(pyenv_cfg_path, 'w') as f:
+    with pyenv_cfg_path.open('w') as f:
         config.write(f)
 
-    python_path = venv_path / 'bin/python'
-    python_path.unlink(missing_ok=True)
-    python_path.symlink_to(hython_path.relative_to(venv_path / 'bin'))
+    pth_path = site_libs_path / '_houdini.pth'
+    with pth_path.open('w') as f:
+        f.write(str(lib_path) + os.linesep)
 
-    # Update python symlink if needed
-
-    # This is optional - only do this if you want to replace the default Python
-    # with the Houdini Python (which could cause compatibility issues)
-
+    hython_path = bin_dir / 'hython'
+    for p in ('python', 'python3'):
+        # Remove existing symlinks if they exist
+        python_path = venv_path / 'bin' / p
+        python_path.unlink(missing_ok=True)
+        # Create a symlink to the hython launcher
+        python_path.symlink_to(hython_path.relative_to(venv_path / 'bin'))
     return hython_path
 
-def get_hython_path(version: Version|None,
-                    install: bool=False) -> tuple[Path, Path]:
+def get_hython_paths(version: Version|None,
+                    install: bool=False) -> HoudiniInstall:
     """
     Get the path to the hython launcher for a specific Houdini version.
     If the version is not installed, it will raise an error.
@@ -144,7 +148,7 @@ def get_hython_path(version: Version|None,
                     # Pick the latest version we have support for
                     version = max(HOUDINI_PROJECTS.keys())
                 houdini = install_houdini(version)
-        return houdini.hython, houdini.exec_prefix
+        return houdini
     except Exception as e:
         raise RuntimeError(f"Failed to get Houdini installation: {e}")
 
@@ -201,7 +205,7 @@ def setup_houdini_venv_from_current(directory: Path|None=None,
             if houdini_version not in HOUDINI_PROJECTS:
                 raise RuntimeError(f"Houdini version {houdini_version} not found in available projects")
 
-            houdini_path, exec_prefix = get_hython_path(
+            houdini = get_hython_paths(
                 houdini_version,
                 install=install
             )
@@ -214,7 +218,11 @@ def setup_houdini_venv_from_current(directory: Path|None=None,
                 print(f"Using existing virtual environment at {venv_path}")
 
             # Configure the venv for Houdini
-            return configure_houdini_venv(venv_path, houdini_path, exec_prefix)
+            houdini_path = houdini.hython
+            site_lib_path = venv_path / 'lib' / f'python{houdini.python_version.major}.{houdini.python_version.minor}' / 'site-packages'
+            site_lib_path.mkdir(parents=True, exist_ok=True)
+            lib_dir = houdini.lib_dir
+            return configure_houdini_venv(venv_path, houdini_path, site_lib_path, lib_dir)
 
         # If we've reached ZABOB_HOUDINI_DIR, stop and raise an error
         if directory.samefile(ZABOB_HOUDINI_DIR):

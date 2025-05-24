@@ -6,7 +6,6 @@ This command is used to set up the development environment for the project.
 
 
 from collections.abc import Generator, Iterator
-from contextlib import suppress
 from itertools import count
 import os
 from pathlib import Path
@@ -23,6 +22,7 @@ from tomlkit.toml_file import TOMLFile
 
 if __name__ == '__main__':
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from zabob.houdini import setup_houdini_venv_from_current
 from zabob.node import node_version, node_path  # type: ignore # noqa: E402
 from zabob.paths import ALLPROJECTS, ZABOB_CHECKSUMS, ZABOB_ROOT, SUBPROJECTS
 from zabob.subproc import capture, run
@@ -114,23 +114,27 @@ def setup(
             dry_run_flag     = ('--dry-run',) if dry_run else ()
             if use_hython:
                  # Use hython to create the virtual environment.
-                 with suppress(RuntimeError):
-                     QUIET("Creating hython virtual environment...")
-                     # This currently fails. Ignore the error for now.
-                     run('hython', '-m', 'venv', '.venv',
-                         cwd=subproject,
-                         env=uv_env,
-                         stdout=output,
-                         stderr=output,
-                         dry_run=dry_run,
-                     )
-                     QUIET("Syncing hython virtual environment...")
-                     run('uv', 'sync', *dry_run_flag,
-                         cwd=subproject,
-                         env=uv_env,
-                         stdout=output,
-                         stderr=output,
-                     )
+                    QUIET("Creating hython virtual environment...")
+                    # This currently fails. Ignore the error for now.
+                    run('python', '-I', '-m', 'venv', '.venv',
+                        cwd=subproject,
+                        env=uv_env,
+                        stdout=output,
+                        stderr=output,
+                        dry_run=dry_run,
+                    )
+                    setup_houdini_venv_from_current(
+                    directory=subproject,
+                    install=False
+                )
+                # with suppress(Exception):
+                    # QUIET("Syncing hython virtual environment...")
+                    # run('uv', 'sync', *dry_run_flag,
+                    #     cwd=subproject,
+                    #     env=uv_env,
+                    #     stdout=output,
+                    #     stderr=output,
+                    # )
             else:
                 run('uv', 'sync', *dry_run_flag,
                     cwd=subproject,
@@ -274,8 +278,11 @@ def checksum_project() :
         node_depth=1,
         node_offset=next(offsets[1]),
         last_node=True)
-    with Path(__file__).open('rb') as f:
-        file_digest(f, lambda: self_hash)
+    setup = Path(__file__).resolve()
+    houdini = setup.parent / 'houdini.py'
+    for p in (setup, houdini):
+        with p.open('rb') as f:
+            file_digest(f, lambda: self_hash)
     yield Path('SELF'), self_hash.digest()
     hash.update(self_hash.digest())
     yield Path('PROJECT'), hash.digest()

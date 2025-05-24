@@ -11,11 +11,14 @@ dependencies = [
     "aiohttp>=3.11.18",
     "aiopath>=0.7.7",
     "anyio>=4.9.0",
+    "click>=8.1.8",
     "fastapi>=0.115.12",
     "fastmcp>=2.3.4",
     "httpx>=0.28.1",
     "mcp[cli]>=1.8.1",
     "pedantic>=2.1.9",
+    "zabob",
+    "semver>=3.0.4",
     "sqlite-vec>=0.1.7a2",
     "uvicorn>=0.34.2",
 ]
@@ -32,6 +35,9 @@ hou_aibridge = [
     "responses/*.md",
     "zabob.jpg",
 ]
+
+[tool.uv.sources]
+zabob = { path = "../zabob-modules", editable = true }
 
 [dependency-groups]
 dev = [

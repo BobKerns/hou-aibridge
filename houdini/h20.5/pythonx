@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+cwd="$PWD"
+cd /Applications/Houdini/Current/Frameworks/Houdini.framework/Versions/20.5/Resources
+source ./houdini_setup_bash -q
+cd "$cwd"
+
+env >hython.env
+echo CWD=$PWD
+
+exec /Applications/Houdini/Current/Frameworks/Houdini.framework/Versions/20.5/Resources/bin/hython "$@"

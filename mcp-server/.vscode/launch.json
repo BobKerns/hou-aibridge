@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File (mcp-server)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder:mcp-server}/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder:mcp-server}/src${pathSeparator}${env:PYTHONPATH}"
+            },
+            "args": ["${command:pickArgs}"],
+        }
+    ]
+}

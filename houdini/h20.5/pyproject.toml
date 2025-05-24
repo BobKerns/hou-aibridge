@@ -1,0 +1,20 @@
+[project]
+name = "h20-5"
+version = "0.1.0"
+description = "Zabob connector for Houdini 20.5"
+readme = "README.md"
+authors = [
+    { name = "Bob Kerns", email = "1154903+BobKerns@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "hou>=0.1.0",
+]
+use-hython = true
+
+[project.scripts]
+h20-5 = "h20_5:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

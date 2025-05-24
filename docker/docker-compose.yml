@@ -1,0 +1,29 @@
+services:
+  houdini:
+    build:
+      context: ./houdini-20.5
+      dockerfile: Dockerfile
+      args:
+        HOUDINI_VERSION: 20.5.584
+        HOUDINI_ARCH: arm64
+        HOUDINI_BUILD_TYPE: gcc9.3
+        BUILDKIT_INLINE_CACHE: 1
+      secrets:
+        - sidefx_credentials
+      target: final
+    volumes:
+      - ..:/app
+      - pip-cache:/root/.cache/pip
+      - apt-cache:/var/cache/apt
+      - apt-lib:/var/lib/apt
+    ports:
+      - "5678:5678"
+
+secrets:
+  sidefx_credentials:
+    file: ./sidefx_credentials.env
+
+volumes:
+  pip-cache:
+  apt-cache:
+  apt-lib:

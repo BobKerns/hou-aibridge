@@ -24,7 +24,7 @@
             "problemMatcher": "$esbuild-watch",
             "isBackground": true,
             "label": "npm: watch:esbuild",
-            "path": "vscode-chat",
+            "path": "zabob-chat",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
@@ -37,7 +37,7 @@
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
             "label": "npm: watch:tsc",
-            "path": "vscode-chat",
+            "path": "zabob-chat",
             "presentation": {
                 "group": "watch",
                 "reveal": "never"
@@ -46,7 +46,7 @@
 		{
 			"type": "npm",
 			"script": "watch-tests",
-            "path": "vscode-chat",
+            "path": "zabob-chat",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"presentation": {

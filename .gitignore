@@ -318,6 +318,7 @@ Thumbs.db
 !.npmrc
 !.python-version
 !.node-version
+!.houdini-version
 !.gitignore
 !.vscode*
 !.cspell
@@ -333,4 +334,12 @@ Thumbs.db
 houdini_versions_cache.json
 
 .vscode-test/
+
+*.env
+!*.example.env
+
+# Emacs-related
+*~
+*\#
+\#*
 

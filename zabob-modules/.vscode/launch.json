@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File (zabob-modules)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder:zabob-modules}/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder:zabob-modules}/src${pathSeparator}${env:PYTHONPATH}"
+            },
+            "args": ["${command:pickArgs}"],
+        }
+    ]
+}

@@ -4,8 +4,7 @@
   "description": "Bridge between Houdini and AI",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.100.0",
-    "node": "^23.11.0"
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Other",
@@ -61,27 +60,24 @@
     ]
   },
   "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "compile": "mkdir -p out/src && cp package.json out/src && pnpm run check-types && pnpm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+    "compile-tests": "mkdir -p out/test && cp package.json out/test && tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "node ./out/test/runTest.js",
+    "deploy": "vsce publish --yarn"
   },
-  "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^8.31.1",
-    "@typescript-eslint/parser": "^8.31.1",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.3.2",
-    "esbuild": "^0.25.3",
-    "eslint": "^9.25.1",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.3"
+  "dependencies": {
+    "@types/vscode": "^1.100.0",
+    "@vscode/prompt-tsx": "0.4.0-alpha.4"
   },
-  "directories": {
-    "lib": "./dist",
-    "images": "./images"
-  },
-  "files": [
-    "vscode-chat"
-  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/BobKerns/hou-aibridge"
@@ -89,7 +85,21 @@
   "bugs": {
     "url": "https://github.com/BobKerns/hou-aibridge/issues"
   },
-  "homepage": "https://github.com/BobKerns/hou-aibridge?tab=readme-ov-file#zabob-the-ai-bridge-to-houdini-sfx",
   "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977",
-  "license": "MIT"
+  "homepage": "https://github.com/BobKerns/hou-aibridge?tab=readme-ov-file#zabob-the-ai-bridge-to-houdini-sfx",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.15.18",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.3.2",
+    "esbuild": "^0.25.4",
+    "eslint": "^9.27.0",
+    "mocha": "^11.3.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
+  }
 }

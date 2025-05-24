@@ -47,6 +47,7 @@
             "**/out": true,
             ".vscode-test": true,
             ".vscode-test-insiders": true,
+            "build": true,
         },
         "files.trimTrailingWhitespace": true,
         "ruff.exclude": [
@@ -160,6 +161,7 @@
             ".vscode-test/": true,
             ".vscode-test-insiders/": true,
             "**/__pycache__": true,
+            "**/*.egg-info": true,
             "*~": true,
             "*.bak": true,
             "#*": true,

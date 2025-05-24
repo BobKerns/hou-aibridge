@@ -19,6 +19,7 @@ class HoudiniInstall:
     hfs_dir: Path # Houdini's built-in types, scripts, extensions, and more.
     hython: Path
     lib_dir: Path # Python library directory
+    exec_prefix: Path  # Python executable prefix directory
     app_paths: dict[str, Path] # application installation directories
 
     def __repr__(self) -> str:

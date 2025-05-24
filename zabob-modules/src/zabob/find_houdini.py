@@ -76,7 +76,7 @@ def get_houdini(version: Version|None = None) -> HoudiniInstall:
                 type=OptionalType(SemVerParamType(min_parts=2)),
                 default=None,
                 required=False)
-def show_houdini(version: Version|None):
+def show_houdini(version: Version|None=None):
     """
     Command-line interface to find Houdini installations.
 
@@ -86,15 +86,14 @@ def show_houdini(version: Version|None):
     try:
         houdini = get_houdini(version)
         print(f"Found Houdini installation: {houdini}")
-        print('Installed applications:')
-        for key, path in houdini.app_paths.items():
-            print(f"  {key}")
+        print(f"Installed applications: {', '.join(houdini.app_paths.keys())}")
         title = 'Python Version'
-        print(f"  {title:>14s}: {houdini}")
+        print(f"  {title:>14s}: {houdini.python_version}")
         title = 'Version Dir'
         version_dir = houdini.version_dir
         print(f"  {title:>14s}: {version_dir}")
         for key in (
+                    'exec_prefix',
                     'bin_dir',
                     'hython',
                     'hfs_dir',
@@ -103,7 +102,7 @@ def show_houdini(version: Version|None):
 
             title = key.replace('_', ' ').title()
             title = title.replace('hfs', 'HFS')
-            print(f"  {title:>14s}: {Path(getattr(houdini, key)).relative_to(version_dir)}")
+            print(f"      {title:>14s}: {Path(getattr(houdini, key)).relative_to(version_dir)}")
 
     except FileNotFoundError as e:
         print(e)

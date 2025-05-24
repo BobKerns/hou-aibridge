@@ -66,6 +66,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             houdini_version=houdini_version,
             python_version=_version(python_version),
             version_dir=version_dir,
+            exec_prefix=version_dir, #TODO: Verify this
             hfs_dir=version_dir,
             bin_dir=bin_dir,
             hython=hython_path,

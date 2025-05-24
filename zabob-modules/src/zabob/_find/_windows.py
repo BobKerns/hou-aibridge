@@ -124,7 +124,8 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
         yield HoudiniInstall(
             houdini_version=houdini_version,
             python_version=python_version,
-            version_dir=version_dir,
+            version_dir=version_dir, # TODO: Verify this
+            exec_prefix=version_dir,
             hfs_dir=version_dir,
             bin_dir=bin_dir,
             hython=hython_path,

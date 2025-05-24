@@ -79,7 +79,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
     # but that would be hard to apply cross-platform and probably not useful.
     # But the apps are user-visible artifacts that may be discussed.
     app_paths = {
-        m.group(1): app
+        m.group(1).strip(): app
         for app_dir in (version_dir,
                         version_dir / 'Utilities',
                         version_dir / 'Administrative Tools')
@@ -103,6 +103,8 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             key=lambda p: p[0],
             default=(Version(0), hfs_dir),
         )
+        release = f'{python_version.major}.{python_version.minor}'
+        exec_prefix = frameworks / 'Python.framework' / release
         # We won't reject python versions <3.11, but we can't use them.
         # We can still report them.
         yield HoudiniInstall(
@@ -110,6 +112,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             python_version=python_version,
             version_dir=version_dir,
             bin_dir=bin_dir,
+            exec_prefix=exec_prefix,
             hython=hython_path,
             hfs_dir=hfs_dir,
             lib_dir=lib_dir,

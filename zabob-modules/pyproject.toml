@@ -23,17 +23,30 @@ dependencies = [
     "uvicorn>=0.34.2",
 ]
 
+# [build-system]
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
+
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
 
+[tool.hatch.build]
+packages = [ "zabob" ]
+package-dir = { "" = "src" }
 
 [tool.hatch.build.targets.wheel]
-packages = [ "src/zabob/**"]
+#packages = [ "src/zabob/**"]
+only-include = [ "src/zabob" ]
 
-[tool.setuptools.package-data]
-include=[ 'src/zabob/**', "README.md", "../LICENSE.md",  ]
+[tool.hatch.build.targets.editable]
+dev-mode-exact = true
+#
+#[tool.setuptools.package-data]
+#include=[ 'src/zabob/**', "README.md", "../LICENSE.md",  ]
 
 [tool.uv.sources]
 zabob-modules = { workspace = true }

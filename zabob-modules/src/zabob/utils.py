@@ -281,3 +281,77 @@ class SemVerParamType(ParamType):
                 return result
             except ValueError as e:
                 self.fail('Not a valid version, {0}'.format(str(e)), param, ctx)
+
+
+class OrType(ParamType):
+    """A custom click type that accepts multiple types."""
+    name = 'or_type'
+    _types: tuple[ParamType, ...]
+
+    def __init__(self, *types: ParamType) -> None:
+        """
+        Initialize the OrType with multiple types.
+
+        :param types: The types to accept.
+        """
+        super().__init__()
+        self._types = types
+
+    def convert(self, value, param, ctx):
+        """Convert the value to one of the accepted types."""
+        for t in self._types:
+            try:
+                return t.convert(value, param, ctx)
+            except Exception:
+                continue
+        self.fail(f"Value '{value}' does not match any of the accepted types: {self._types}",
+                  param,
+                  ctx)
+
+class NoneType(ParamType):
+    """A custom click type that accepts None."""
+    name = 'none_type'
+
+    def convert(self, value, param, ctx):
+        """Convert the value to None."""
+        if value is None or value.lower() == 'none':
+            return None
+        self.fail(f"Value '{value}' is not None", param, ctx)
+
+
+class OptionalType(ParamType):
+    """A custom click type that accepts a value or None."""
+    name: str
+    _type: ParamType
+    def __init__(self, type: ParamType) -> None:
+        """
+        Initialize the OptionalType with a specific type.
+
+        :param type: The type to accept.
+        """
+        super().__init__()
+        self._type = type
+        self.name = f'Optional[{type.name}]'
+
+    def convert(self, value, param, ctx):
+        """Convert the value to None if it is 'None' or empty."""
+        if value is None or value.lower() == 'none' or value == '':
+            return None
+        if hasattr(self._type, 'convert'):
+            # If value is already a ParamType, use its convert method
+            return self._type.convert(value, param, ctx)
+        return self._type(value)
+
+def _version(version: Version|str) -> Version:
+    """
+    Convert a version to a semver.Version object.
+
+    Args:
+        version (Version|str): The version to convert.
+
+    Returns:
+        Version: The converted version.
+    """
+    if isinstance(version, Version):
+        return version
+    return Version.parse(version, optional_minor_and_patch=True)

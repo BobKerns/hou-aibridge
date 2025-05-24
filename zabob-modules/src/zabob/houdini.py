@@ -7,14 +7,15 @@ import shutil
 import stat
 import sys
 from pathlib import Path
-from configparser import ConfigParser
+from configparser import ConfigParser, UNNAMED_SECTION
 
 import click
 from semver import Version
 
 
-from zabob.houdini_versions import cli as houdini_cli
-from zabob.find_houdini import list_houdini_installations, show_houdini
+from zabob._find.types import HoudiniInstall
+from zabob.houdini_versions import cli as houdini_cli, download_houdini_installer
+from zabob.find_houdini import get_houdini, list_houdini_installations, show_houdini
 from zabob.main import main
 from zabob.paths import HOUDINI_PROJECTS, ZABOB_HOUDINI_DIR
 from zabob.subproc import run
@@ -27,12 +28,18 @@ def houdini_commands():
     """
     pass
 
-def install_hython_launcher(venv_path, system_python=None):
+def install_hython_launcher(venv_path, system_python=None) -> tuple[Path, Path]:
     """Install the hython launcher to the specified venv bin directory.
 
     Args:
         venv_path: Path to the virtual environment
         system_python: Path to system Python (defaults to system Python)
+
+    Returns:
+        Tuple containing:
+            - Path to the hython launcher script
+            - Path to the bin directory of the Houdini installation
+
     """
     # Get system Python path if not provided
     if system_python is None:
@@ -42,26 +49,31 @@ def install_hython_launcher(venv_path, system_python=None):
     bin_dir = venv_path / "bin"
     target_path = bin_dir / "hython"
 
+    with resources.open_text("zabob.data", "sitecustomize.py") as src:
+        with open(venv_path / "lib" / "sitecustomize.py", 'w') as target:
+            # Write the sitecustomize.py content
+            shutil.copyfileobj(src, target)
+
     # Get template file path
-    with resources.path("zabob.data", "hython") as src_path:
+    with resources.open_text("zabob.data", "hython") as src:
         with open(target_path, 'w') as target:
             # Write custom shebang
             target.write(f"#!{system_python}\n")
-
-            # Copy the rest (skipping first line)
-            with open(src_path, 'r') as source:
                 # Skip the first line (original shebang)
-                source.readline()
+            src.readline()
 
-                # Copy the rest efficiently
-                shutil.copyfileobj(source, target)
+            # Copy the rest efficiently
+            shutil.copyfileobj(src, target)
 
     # Make executable
     target_path.chmod(target_path.stat().st_mode | stat.S_IEXEC)
 
-    return target_path
+    return target_path, bin_dir
 
-def configure_houdini_venv(venv_path, houdini_path, system_python=None):
+def configure_houdini_venv(venv_path: Path,
+                           houdini_path: Path,
+                           exec_prefix: Path,
+                           system_python=None):
     """
     Configure a virtual environment for Houdini.
 
@@ -78,42 +90,83 @@ def configure_houdini_venv(venv_path, houdini_path, system_python=None):
     houdini_path = Path(houdini_path).resolve()
 
     # Install the hython launcher
-    hython_path = install_hython_launcher(venv_path, system_python)
+    hython_path, bin_dir = install_hython_launcher(venv_path, system_python)
 
     # Update pyenv.cfg with Houdini information
     pyenv_cfg_path = venv_path / "pyvenv.cfg"
 
     # Read existing configuration
-    config = ConfigParser()
-    # ConfigParser requires section headers, but pyvenv.cfg doesn't have them
-    # Add a default section to parse it correctly
-    with open(pyenv_cfg_path, 'r') as f:
-        config_content = '[DEFAULT]\n' + f.read()
-
-    config.read_string(config_content)
+    config = ConfigParser(allow_unnamed_section=True)
+    config.read(pyenv_cfg_path)
 
     # Create a hython section with Houdini home
     if 'hython' not in config:
         config.add_section('hython')
 
-    config.set('hython', 'home', str(houdini_path))
+    config.set('hython', 'hython', str(houdini_path))
+    config.set('hython', 'exec_prefix', str(exec_prefix))
+    config.set(UNNAMED_SECTION, 'home', str(houdini_path.parent ))
+ # Remove existing home if it exists
+
 
     # Write back to pyenv.cfg without the [DEFAULT] section
     with open(pyenv_cfg_path, 'w') as f:
-        # Write all key-value pairs without section headers
-        for key, value in config['DEFAULT'].items():
-            f.write(f"{key} = {value}\n")
+        config.write(f)
 
-        # Write the hython section with header
-        f.write("\n[hython]\n")
-        for key, value in config['hython'].items():
-            f.write(f"{key} = {value}\n")
+    python_path = venv_path / 'bin/python'
+    python_path.unlink(missing_ok=True)
+    python_path.symlink_to(hython_path.relative_to(venv_path / 'bin'))
 
     # Update python symlink if needed
+
     # This is optional - only do this if you want to replace the default Python
     # with the Houdini Python (which could cause compatibility issues)
 
     return hython_path
+
+def get_hython_path(version: Version|None,
+                    install: bool=False) -> tuple[Path, Path]:
+    """
+    Get the path to the hython launcher for a specific Houdini version.
+    If the version is not installed, it will raise an error.
+    If `install` is True, it will download (if not cached) the version
+    and install it before returning the path.
+    """
+    try:
+        try:
+            houdini: HoudiniInstall= get_houdini(version)
+        except FileNotFoundError:
+            if not install:
+                raise FileNotFoundError(f"No Houdini installation matching version {version} found")
+            else:
+                # If install is True, we should download and install the version
+                if version is None:
+                    # Pick the latest version we have support for
+                    version = max(HOUDINI_PROJECTS.keys())
+                houdini = install_houdini(version)
+        return houdini.hython, houdini.exec_prefix
+    except Exception as e:
+        raise RuntimeError(f"Failed to get Houdini installation: {e}")
+
+
+def install_houdini(version: Version) -> HoudiniInstall:
+    '''
+    Install a specific Houdini version.
+    This will download the installer if not cached, and then run it.
+
+    Args:
+        version: The Houdini version to install (e.g., "20.5.584")
+    Returns:
+        Path to the installed Houdini directory.
+    '''
+    installer = download_houdini_installer(version)
+    if not installer.exists():
+        raise FileNotFoundError(f"Houdini installer for version {version} not found at {installer}")
+    # Run the installer
+    print(f"Running Houdini installer for version {version} at {installer}")
+    run(installer, '--install', '--accept-eula', '--no-gui', '--no-shortcuts')
+    return get_houdini(version)
+
 
 def setup_houdini_venv_from_current(directory: Path|None=None,
                                     install: bool=False):
@@ -148,13 +201,10 @@ def setup_houdini_venv_from_current(directory: Path|None=None,
             if houdini_version not in HOUDINI_PROJECTS:
                 raise RuntimeError(f"Houdini version {houdini_version} not found in available projects")
 
-            # TODO: 1) Check if the version is installed, using the
-            # get_houdini function.
-            # 2) If not installed, download (if not cached) and install it.
-            # 3) Get the path to the Houdini installation with the
-            # get_houdini function.
-            # 4) Use this instead of the following line to configure the venv.
-            houdini_path = HOUDINI_PROJECTS[houdini_version]
+            houdini_path, exec_prefix = get_hython_path(
+                houdini_version,
+                install=install
+            )
 
             # Create the venv using UV if it doesn't exist
             if not venv_path.exists():
@@ -164,7 +214,7 @@ def setup_houdini_venv_from_current(directory: Path|None=None,
                 print(f"Using existing virtual environment at {venv_path}")
 
             # Configure the venv for Houdini
-            return configure_houdini_venv(venv_path, houdini_path)
+            return configure_houdini_venv(venv_path, houdini_path, exec_prefix)
 
         # If we've reached ZABOB_HOUDINI_DIR, stop and raise an error
         if directory.samefile(ZABOB_HOUDINI_DIR):
@@ -200,7 +250,7 @@ def setup_houdini_venv_cmd(directory: Path|None=None,
         print(f"Error: {e}")
         sys.exit(1)
 
-houdini_commands.add_command(show_houdini, 'show')
+houdini_commands.add_command(show_houdini, 'show-houdini')
 houdini_commands.add_command(list_houdini_installations, 'installations')
 houdini_commands.add_command(hython, 'hython')
 for name, command in houdini_cli.commands.items():

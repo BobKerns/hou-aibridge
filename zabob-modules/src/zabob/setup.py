@@ -117,7 +117,7 @@ def setup(
                  with suppress(RuntimeError):
                      QUIET("Creating hython virtual environment...")
                      # This currently fails. Ignore the error for now.
-                     run('hython', '-m', 'venv', '.venv', '--without-pip',
+                     run('hython', '-m', 'venv', '.venv',
                          cwd=subproject,
                          env=uv_env,
                          stdout=output,

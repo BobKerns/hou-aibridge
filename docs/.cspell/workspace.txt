@@ -82,8 +82,11 @@ oudini
 pids
 pipenv
 Pipfile
+platbase
+platlib
 procps
 psutil
+purelib
 pybuilder
 pycache
 pyenv
@@ -94,9 +97,13 @@ pypirc
 pyproject
 Pyro
 pytest
+PYTHONDONTWRITEBYTECODE
 PYTHONPATH
+PYTHONPLATLIBDIR
+PYTHONVERBOSE
 pytype
 pyvenv
+pyver
 randr
 Referer
 ropeproject
@@ -107,6 +114,7 @@ setuptools
 shellquote
 shlvl
 SIDEFX
+sitecustomize
 Spyder
 spyderproject
 spyproject

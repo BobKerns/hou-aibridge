@@ -1,20 +1,37 @@
+#!/usr/bin/env python3
 import os
 import sys
 import configparser
+from pathlib import Path
 
 # Read pyenv.cfg to get Houdini location
-config = configparser.ConfigParser()
-venv_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-config.read(os.path.join(venv_dir, "pyvenv.cfg"))
+venv_dir = Path(__file__).resolve().parent.parent
+config_file = venv_dir / "pyvenv.cfg"
+config = configparser.ConfigParser(allow_unnamed_section=True)
+config.read(config_file)
 
 # Extract Houdini path from config
-houdini_path = config.get("hython", "home", fallback=None)
-if not houdini_path:
+hython_path = config.get("hython", "hython", fallback=None)
+if not hython_path:
     print("Error: No Houdini path configured in pyvenv.cfg", file=sys.stderr)
     sys.exit(1)
+exec_prefix = config.get("hython", "exec_prefix", fallback=None)
+if not exec_prefix:
+    print("Error: No exec_prefix configured in pyvenv.cfg", file=sys.stderr)
+    sys.exit(1)
 
-# Build path to actual hython executable
-hython_path = os.path.join(houdini_path, "bin", "hython")
+# Set up environment variables for virtual environment recognition
+os.environ["VIRTUAL_ENV"] = str(venv_dir)
+
+# Point to sitecustomize.py which will handle the path modifications
+site_custom = venv_dir / "lib/sitecustomize.py"
+if site_custom.exists():
+    os.environ["PYTHONSTARTUP"] = str(site_custom)
+    if sys.stdin.isatty():
+        print(f"Using sitecustomize.py at {site_custom}", file=sys.stderr)
+else:
+    print(f"Error: {site_custom} not found in virtual environment", file=sys.stderr)
+    sys.exit(1)
 
 # Execute hython with all arguments
-os.execv(hython_path, [hython_path] + sys.argv[1:])
+os.execv(str(hython_path), [str(hython_path), str(site_custom)] + sys.argv[1:])

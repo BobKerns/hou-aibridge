@@ -40,7 +40,7 @@ def run(*cmds: Any,
         return subprocess.CompletedProcess(cmd, 0)
     env = env or os.environ.copy()
     result: subprocess.CompletedProcess = subprocess.run(cmd,
-                                                        cwd=str(cwd),
+                                                        cwd=str(cwd) if cwd is not None else None,
                                                         env=env,
                                                         shell=shell,
                                                         stderr=stderr,
@@ -66,7 +66,7 @@ def capture(*cmds: Any,
     if cwd:
         DEBUG(f"Working directory: {cwd}")
     result: subprocess.CompletedProcess = subprocess.run(cmd,
-                                                        cwd=cwd,
+                                                        cwd=str(cwd) if cwd is not None else None,
                                                         capture_output=True,
                                                         text=True,
                                                         env=env,
@@ -99,7 +99,7 @@ def spawn(*cmds: Any,
     if cwd:
         DEBUG(f"Working directory: {cwd}")
     proc = subprocess.Popen(cmd,
-                            cwd=str(cwd),
+                            cwd=str(cwd) if cwd is not None else None,
                             env=env,
                             shell=shell,
                             stdout=stdout,

@@ -18,6 +18,7 @@ from zabob.find_houdini import list_houdini_installations, show_houdini
 from zabob.main import main
 from zabob.paths import HOUDINI_PROJECTS, ZABOB_HOUDINI_DIR
 from zabob.subproc import run
+from zabob.hython import hython
 
 @main.group('houdini')
 def houdini_commands():
@@ -201,6 +202,7 @@ def setup_houdini_venv_cmd(directory: Path|None=None,
 
 houdini_commands.add_command(show_houdini, 'show')
 houdini_commands.add_command(list_houdini_installations, 'installations')
+houdini_commands.add_command(hython, 'hython')
 for name, command in houdini_cli.commands.items():
     # Register the command with the main group
     houdini_commands.add_command(command, name)

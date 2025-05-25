@@ -7,6 +7,9 @@ on:
                 required: false
                 default: '20.5'
 
+permissions:
+  contents: read
+
 jobs:
   prepare-matrix:
     runs-on: ubuntu-latest

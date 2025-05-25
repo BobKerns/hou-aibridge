@@ -7,6 +7,8 @@ on:
     - created
     - published
 
+permissions:
+  contents: write
 
 jobs:
   build-extension:

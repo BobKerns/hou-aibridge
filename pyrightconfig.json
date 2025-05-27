@@ -1,0 +1,17 @@
+{
+  "include": [
+    "zabob-modules/src",
+    "mcp-server/src",
+    "houdini/zcommon/src",
+    "houdini/h20.5/src"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*"
+  ],
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "basic"
+}

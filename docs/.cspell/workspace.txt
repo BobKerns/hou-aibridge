@@ -146,7 +146,7 @@ Microbundle
 mkdocs
 mmdc
 modelview
-msbuild
+mssbuild
 mtlx
 muscletoolutils
 mvexportutils
@@ -241,10 +241,10 @@ rmands
 ropeproject
 roptoolutils
 roputils
-scrapy
 scenegraphdetails
 scenegraphlayers
 sceneviewerhooks
+scrapy
 sdata
 sdist
 setuptools
@@ -276,6 +276,7 @@ SUBPROJECTS
 taskgraphtable
 taskgraphtablepanel
 terraintoolutils
+textify
 tilefx
 tomlkit
 toolbelt
@@ -302,6 +303,7 @@ vscpp
 vuepress
 webassets
 whihtelist
+wikipages
 wscript
 xfixes
 xinerama

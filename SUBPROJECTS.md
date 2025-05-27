@@ -32,3 +32,7 @@ The subprojects:
 The spelling dictionary is stored in [docs/.cspell/workspace.txt], rather than the top-level project, because there is no way to reference the top-level project that doesn't change if the directory name of the worktree changes. All projects share the same dictionary, and currently all the same settings, stored in the [zabob.code-workspace](zabob.code-workspace) file.
 
 The settings appear in the UI like this. User settings are personal, unshared changes. Workspace settings apply to the entire workspace (and are stored in [zabob.code-workspace](zabob.code-workspace), as described above). The "Folder" settings drop-down selects the per-project settings.
+
+## Referencing subprojects in `pyproject.py` files
+
+Here's an explanation of [when to use dot notation, hyphens, or underscores](PYPROJECT-TOML.md)

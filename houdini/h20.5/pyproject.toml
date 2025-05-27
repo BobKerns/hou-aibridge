@@ -1,5 +1,5 @@
 [project]
-name = "h20-5"
+name = "zabob-h20-5"
 version = "0.1.0"
 description = "Zabob connector for Houdini 20.5"
 readme = "README.md"
@@ -11,10 +11,12 @@ dependencies = [
     "hou>=0.1.0",
     "zabob-common",
 ]
-# use-hython = true
+
+[tool.zabob]
+use-hython = true
 
 [project.scripts]
-h20-5 = "h20_5:main"
+h20-5 = "zabob.h20_5:main"
 
 # [build-system]
 # requires = ["hatchling"]
@@ -26,11 +28,11 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["zabob-h20_5"]
+packages = ["zabob.h20_5"]
 
 
 [tool.uv.sources]
-zabob-h20_5 = { workspace = true }
+zabob-h20-5 = { workspace = true }
 zabob-common = { path = "../zcommon", editable = true }
 
 

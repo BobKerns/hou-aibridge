@@ -64,7 +64,7 @@
             "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
             "pyproject.toml": ".houdini-version,.python-version,uv.lock,.envrc",
             "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore,pyrightconfig.json",
-            "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md"
+            "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md,PYPROJECT-TOML.md"
         },
         "explorer.excludeGitIgnore": true,
         "git.repositoryScanIgnoredFolders": [

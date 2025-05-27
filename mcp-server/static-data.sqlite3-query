@@ -1,0 +1,10 @@
+-- database: /Users/rwk/p/hou-ai-bridge/houdini/h20.5/houdini_static_data.db
+
+SELECT rowid, name, type, datatype, parent_name, parent_type FROM houdini_static_data
+where type = 'module'
+ORDER BY `rowid` ASC;
+
+select name, type from houdini_static_data
+where parent_name = 'objecttoolutils';
+
+select COUNT(*) from houdini_static_data;

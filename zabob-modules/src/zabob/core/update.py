@@ -13,10 +13,10 @@ import tomlkit
 import tomlkit.container
 from tomlkit.toml_file import TOMLFile
 
-from zabob.utils import needs_update, VERBOSE
-from zabob.main import main, sync_dependencies
-from zabob.paths import ZABOB＿IMAGES_DIR, ZABOB_ROOT
-from zabob.subproc import run
+from zabob.core.utils import needs_update, VERBOSE
+from zabob.core.main import main, sync_dependencies
+from zabob.core.paths import ZABOB＿IMAGES_DIR, ZABOB_ROOT
+from zabob.core.subproc import run
 
 @main.group(name='update')
 def update() -> None:

@@ -3,8 +3,8 @@ Hython invoker
 '''
 
 import click
-from zabob.find_houdini import get_houdini
-from zabob.main import main
+from zabob.core.find_houdini import get_houdini
+from zabob.core.main import main
 
 
 @main.command(

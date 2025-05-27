@@ -10,9 +10,9 @@ import webbrowser
 import click
 import os
 
-from zabob.paths import ZABOB＿MARKSERV, ZABOB_ROOT
-from zabob.utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
-from zabob.subproc import run
+from zabob.core.paths import ZABOB＿MARKSERV, ZABOB_ROOT
+from zabob.core.utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
+from zabob.core.subproc import run
 
 
 @click.group()
@@ -105,7 +105,7 @@ def shell(args: list[str],
 def browse_docs(file: PathLike|str = ZABOB_ROOT / 'README.md') -> None:
     "[<PATH>] Open the documentation in a browser."
 
-    from zabob.server import get_server_status, start_server
+    from zabob.core.server import get_server_status, start_server
 
     file = Path(file).resolve()
     if not file.exists():

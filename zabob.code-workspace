@@ -166,6 +166,7 @@
             "*.bak": true,
             "#*": true,
             "*#": true,
+            ".venv/**/test*/**": true,
         },
         "cSpell.workspaceRootPath": "${workspaceFolder}",
         "cSpell.customDictionaries": {
@@ -203,19 +204,19 @@
         ],
         "python.analysis.exclude": [
             "*.pyi",
-            "**/.venv/**",
+            "**/.xvenv/**",
             "**/typings/**",
             "**/build/**",
         ],
         "python.analysis.ignore": [
-            ".venv/",
+            "**/.venv/**",
             "**/node_modules/**",
             "**/dist/**",
             "**/out/**",
             "**/.vscode-test/**",
             "**/.vscode-test-insiders/**",
             "**/.git/**",
-            "**/build/**",
+            "**/build/**"
         ],
         "python.analysis.typeCheckingMode": "standard",
         "python.terminal.activateEnvironment": true,
@@ -238,6 +239,8 @@
             "MD041": false,
             "MD013": false,
         },
+        "vscode-decompiler.tool.ghidra.path": "/opt/homebrew/Caskroom/ghidra/11.3.2-20250415/ghidra_11.3.2_PUBLIC/support/analyzeHeadless",
+        "sqlite3-editor.ui.columnFilter.list.maxTableRecords": 10000,
     },
     "extensions": {
         "recommendations": [

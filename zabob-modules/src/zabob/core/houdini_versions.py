@@ -28,7 +28,7 @@ from semver import Version
 # Add dotenv support
 from dotenv import load_dotenv
 
-from zabob.utils import SemVerParamType
+from zabob.core.utils import SemVerParamType
 
 load_dotenv()  # Load from .env if available]
 

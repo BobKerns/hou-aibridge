@@ -14,7 +14,7 @@ from semver import Version
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import shared types and utilities
-from zabob.utils import OptionalType, SemVerParamType
+from zabob.core.utils import OptionalType, SemVerParamType
 from zabob._find.types import HoudiniInstall, _version
 
 # Conditionally import the platform-specific module

@@ -12,13 +12,13 @@ from time import sleep
 
 import psutil
 
-from zabob.paths import (
+from zabob.core.paths import (
     ZABOB_BROWSE_LOG_FILE, ZABOB_MARKSERV, ZABOB_BROWSE_PID_FILE,
     ZABOB_BROWSE_PORT_FILE, ZABOB_ROOT, ZABOB_BROWSE_RELOAD_FILE,
 )
-from zabob.utils import DEBUG
-from zabob.subproc import check_pid, spawn
-from zabob.main import main
+from zabob.core.utils import DEBUG
+from zabob.core.subproc import check_pid, spawn
+from zabob.core.main import main
 
 
 @main.group(name='server')
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     # This is useful for debugging.
     server()
 
-    
+
 __all__: Final[tuple[str, ...]] = (
     'server',
     'start_server',

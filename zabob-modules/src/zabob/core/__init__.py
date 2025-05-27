@@ -6,7 +6,7 @@ from typing import Final
 import json
 from contextlib import suppress
 
-from zabob.utils import (
+from zabob.core.utils import (
     Level,
     LEVELS,
     DEBUG,
@@ -15,7 +15,7 @@ from zabob.utils import (
     QUIET,
     SILENT,
 )
-from zabob.paths import (
+from zabob.core.paths import (
     ZABOB_MODULES_DIR,
     ZABOB_ROOT,
     ZABOB_PACKAGE_FILE,
@@ -36,20 +36,20 @@ from zabob.paths import (
     ZABOB_BROWSE_PID_FILE,
     ZABOB_BROWSE_LOG_FILE,
 )
-from zabob.subproc import (
+from zabob.core.subproc import (
     run,
     capture,
     spawn,
     check_pid,
 )
-from zabob.main import main
-from zabob.update import update
-from zabob.setup import setup
-from zabob.server import server
-from zabob.node import node_group
-from zabob.houdini import houdini_commands
-from zabob.houdini_versions import cli as houdini_cli
-from zabob.find_houdini import (
+from zabob.core.main import main
+from zabob.core.update import update
+from zabob.core.setup import setup
+from zabob.core.server import server
+from zabob.core.node import node_group
+from zabob.core.houdini import houdini_commands
+from zabob.core.houdini_versions import cli as houdini_cli
+from zabob.core.find_houdini import (
     find_houdini_installations, get_houdini,
 )
 

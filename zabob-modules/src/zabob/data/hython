@@ -15,10 +15,6 @@ hython_path = config.get("hython", "hython", fallback=None)
 if not hython_path:
     print("Error: No Houdini path configured in pyvenv.cfg", file=sys.stderr)
     sys.exit(1)
-exec_prefix = config.get("hython", "exec_prefix", fallback=None)
-if not exec_prefix:
-    print("Error: No exec_prefix configured in pyvenv.cfg", file=sys.stderr)
-    sys.exit(1)
 
 # Set up environment variables for virtual environment recognition
 os.environ["VIRTUAL_ENV"] = str(venv_dir)

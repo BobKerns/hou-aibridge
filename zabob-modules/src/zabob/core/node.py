@@ -9,9 +9,9 @@ import sys
 
 import click
 
-from zabob.paths import ZABOB_BIN_DIR, ZABOB_ROOT, SUBPROJECTS
-from zabob.subproc import run
-from zabob.main import main
+from zabob.core.paths import ZABOB_BIN_DIR, ZABOB_ROOT, SUBPROJECTS
+from zabob.core.subproc import run
+from zabob.core.main import main
 
 
 @main.group(name='node')

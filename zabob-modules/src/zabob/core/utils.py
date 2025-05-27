@@ -17,7 +17,7 @@ from time import sleep
 from click import ParamType
 from semver import Version
 
-from zabob.paths import ZABOB_ROOT
+from zabob.core.paths import ZABOB_ROOT
 
 
 class Level(StrEnum):
@@ -102,7 +102,7 @@ def same_commit(files: Sequence[PathLike|str]) -> bool:
         bool: True if all files are at the same commit, False otherwise.
     '''
 
-    from zabob.subproc import capture
+    from zabob.core.subproc import capture
     git = find_git()
     matches  = capture(git, 'log', '--name-only', '-n', 1, '--format=', '--',
                        *(repo_relative(f) for f in files)).strip()
@@ -117,7 +117,7 @@ def is_clean(file: PathLike|str) -> bool:
         bool: True if the file is clean, False otherwise.
     '''
 
-    from zabob.subproc import capture
+    from zabob.core.subproc import capture
     git = find_git()
     matches  = capture(git, 'status', '--porcelain', '--', repo_relative(file))
     return not matches.strip()

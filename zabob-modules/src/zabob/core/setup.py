@@ -22,12 +22,12 @@ from tomlkit.toml_file import TOMLFile
 
 if __name__ == '__main__':
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from zabob.houdini import setup_houdini_venv_from_current
-from zabob.node import node_version, node_path  # type: ignore # noqa: E402
-from zabob.paths import ALLPROJECTS, ZABOB_CHECKSUMS, ZABOB_ROOT, SUBPROJECTS
-from zabob.subproc import capture, run
-from zabob.utils import DEBUG, QUIET, INFO, VERBOSE, rmdir
-from zabob.main import main
+from zabob.core.houdini import setup_houdini_venv_from_current
+from zabob.core.node import node_version, node_path  # type: ignore # noqa: E402
+from zabob.core.paths import ALLPROJECTS, ZABOB_CHECKSUMS, ZABOB_ROOT, SUBPROJECTS
+from zabob.core.subproc import capture, run
+from zabob.core.utils import DEBUG, QUIET, INFO, VERBOSE, rmdir
+from zabob.core.main import main
 
 
 @main.command(name='setup')
@@ -278,9 +278,14 @@ def checksum_project() :
         node_depth=1,
         node_offset=next(offsets[1]),
         last_node=True)
-    setup = Path(__file__).resolve()
-    houdini = setup.parent / 'houdini.py'
-    for p in (setup, houdini):
+    this_dir = Path(__file__).resolve().parent
+    data = this_dir / 'data'
+    for p in (
+            this_dir / 'setup.py',
+            this_dir / 'houdini.py',
+            data / 'hython',
+            data / 'sitecustomize.py',
+        ):
         with p.open('rb') as f:
             file_digest(f, lambda: self_hash)
     yield Path('SELF'), self_hash.digest()

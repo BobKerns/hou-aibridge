@@ -19,7 +19,7 @@ import psutil
 if TYPE_CHECKING:
     from subprocess import _FILE
 
-from zabob.utils import DEBUG
+from zabob.core.utils import DEBUG
 
 def run(*cmds: Any,
         cwd: os.PathLike|str|None=None,

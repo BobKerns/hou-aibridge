@@ -1,4 +1,4 @@
-from zabob.main import main
+from zabob.core.main import main
 
 if __name__ == "__main__":
     # This is the entry point for the command line interface.

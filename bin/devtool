@@ -7,6 +7,7 @@
 #     "psutil",
 #     "semver",
 #     "zabob",
+#     "requests",
 # ]
 #
 # [tool.uv.sources]
@@ -31,5 +32,5 @@ MODULES_DIR: Final[Path] = PROJECT_DIR / 'zabob-modules/src'
 sys.path.insert(0, str(MODULES_DIR))
 
 if __name__ == "__main__":
-    from zabob import main  # type: ignore # noqa: E402
+    from zabob.core import main  # type: ignore # noqa: E402
     main()

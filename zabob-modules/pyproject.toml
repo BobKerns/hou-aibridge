@@ -21,6 +21,7 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "sqlite-vec>=0.1.7a2",
     "uvicorn>=0.34.2",
+    "zabob-common",
 ]
 
 # [build-system]
@@ -62,6 +63,7 @@ dev-mode-exact = true
 
 [tool.uv.sources]
 zabob-modules = { workspace = true }
+zabob-common = { path = "../houdini/zcommon", editable = true }
 
 [dependency-groups]
 dev = [

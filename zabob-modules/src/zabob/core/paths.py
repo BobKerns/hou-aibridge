@@ -10,20 +10,32 @@ import sys
 
 from semver import Version
 
+from zabob.common import (
+    ZABOB_OUT_DIR as _ZABOB_OUT_DIR,
+    ZABOB_ZCOMMON_DIR as _ZABOB_ZCOMMON_DIR,
+)
+
 # Shared constants
-ZABOB_PKG_DIR: Final[Path] = Path(__file__).resolve().parent
-ZABOB_SRC_DIR: Final[Path] = ZABOB_PKG_DIR.parent
-ZABOB_MODULES_DIR: Final[Path] = ZABOB_SRC_DIR.parent
+ZABOB_CORE_DIR: Final[Path] = Path(__file__).resolve().parent
+_ZABOB_PKG_DIR: Final[Path] = ZABOB_CORE_DIR.parent
+_ZABOB_SRC_DIR: Final[Path] = _ZABOB_PKG_DIR.parent
+ZABOB_MODULES_DIR: Final[Path] = _ZABOB_SRC_DIR.parent
 ZABOB_ROOT: Final[Path] = ZABOB_MODULES_DIR.parent
 ZABOB_CHAT_DIR: Final[Path] = ZABOB_ROOT / "zabob-chat"
 ZABOB_PACKAGE_FILE: Final[Path] = ZABOB_CHAT_DIR / "package.json"
+ZABOB_ZCOMMON_DIR: Final[Path] = _ZABOB_ZCOMMON_DIR
 
 ZABOB_CHECKSUMS: Final[Path] = ZABOB_ROOT / ".checksums"
 '''
 Checksums for the project files.
 This is used to check if the project files have changed.
 '''
-
+ZABOB_OUT_DIR: Final[Path] = _ZABOB_OUT_DIR
+'''
+Output directory for the zabob project. This directory is used
+to store generated files for development; it is excluded from
+.git and should not be committed to the repository.
+'''
 
 # Add useful path constants
 ZABOB_DOCKER_DIR: Final[Path] = ZABOB_ROOT / "docker"
@@ -86,6 +98,7 @@ SUBPROJECTS: Final[tuple[Path, ...]] =tuple(
             'mcp-server',
             'zabob-chat',
             'houdini/h*.*',
+            'houdini/zcommon',
             'houdini/hdas'
             "docs",
         )
@@ -105,7 +118,7 @@ Paths to all the subproject directories, including the root project directory.
 '''
 
 __all__: Final[tuple[str, ...]] = (
-    "ZABOB_PKG_DIR",
+    "ZABOB_CORE_DIR",
     "ZABOB_MODULES_DIR",
     "ZABOB_ROOT",
     "ZABOB_PACKAGE_FILE",

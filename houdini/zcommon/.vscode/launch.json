@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+
+
+        {
+            "name": "Python: Current File (zcommon)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/bin/hython",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder:zcommon}/src${pathSeparator}${env:PYTHONPATH}"
+            },
+            "args": ["${command:pickArgs}"],
+        }
+    ]
+}

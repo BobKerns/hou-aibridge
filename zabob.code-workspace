@@ -5,10 +5,6 @@
             "path": "."
         },
         {
-            "name": "mcp-server",
-            "path": "mcp-server"
-        },
-        {
             "name": "h20.5",
             "path": "houdini/h20.5"
         },
@@ -19,6 +15,14 @@
         {
             "name": "hdas",
             "path": "houdini/hdas"
+        },
+        {
+            "name": "mcp-server",
+            "path": "mcp-server"
+        },
+        {
+            "name": "zcommon",
+            "path": "houdini/zcommon"
         },
         {
             "name": "zabob-modules",
@@ -151,6 +155,7 @@
             "mcp-server/": true,
             "houdini/h*.*/": true,
             "houdini/hdas/": true,
+            "houdini/zcommon/": true,
             "dist": true,
             "out": true,
             "node_modules": true,

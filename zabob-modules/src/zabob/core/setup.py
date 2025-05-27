@@ -109,32 +109,23 @@ def setup(
         if pyproject.exists():
             file = TOMLFile(pyproject)
             toml = file.read()
-            project = cast(tomlkit.container.Container, toml['project'])
+            project = cast(tomlkit.container.Container, toml['tool.zabob'])
             use_hython = project.get('use-hython', False)
             dry_run_flag     = ('--dry-run',) if dry_run else ()
             if use_hython:
                  # Use hython to create the virtual environment.
-                    QUIET("Creating hython virtual environment...")
-                    # This currently fails. Ignore the error for now.
-                    run('python', '-I', '-m', 'venv', '.venv',
-                        cwd=subproject,
-                        env=uv_env,
-                        stdout=output,
-                        stderr=output,
-                        dry_run=dry_run,
-                    )
-                    setup_houdini_venv_from_current(
-                    directory=subproject,
+                QUIET("Creating hython virtual environment...")
+                run('python', '-I', '-m', 'venv', '.venv',
+                    cwd=subproject,
+                    env=uv_env,
+                    stdout=output,
+                    stderr=output,
+                    dry_run=dry_run,
+                )
+                setup_houdini_venv_from_current(
+                directory=subproject,
                     install=False
                 )
-                # with suppress(Exception):
-                    # QUIET("Syncing hython virtual environment...")
-                    # run('uv', 'sync', *dry_run_flag,
-                    #     cwd=subproject,
-                    #     env=uv_env,
-                    #     stdout=output,
-                    #     stderr=output,
-                    # )
             else:
                 run('uv', 'sync', *dry_run_flag,
                     cwd=subproject,

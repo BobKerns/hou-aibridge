@@ -13,6 +13,8 @@ from semver import Version
 from zabob.common import (
     ZABOB_OUT_DIR as _ZABOB_OUT_DIR,
     ZABOB_ZCOMMON_DIR as _ZABOB_ZCOMMON_DIR,
+    ZABOB_HOME_DIR as _ZABOB_HOME_DIR,
+    ZABOB_HOUDINI_DATA as _ZABOB_HOUDINI_DATA,
 )
 
 # Shared constants
@@ -24,6 +26,8 @@ ZABOB_ROOT: Final[Path] = ZABOB_MODULES_DIR.parent
 ZABOB_CHAT_DIR: Final[Path] = ZABOB_ROOT / "zabob-chat"
 ZABOB_PACKAGE_FILE: Final[Path] = ZABOB_CHAT_DIR / "package.json"
 ZABOB_ZCOMMON_DIR: Final[Path] = _ZABOB_ZCOMMON_DIR
+ZABOB_HOME_DIR: Final[Path] = _ZABOB_HOME_DIR
+ZABOB_HOUDINI_DATA: Final[Path] = _ZABOB_HOUDINI_DATA
 
 ZABOB_CHECKSUMS: Final[Path] = ZABOB_ROOT / ".checksums"
 '''

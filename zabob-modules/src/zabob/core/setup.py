@@ -6,6 +6,7 @@ This command is used to set up the development environment for the project.
 
 
 from collections.abc import Generator, Iterator
+from contextlib import suppress
 from itertools import count
 import os
 from pathlib import Path
@@ -109,8 +110,10 @@ def setup(
         if pyproject.exists():
             file = TOMLFile(pyproject)
             toml = file.read()
-            project = cast(tomlkit.container.Container, toml['tool.zabob'])
-            use_hython = project.get('use-hython', False)
+            use_hython = False
+            with suppress(KeyError):
+                project = cast(tomlkit.container.Container, toml['tool.zabob'])
+                use_hython = project.get('use-hython', False)
             dry_run_flag     = ('--dry-run',) if dry_run else ()
             if use_hython:
                  # Use hython to create the virtual environment.
@@ -270,7 +273,7 @@ def checksum_project() :
         node_offset=next(offsets[1]),
         last_node=True)
     this_dir = Path(__file__).resolve().parent
-    data = this_dir / 'data'
+    data = this_dir.parent / 'data'
     for p in (
             this_dir / 'setup.py',
             this_dir / 'houdini.py',

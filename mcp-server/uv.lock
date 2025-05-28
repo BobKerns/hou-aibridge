@@ -270,6 +270,15 @@ wheels = [
 ]
 
 [[package]]
+name = "hou"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/83/5b/8ff6915137a600dd9d07711a8022c2fbf569aada2721ed9dab485652e763/hou-0.1.0.tar.gz", hash = "sha256:436e72031404266bd804a9dd57b2bc845614a32b5ab5a71f38bf53076833a5b7", size = 1033, upload-time = "2024-11-05T00:14:55.843Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/16/22/b853c4cf3f59e2b0f631eb8c52573578922a0d38454ccb36ae684158559d/hou-0.1.0-py3-none-any.whl", hash = "sha256:3d263496a641d3cc68dcef15146cddbdefe2dcbb2e70c1b8ef6b93e282fca3e9", size = 1286, upload-time = "2024-11-05T00:14:54.392Z" },
+]
+
+[[package]]
 name = "hou-aibridge"
 version = "0.1.0"
 source = { editable = "." }
@@ -865,6 +874,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "sqlite-vec" },
     { name = "uvicorn" },
+    { name = "zabob-common" },
 ]
 
 [package.metadata]
@@ -882,6 +892,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "sqlite-vec", specifier = ">=0.1.7a2" },
     { name = "uvicorn", specifier = ">=0.34.2" },
+    { name = "zabob-common", editable = "../houdini/zcommon" },
 ]
 
 [package.metadata.requires-dev]
@@ -892,3 +903,14 @@ dev = [
     { name = "semver", specifier = ">=3.0.4" },
     { name = "tomlkit", specifier = ">=0.13.2" },
 ]
+
+[[package]]
+name = "zabob-common"
+version = "0.1.0"
+source = { editable = "../houdini/zcommon" }
+dependencies = [
+    { name = "hou" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "hou", specifier = ">=0.1.0" }]

@@ -11,6 +11,7 @@ from zabob.common.common_paths import (
     ZABOB_OUT_DIR,
     ZABOB_HOUDINI_DATA
 )
+from zabob.common.timer import timer
 
 __all__ = (
     "ZABOB_COMMON_DIR",
@@ -20,4 +21,5 @@ __all__ = (
     "ZABOB_HOME_DIR",
     "ZABOB_OUT_DIR",
     "ZABOB_HOUDINI_DATA",
+    "timer"
 )

@@ -12,7 +12,7 @@ wheels = [
 ]
 
 [[package]]
-name = "zcommon"
+name = "zabob-common"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

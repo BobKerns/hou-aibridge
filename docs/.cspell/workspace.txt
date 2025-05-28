@@ -66,6 +66,7 @@ fbxexportpreset
 fontconfig
 furtoolutils
 gasresizedynamic
+getdlopenflags
 gplay
 groomingradial
 happrentice
@@ -247,6 +248,7 @@ sceneviewerhooks
 scrapy
 sdata
 sdist
+setdlopenflags
 setuptools
 shaderhda
 shadingutils
@@ -308,5 +310,6 @@ wscript
 xfixes
 xinerama
 yarnrc
+Ylibs
 Zabob
 zcommon

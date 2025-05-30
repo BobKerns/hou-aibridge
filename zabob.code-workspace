@@ -39,6 +39,9 @@
         {
             "name": "docs",
             "path": "docs"
+        },
+        {
+            "path": "out"
         }
     ],
     "settings": {
@@ -49,6 +52,7 @@
             "**/node_modules": true,
             "**/dist": true,
             "**/out": true,
+            "out/**": true,
             ".vscode-test": true,
             ".vscode-test-insiders": true,
             "build": true,
@@ -157,7 +161,6 @@
             "houdini/hdas/": true,
             "houdini/zcommon/": true,
             "dist": true,
-            "out": true,
             "node_modules": true,
             "zabob-modules/": true,
             "docs/": true,
@@ -240,9 +243,9 @@
             }
         ],
         "python.analysis.extraPaths": [
-            "${workspaceFolder}/zabob-modules/src",
-            "${workspaceFolder}/mcp-server/src",
-            "${workspaceFolder}/houdini/zcommon/src"
+            "${workspaceFolder:zabob-modules}/src",
+            "${workspaceFolder:mcp-server}/src",
+            "${workspaceFolder:zcommon}/src"
         ],
         "python.terminal.activateEnvironment": true,
         "python.terminal.activateEnvInCurrentTerminal": true,

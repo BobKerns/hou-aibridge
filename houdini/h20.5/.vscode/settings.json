@@ -22,11 +22,5 @@
         "#*": true,
         "*#": true,
         ".venv/**/test*/**": true
-    },
-    "python.analysis.extraPaths": [
-            "${workspaceFolder:zabob-modules}/src",
-            "${workspaceFolder:mcp-server}/src",
-            "${workspaceFolder:zcommon}/src",
-        "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/houdini/python3.11libs"
-    ]
+    }
 }

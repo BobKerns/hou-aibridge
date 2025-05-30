@@ -1,44 +1,6 @@
 '''
 Routines to extract static data from Houdini 20.5.
 '''
-#def setup_houdini_env():
-#    """More complete Houdini environment setup"""
-#    hfs = "/Applications/Houdini/Houdini20.5.584"
-#    os.environ["HFS"] = hfs
-#    os.environ["H"] = f"{hfs}/Frameworks/Houdini.framework/Versions/20.5/Resources"
-#    os.environ["HB"] = f"{hfs}/bin"
-#    os.environ["HDSO"] = f"{hfs}/Frameworks/Houdini.framework/Libraries"
-#    os.environ["HD"] = f"{hfs}/demo"
-#    os.environ["HH"] = f"{hfs}/houdini"
-#    os.environ["HHC"] = f"{hfs}/toolkit/include"
-#    os.environ["HT"] = f"{hfs}/toolkit"
-#    os.environ["HSB"] = f"{hfs}/toolkit/include/SIM/SIM_Solver.h"
-#
-#    # Library path is critical
-#    dyld_path = os.environ.get("DYLD_LIBRARY_PATH", "")
-#    os.environ["DYLD_LIBRARY_PATH"] = f"{hfs}/Frameworks/Houdini.framework/Libraries:{dyld_path}"
-#
-#    # Add to Python path
-#    houdini_path = f"{hfs}/Frameworks/Houdini.framework/Versions/20.5/Resources/houdini/python3.11libs"
-#    if houdini_path not in sys.path:
-#        sys.path.insert(0, houdini_path)
-#
-# import ctypes
-# import os
-#
-# hfs = "/Applications/Houdini/Houdini20.5.584"
-# lib_path = f"{hfs}/Frameworks/Houdini.framework/Libraries"
-#
-# # Load core libraries in the right order
-# ctypes.CDLL(f"{lib_path}/libHoudiniUI.dylib", ctypes.RTLD_GLOBAL)
-# ctypes.CDLL(f"{lib_path}/libHoudiniOPZ.dylib", ctypes.RTLD_GLOBAL)
-# ctypes.CDLL(f"{lib_path}/libHoudiniOP3.dylib", ctypes.RTLD_GLOBAL)
-# ctypes.CDLL(f"{lib_path}/libHoudiniOP2.dylib", ctypes.RTLD_GLOBAL)
-# ctypes.CDLL(f"{lib_path}/libHoudiniOP1.dylib", ctypes.RTLD_GLOBAL)
-# ctypes.CDLL(f"{lib_path}/libHoudiniSIM.dylib", ctypes.RTLD_GLOBAL)
-# ctypes.CDLL(f"{lib_path}/libHoudiniGEO.dylib", ctypes.RTLD_GLOBAL)
-#
-# setup_houdini_env()
 
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -59,14 +21,13 @@ import sqlite3
 import click
 from semver import Version
 
-import zabob.common.zhou
-from zabob.common.timer import timer
 
 import hou
 
-n = hou.node('/obj')
-
+from zabob.common.timer import timer
+from zabob.common.common_utils import environment
 from zabob.common.common_paths import ZABOB_HOUDINI_DATA, ZABOB_OUT_DIR
+
 
 class EntryType(StrEnum):
     """
@@ -82,24 +43,6 @@ class EntryType(StrEnum):
     ATTRIBUTE = 'attribute'
     ENUM_TYPE = 'EnumType'
 
-@contextmanager
-def environ(**kwargs: str):
-    """
-    Context manager to temporarily set environment variables.
-    Args:
-        **kwargs: Environment variables to set.
-    Yields:
-        None
-    """
-    old_environ = dict(os.environ)
-    kwargs = {k: str(v) for k, v in kwargs.items()}
-    os.environ.update(kwargs)
-    try:
-        yield os.environ
-    finally:
-        os.environ.clear()
-        os.environ.update(old_environ)
-
 
 def import_or_warn(module_name: str):
     """
@@ -110,7 +53,7 @@ def import_or_warn(module_name: str):
         module: The imported module, or None if the import failed.
     """
     try:
-        with environ(HOUDINI_ENABLE_HOM_EXTENSIONS='1',):
+        with environment(HOUDINI_ENABLE_HOM_EXTENSIONS='1',):
             print(f"Importing {module_name}...")
             yield import_module(module_name)
     except Exception as e:

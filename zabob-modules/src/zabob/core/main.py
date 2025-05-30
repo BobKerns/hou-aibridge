@@ -136,6 +136,7 @@ def browse_docs(file: PathLike|str = ZABOB_ROOT / 'README.md') -> None:
     VERBOSE(f"Opening documentation in browser at http://localhost:{html_port}/{file}")
     webbrowser.open(f'http://localhost:{html_port}/{file}')
 
+main.add_command(hython, name='hython')
 
 __all__ = (
     "main", 'sync_dependencies', 'browse_docs',

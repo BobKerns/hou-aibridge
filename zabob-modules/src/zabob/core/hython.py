@@ -4,7 +4,8 @@ Hython invoker
 
 import os
 from pathlib import Path
-from typing import Any, Literal, Sequence, overload
+from collections.abc import Sequence
+from typing import Any, Literal, overload
 
 import click
 from semver import Version
@@ -13,7 +14,7 @@ from zabob.common import (
     environment,
     ZABOB_ZCOMMON_DIR, ZABOB_HOUDINI_DIR,
     ZABOB_PYCACHE_DIR, ZABOB_ROOT,  get_houdini,
-    run, capture, CompletedProcess, OptionalType, SemVerParamType
+    run, capture, exec_cmd, CompletedProcess, OptionalType, SemVerParamType
 )
 
 
@@ -23,6 +24,7 @@ def run_houdini_script(script_path: Path|str|None=None,
                       module: None=None,
                       version: Version|None=None,
                       capture_output: Literal[False]=False,
+                      exec: bool = False,
                       env_vars: dict[str, str]|None = None,
                       **kwargs) -> CompletedProcess: ...
 @overload
@@ -38,6 +40,7 @@ def run_houdini_script(*args: Path|str,
                        module: str,
                       version: Version|None=None,
                       capture_output: Literal[False]=False,
+                      exec: bool = False,
                       env_vars: dict[str, str]|None = None,
                       **kwargs) -> CompletedProcess: ...
 @overload
@@ -52,6 +55,7 @@ def run_houdini_script(script_path: Path|str|None=None,
                       module: str|None = None,
                       version: Version|None=None,
                       capture_output: bool = False,
+                      exec: bool = False,
                       env_vars: dict[str, str]|None = None,
                       **kwargs) -> CompletedProcess|str:
     """
@@ -66,6 +70,7 @@ def run_houdini_script(script_path: Path|str|None=None,
         version: Houdini version to use
         env_vars: Additional environment variables
         capture_output: Whether to capture stdout/stderr
+        exec: If True, execute the script via execve. Incompatible with `capture_output`.
         **kwargs: Additional arguments for run/capture
     """
     match script_path, module:
@@ -77,6 +82,11 @@ def run_houdini_script(script_path: Path|str|None=None,
             script = (script_path, )
         case _, _:
             script = ('-m', module, '--', script_path)
+
+    match capture_output, exec:
+        case True, True:
+            raise ValueError("Cannot use capture_output with exec=True.")
+
     # Get Houdini installation
     houdini = get_houdini(version)
 
@@ -95,10 +105,15 @@ def run_houdini_script(script_path: Path|str|None=None,
     with environment(PYTHONPATH=os.pathsep.join(str(p) for p in paths),
                     PYTHONPYCACHEPREFIX=str(pycache_dir),
                     **(env_vars or {})):
+        if exec:
+            return exec_cmd(houdini.hython, *script, *args,
+                            **kwargs)
         if capture_output:
-            return capture(houdini.hython, script_path, *args, **kwargs)
+            return capture(houdini.hython, *script, *args,
+                           **kwargs)
         else:
-            return run(houdini.hython, *script, *args, **kwargs)
+            return run(houdini.hython, *script, *args,
+                       *kwargs)
 
 @ click.command(
     name='hython',

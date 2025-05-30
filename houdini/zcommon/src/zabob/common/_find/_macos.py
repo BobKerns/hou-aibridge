@@ -9,7 +9,7 @@ import re
 
 from semver import Version
 
-from zabob._find.types import (
+from zabob.common._find.types import (
     HoudiniInstall,
     _get_houdini_version,
     _group_by_major_minor,

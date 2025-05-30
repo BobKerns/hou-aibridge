@@ -14,12 +14,14 @@ from typing import Any, TYPE_CHECKING
 from pathlib import Path
 import os
 import subprocess
+# For re-export for consistency
+from subprocess import CompletedProcess
 
 import psutil
 if TYPE_CHECKING:
     from subprocess import _FILE
 
-from zabob.core.utils import DEBUG
+from zabob.common.common_utils import DEBUG
 
 def run(*cmds: Any,
         cwd: os.PathLike|str|None=None,
@@ -128,3 +130,11 @@ def check_pid(pid: int|None):
     with suppress(Exception):
         return psutil.pid_exists(pid)
     return False
+
+__all__ = (
+    "run",
+    "capture",
+    "spawn",
+    "check_pid",
+    "CompletedProcess",
+)

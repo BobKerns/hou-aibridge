@@ -3,11 +3,11 @@ Find where Houdini is hiding on Linux
 '''
 
 from collections.abc import Iterable
+from contextlib import suppress
 from pathlib import Path
 
 from semver import Version
-from zabob._find._macos import suppress
-from zabob._find.types import (
+from zabob.common._find.types import (
     HoudiniInstall,
     _get_houdini_version, _group_by_major_minor,
     _parse_pyversion, _version,

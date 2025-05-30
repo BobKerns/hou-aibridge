@@ -18,54 +18,7 @@ from click import ParamType
 from semver import Version
 
 from zabob.core.paths import ZABOB_ROOT
-
-
-class Level(StrEnum):
-    """
-    Enum for logging levels. Each level acts both as a string and as a callable.
-
-    Calling `INFO("message")` will print the message if the current logging level
-    is `INFO` or more verbose. The levels are ordered from most verbose to least
-    verbose. The default level is `INFO`. `DEBUG` will print all messages, while
-    `SILENT` will suppress all output except for explicit calls to `SILENT`.
-    """
-    DEBUG = "DEBUG"
-    VERBOSE = "VERBOSE"
-    INFO = "INFO"
-    QUIET = "QUIET"
-    SILENT = "SILENT"
-
-    level: 'Level'
-
-    @property
-    def enabled(self) -> bool:
-        """
-        Check if the current logging level is enabled.
-        """
-        return LEVELS.index(self) >= LEVELS.index(Level.level)
-
-    def __call__(self, message: str) -> None:
-        """
-        Output a message at the specified logging level.
-        """
-        if self.enabled:
-            # Only print the message if the current logging level is
-            # at least as verbose as the message level.
-            print(message)
-
-
-Level.level = Level.INFO
-
-LEVELS: tuple[Level, ...] = tuple(Level.__members__.values())
-'''
-Ordered list of logging levels, fro the most verbose to the least verbose.
-'''
-
-DEBUG: Final[Literal[Level.DEBUG]] = Level.DEBUG
-VERBOSE: Final[Literal[Level.VERBOSE]] = Level.VERBOSE
-INFO: Final[Literal[Level.INFO]] = Level.INFO
-QUIET: Final[Literal[Level.QUIET]] = Level.QUIET
-SILENT: Final[Literal[Level.SILENT]] = Level.SILENT
+from zabob.common.common_utils import DEBUG, QUIET, VERBOSE, Level
 
 
 def repo_relative(f: PathLike|str) -> Path:
@@ -102,7 +55,7 @@ def same_commit(files: Sequence[PathLike|str]) -> bool:
         bool: True if all files are at the same commit, False otherwise.
     '''
 
-    from zabob.core.subproc import capture
+    from zabob.common.subproc import capture
     git = find_git()
     matches  = capture(git, 'log', '--name-only', '-n', 1, '--format=', '--',
                        *(repo_relative(f) for f in files)).strip()
@@ -117,7 +70,7 @@ def is_clean(file: PathLike|str) -> bool:
         bool: True if the file is clean, False otherwise.
     '''
 
-    from zabob.core.subproc import capture
+    from zabob.common.subproc import capture
     git = find_git()
     matches  = capture(git, 'status', '--porcelain', '--', repo_relative(file))
     return not matches.strip()
@@ -148,8 +101,6 @@ def needs_update(*files: PathLike|str) -> bool:
         return True
     DEBUG("Files are clean, no need to update.")
     return False
-
-
 
 
 def flatten_tree(*dirs: Path):
@@ -200,158 +151,3 @@ def rmdir(*dirs: Path,
         retries -= 1
         sleep(0.5)
 
-
-class SemVerParamType(ParamType):
-    """Provide a custom click type for semantic versions.
-
-    This custom click type provides validity checks for semantic versions.
-    """
-    name = 'semver'
-    _min_parts: int = 3
-    _max_parts: int = 3
-
-    _min_version: Version|None = None
-    _max_version: Version|None = None
-
-    def __init__(self,
-                 min_parts: int = 3,
-                 max_parts: int = 3,
-                 min_version: Version|None = None,
-                 max_version: Version|None = None,
-    ) -> None:
-        """
-        Initialize the SemVerParamType.
-
-        :param min_parts: If True, the minor version is optional.
-        :type min_parts: int
-        :param max_parts: If True, the patch version is optional.
-        :type max_parts: int
-        :param min_version: The minimum version allowed.
-        :type min_version: semver.Version|None
-        :param max_version: The maximum version allowed.
-        :type max_version: semver.Version|None
-        """
-        super().__init__()
-        self._min_parts = min(min_parts, max_parts)
-        self._max_parts = max(max_parts, min_parts)
-        self._min_version = min_version
-        self._max_version = max_version
-
-
-    def convert(self, value, param, ctx) -> Version:
-        """Converts the value from string into semver type.
-
-        This method takes a string and check if this string belongs to semantic version definition.
-        If the test is passed the value will be returned. If not a error message will be prompted.
-
-        :param value: the value passed
-        :type value: str
-        :param param: the parameter that we declared
-        :type param: str
-        :param ctx: context of the command
-        :type ctx: str
-        :return: the passed value as a checked semver
-        :rtype: str
-        """
-        parts = value.count('.') + 1
-        if parts > self._max_parts:
-            segments = ('major', 'minor', 'patch', 'prerelease', 'build')
-            expect = '.'.join(segments[:self._max_parts])
-            self.fail(f"Not a valid version, expected at most {expect}", param, ctx)
-        elif parts < self._min_parts:
-            segments = ('major', 'minor', 'patch', 'prerelease', 'build')
-            expect = '.'.join(segments[:self._min_parts])
-            self.fail(f"Not a valid version, expected at least {expect}", param, ctx)
-        else:
-            try:
-                result = _version(value)
-                if self._min_version and self._max_version:
-                    if result > self._max_version or result < self._min_version:
-                        self.fail(f"Version {result} is not in range {self._min_version} - {self._max_version}",
-                                  param,
-                                  ctx)
-                if self._min_version and result < self._min_version:
-                    self.fail(f"Version {result} is less than minimum version {self._min_version}",
-                              param,
-                              ctx)
-                if self._max_version and result > self._max_version:
-                    self.fail(f"Version {result} is greater than maximum version {self._max_version}",
-                              param,
-                              ctx)
-                return result
-            except ValueError as e:
-                self.fail('Not a valid version, {0}'.format(str(e)), param, ctx)
-
-
-class OrType(ParamType):
-    """A custom click type that accepts multiple types."""
-    name = 'or_type'
-    _types: tuple[ParamType, ...]
-
-    def __init__(self, *types: ParamType) -> None:
-        """
-        Initialize the OrType with multiple types.
-
-        :param types: The types to accept.
-        """
-        super().__init__()
-        self._types = types
-
-    def convert(self, value, param, ctx):
-        """Convert the value to one of the accepted types."""
-        for t in self._types:
-            try:
-                return t.convert(value, param, ctx)
-            except Exception:
-                continue
-        self.fail(f"Value '{value}' does not match any of the accepted types: {self._types}",
-                  param,
-                  ctx)
-
-class NoneType(ParamType):
-    """A custom click type that accepts None."""
-    name = 'none_type'
-
-    def convert(self, value, param, ctx):
-        """Convert the value to None."""
-        if value is None or value.lower() == 'none':
-            return None
-        self.fail(f"Value '{value}' is not None", param, ctx)
-
-
-class OptionalType(ParamType):
-    """A custom click type that accepts a value or None."""
-    name: str
-    _type: ParamType
-    def __init__(self, type: ParamType) -> None:
-        """
-        Initialize the OptionalType with a specific type.
-
-        :param type: The type to accept.
-        """
-        super().__init__()
-        self._type = type
-        self.name = f'Optional[{type.name}]'
-
-    def convert(self, value, param, ctx):
-        """Convert the value to None if it is 'None' or empty."""
-        if value is None or value.lower() == 'none' or value == '':
-            return None
-        if hasattr(self._type, 'convert'):
-            # If value is already a ParamType, use its convert method
-            return self._type.convert(value, param, ctx)
-        return self._type(value)
-
-def _version(version: Version|str) -> Version:
-    """
-    Convert a version to a semver.Version object.
-
-    Args:
-        version (Version|str): The version to convert.
-
-    Returns:
-        Version: The converted version.
-    """
-    if isinstance(version, Version):
-        return version
-    return Version.parse(version, optional_minor_and_patch=True)

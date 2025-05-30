@@ -7,13 +7,7 @@ import json
 from contextlib import suppress
 
 from zabob.core.utils import (
-    Level,
-    LEVELS,
-    DEBUG,
-    VERBOSE,
-    INFO,
-    QUIET,
-    SILENT,
+    repo_relative, find_git, same_commit, is_clean,
 )
 from zabob.core.paths import (
     ZABOB_MODULES_DIR,
@@ -36,12 +30,6 @@ from zabob.core.paths import (
     ZABOB_BROWSE_PID_FILE,
     ZABOB_BROWSE_LOG_FILE,
 )
-from zabob.core.subproc import (
-    run,
-    capture,
-    spawn,
-    check_pid,
-)
 from zabob.core.main import main
 from zabob.core.update import update
 from zabob.core.setup import setup
@@ -49,9 +37,6 @@ from zabob.core.server import server
 from zabob.core.node import node_group
 from zabob.core.houdini import houdini_commands
 from zabob.core.houdini_versions import cli as houdini_cli
-from zabob.core.find_houdini import (
-    find_houdini_installations, get_houdini,
-)
 
 def version():
     with suppress(ImportError):
@@ -90,17 +75,6 @@ __all__: Final[tuple[str, ...]] = (
     "SUBPROJECTS",
     "ZABOB_DEFAULT_CREDENTIALS",
     "ZABOB_DEFAULT_COMPOSE",
-    "Level",
-    "LEVELS",
-    'run',
-    'capture',
-    'spawn',
-    'check_pid',
-    "DEBUG",
-    "VERBOSE",
-    "INFO",
-    "QUIET",
-    "SILENT",
     "__version__",
     "ZABOB_BROWSE_PORT_FILE",
     "ZABOB_BROWSE_RELOAD_FILE",
@@ -108,5 +82,4 @@ __all__: Final[tuple[str, ...]] = (
     "ZABOB_BROWSE_LOG_FILE",
     'update', 'server', 'node_group',
     'main', 'setup', 'houdini_commands', 'houdini_cli',
-    'find_houdini_installations', 'get_houdini',
 )

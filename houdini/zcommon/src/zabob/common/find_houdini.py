@@ -14,16 +14,16 @@ from semver import Version
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import shared types and utilities
-from zabob.core.utils import OptionalType, SemVerParamType
-from zabob._find.types import HoudiniInstall, _version
+from zabob.common.click_types import OptionalType, SemVerParamType
+from zabob.common._find.types import HoudiniInstall, _version
 
 # Conditionally import the platform-specific module
 if sys.platform == 'linux':
-    from zabob._find._linux import find_installations # type: ignore
+    from zabob.common._find._linux import find_installations # type: ignore
 elif sys.platform == 'darwin':
-    from zabob._find._macos import find_installations # type: ignore
+    from zabob.common._find._macos import find_installations # type: ignore
 elif sys.platform == 'win32':
-    from zabob._find._windows import find_installations # type: ignore
+    from zabob.common._find._windows import find_installations # type: ignore
 else:
     def find_installations():
         """Placeholder for unsupported platforms."""
@@ -40,7 +40,7 @@ def find_houdini_installations() -> dict[Version, HoudiniInstall]:
     return find_installations()
 
 
-def get_houdini(version: Version|None = None) -> HoudiniInstall:
+def get_houdini(version: Version|str|None = None) -> HoudiniInstall:
     """
     Get a specific Houdini installation, or latest if version is None.
 
@@ -58,17 +58,23 @@ def get_houdini(version: Version|None = None) -> HoudiniInstall:
     if not installations:
         raise FileNotFoundError("No Houdini installations found on this system")
 
-    if version is None:
-        # Return the latest version (last in sorted dictionary)
-        return max(installations.values(), key=lambda x: x.houdini_version)
-
-    # Try exact match
+    match version:
+        case None:
+            # Return the latest version (last in sorted dictionary)
+            return max(installations.values(), key=lambda x: x.houdini_version)
+        case str():
+            # Convert string version to semver.Version
+            v = _version(version)
+        case Version():
+            # Already a semver.Version object
+            v = version
+        case _:
+            raise ValueError("Version must be a string or semver.Version object")
+    # installation includes both full version and major.minor versions
     v = _version(version)
     if v in installations:
         return installations[v]
-
     raise FileNotFoundError(f"No Houdini installation matching version {v} found")
-
 
 
 @click.command()

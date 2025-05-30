@@ -4,6 +4,7 @@ Find Houdini hiding on Windows
 
 from collections import defaultdict
 from collections.abc import Iterable
+from contextlib import suppress
 from pathlib import Path
 from itertools import chain
 from functools import reduce
@@ -11,12 +12,11 @@ import os
 
 from semver import Version
 
-from zabob._find._macos import suppress
-from zabob._find.types import (
+from zabob.common._find.types import (
     HoudiniInstall,
     _get_houdini_version, _group_by_major_minor, _if_exists, _parse_pyversion,
 )
-from zabob._find.types import _get_major_minor
+from zabob.common._find.types import _get_major_minor
 
 def _by_regkey():
     try:

@@ -17,7 +17,7 @@ from zabob.core.paths import (
     ZABOB_BROWSE_PORT_FILE, ZABOB_ROOT, ZABOB_BROWSE_RELOAD_FILE,
 )
 from zabob.core.utils import DEBUG
-from zabob.core.subproc import check_pid, spawn
+from zabob.common.subproc import check_pid, spawn
 from zabob.core.main import main
 
 

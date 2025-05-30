@@ -10,7 +10,7 @@ import sys
 import click
 
 from zabob.core.paths import ZABOB_BIN_DIR, ZABOB_ROOT, SUBPROJECTS
-from zabob.core.subproc import run
+from zabob.common.subproc import run
 from zabob.core.main import main
 
 

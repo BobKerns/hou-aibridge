@@ -16,3 +16,4 @@ ZABOB_OUT_DIR: Path = ZABOB_ROOT / "out"
 
 ZABOB_HOME_DIR: Path = Path.home() / ".zabob"
 ZABOB_HOUDINI_DATA: Path = ZABOB_HOME_DIR / "houdini"
+ZABOB_PYCACHE_DIR: Path = ZABOB_HOME_DIR / "pycache"

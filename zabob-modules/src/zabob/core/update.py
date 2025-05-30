@@ -16,7 +16,7 @@ from tomlkit.toml_file import TOMLFile
 from zabob.core.utils import needs_update, VERBOSE
 from zabob.core.main import main, sync_dependencies
 from zabob.core.paths import ZABOB＿IMAGES_DIR, ZABOB_ROOT
-from zabob.core.subproc import run
+from zabob.common.subproc import run
 
 @main.group(name='update')
 def update() -> None:

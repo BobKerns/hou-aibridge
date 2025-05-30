@@ -27,6 +27,10 @@ import hou
 from zabob.common.timer import timer
 from zabob.common.common_utils import environment
 from zabob.common.common_paths import ZABOB_HOUDINI_DATA, ZABOB_OUT_DIR
+from zabob.common import InfiniteProxy
+
+if getattr(hou, 'ui', None) is None:
+    hou.ui = InfiniteProxy('hou')
 
 
 class EntryType(StrEnum):
@@ -92,7 +96,7 @@ MODULES = [
         # 'generateHDAToolsForOTL', # EXITS!
         'groom', 'groomingradial', 'halo', 'handleutils', 'hdefereval',
         # 'hjsonrpc',
-        'hotkeys', 'hotkeys_prototype', 'houcportion',
+        'hotkeys', 'hotkeys_prototype', 'houcppportion',
         'houdiniengineutils', 'houdinihelp', 'houdiniinternals',
         'houdiniInterpreter', 'houxmlrpc', 'hqrop', 'hscp',
         'husd', 'husdui', 'husktrace', 'hutil', 'hwebserver', 'images2gif',
@@ -622,5 +626,4 @@ def main(db: Path):
     print(f"Static data saved to {db}")
 
 if __name__ == "__main__":
-
     main()

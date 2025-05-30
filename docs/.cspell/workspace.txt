@@ -77,7 +77,7 @@ heducation
 hengine
 hjsonrpc
 hnac
-houcportion
+houcppportion
 houdinicore
 houdiniengineutils
 houdinifx

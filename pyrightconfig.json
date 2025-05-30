@@ -3,7 +3,8 @@
     "zabob-modules/src",
     "mcp-server/src",
     "houdini/zcommon/src",
-    "houdini/h20.5/src"
+    "houdini/h20.5/src",
+    "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/houdini/python3.11libs"
   ],
   "exclude": [
     "**/node_modules",

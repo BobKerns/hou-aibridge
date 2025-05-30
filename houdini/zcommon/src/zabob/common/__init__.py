@@ -18,6 +18,7 @@ from zabob.common.subproc import (
     capture,
     spawn,
     check_pid,
+    exec_cmd,
     CompletedProcess,
 )
 from zabob.common.click_types import (
@@ -33,6 +34,7 @@ from zabob.common.find_houdini import (
     get_houdini,
     HoudiniInstall,
 )
+from zabob.common.infinite_proxy import InfiniteProxy
 
 __all__ = (
     "ZABOB_COMMON_DIR",
@@ -48,6 +50,7 @@ __all__ = (
     "capture",
     "spawn",
     "check_pid",
+    "exec_cmd",
     "CompletedProcess",
     "OptionalType",
     "SemVerParamType",
@@ -65,4 +68,5 @@ __all__ = (
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",
+    "InfiniteProxy",
 )

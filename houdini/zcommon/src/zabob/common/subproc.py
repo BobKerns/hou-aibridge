@@ -10,7 +10,7 @@ the context of a command line interface (CLI).
 
 from contextlib import suppress
 from shutil import which
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Never
 from pathlib import Path
 import os
 import subprocess
@@ -52,6 +52,27 @@ def run(*cmds: Any,
         raise RuntimeError(f"Command exited with return code {result.returncode}.")
     DEBUG("Command completed successfully.")
     return result
+
+def exec_cmd(*cmds: Any,
+        cwd: os.PathLike|str|None=None,
+        env: dict[str,str]|None=None,
+        shell: bool=False,
+        stdout: '_FILE'=None,
+        stderr: '_FILE'=None,
+    ) -> Never:
+    "Run the given command, replacing this process."
+    cmd = [str(arg) for arg in cmds]
+    cmd[0] = which(cmd[0]) or cmd[0]
+    cwd = Path(cwd or Path.cwd())
+    DEBUG(f"{cwd.name}> {' '.join(cmd)}")
+    if cwd:
+        DEBUG(f"Working directory: {cwd}")
+    env = env or os.environ.copy()
+    if shell:
+        DEBUG("Running command in shell mode.")
+    else:
+        DEBUG("Running command in non-shell mode.")
+    os.execve(cmd[0], cmd, env)  #
 
 def capture(*cmds: Any,
             env: dict[str,str]|None=None,
@@ -136,5 +157,6 @@ __all__ = (
     "capture",
     "spawn",
     "check_pid",
+    "exec_cmd",
     "CompletedProcess",
 )

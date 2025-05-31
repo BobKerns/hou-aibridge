@@ -105,6 +105,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
         )
         release = f'{python_version.major}.{python_version.minor}'
         exec_prefix = frameworks / 'Python.framework' / release
+        hhdir = hfs_dir / 'houdini'
         # We won't reject python versions <3.11, but we can't use them.
         # We can still report them.
         yield HoudiniInstall(
@@ -115,6 +116,11 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             exec_prefix=exec_prefix,
             hython=hython_path,
             hfs_dir=hfs_dir,
-            lib_dir=lib_dir,
+            python_libs=lib_dir,
+            hh_dir=hhdir,
+            hdso_libs= hfs_dir / '../Libraries',
+            sbin_dir=hhdir / 'sbin',
+            toolkit_dir=hhdir / 'toolkit',
+            config_dir=hfs_dir / 'config',
             app_paths=app_paths,
         )

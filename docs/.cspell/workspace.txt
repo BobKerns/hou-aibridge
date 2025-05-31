@@ -53,6 +53,7 @@ dopwiretoolutils
 dotenv
 dragdroputils
 drivertoolutils
+dsolib
 envrc
 esbuild
 eslintcache
@@ -74,8 +75,10 @@ happrentice
 hconfig
 hdas
 hdefereval
+hdso
 heducation
 hengine
+hhdir
 hjsonrpc
 hnac
 houcppportion
@@ -251,6 +254,7 @@ sceneviewerhooks
 scrapy
 sdata
 sdist
+sesinetd
 setdlopenflags
 setuptools
 shaderhda
@@ -275,8 +279,8 @@ stagemanager
 statehud
 stroketoolutils
 stylelintcache
-subprojects
 subproject
+subprojects
 SUBPROJECTS
 taskgraphtable
 taskgraphtablepanel

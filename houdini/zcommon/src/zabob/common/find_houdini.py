@@ -103,7 +103,12 @@ def show_houdini(version: Version|None=None):
                     'bin_dir',
                     'hython',
                     'hfs_dir',
-                    'lib_dir',
+                    'python_libs',
+                    'hdso_libs',
+                    'hh_dir',
+                    'config_dir',
+                    'toolkit_dir',
+                    'sbin_dir',
                 ):
 
             title = key.replace('_', ' ').title()

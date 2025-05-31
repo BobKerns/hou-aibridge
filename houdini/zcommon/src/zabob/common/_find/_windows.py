@@ -5,6 +5,7 @@ Find Houdini hiding on Windows
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
+from importlib.util import decode_source
 from pathlib import Path
 from itertools import chain
 from functools import reduce
@@ -121,6 +122,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
         }
 
         # Create installation entry
+        # TODO: Windows install dir layout is just a guess for now
         yield HoudiniInstall(
             houdini_version=houdini_version,
             python_version=python_version,
@@ -129,6 +131,11 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             hfs_dir=version_dir,
             bin_dir=bin_dir,
             hython=hython_path,
-            lib_dir=lib_dir,
+            python_libs=lib_dir,
+            hdso_libs= version_dir / 'dsolib',
+            hh_dir=version_dir / 'houdini',
+            toolkit_dir=version_dir / 'toolkit',
+            config_dir=version_dir / 'config',
+            sbin_dir=version_dir / 'sbin',
             app_paths=app_paths,
         )

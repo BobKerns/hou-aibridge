@@ -13,12 +13,29 @@ _RE_DIR_NAME = re .compile (r'^(?:Houdini ?)(\d+\.\d+(?:\.\d+)?)$', re.IGNORECAS
 class HoudiniInstall:
     """Information about a Houdini installation."""
     houdini_version: Version
+    'The version of this Houdini installation, e.g., 20.5.584'
     python_version: Version
+    'The version of python used by this houdini installation.'
     version_dir: Path
+    'The root of the houdini installation, specific to version'
     bin_dir: Path
-    hfs_dir: Path # Houdini's built-in types, scripts, extensions, and more.
+    "${HB}: Houdini's bin directory, containing executables like houdini, hython, etc."
+    hfs_dir: Path
+    "${JFS}: Houdini's built-in types, scripts, extensions, and more."
     hython: Path
-    lib_dir: Path # Python library directory
+    'Path to the hython executable'
+    hdso_libs: Path
+    "${HDSO}: Houdini's shared libraries directory, containing .so/.dynld/.dll files"
+    python_libs: Path
+    '${HHP}: # Houdini Python library directory'
+    hh_dir: Path
+    '${HH}'
+    config_dir: Path
+    '${HHC}'
+    toolkit_dir: Path
+    '${HHT}: Houdini toolkit directory'
+    sbin_dir: Path
+    "${HHS}: Houdini's sbin directory, containing system binaries like sesinetd"
     exec_prefix: Path  # Python executable prefix directory
     app_paths: dict[str, Path] # application installation directories
 

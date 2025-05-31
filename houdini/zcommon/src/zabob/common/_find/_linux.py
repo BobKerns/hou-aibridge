@@ -61,6 +61,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
         if python_version.major < 3:
             return
 
+
         # Create the installation entry
         yield HoudiniInstall(
             houdini_version=houdini_version,
@@ -68,8 +69,13 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             version_dir=version_dir,
             exec_prefix=version_dir, #TODO: Verify this
             hfs_dir=version_dir,
+            hdso_libs= hfs_dir / 'dsolib',
             bin_dir=bin_dir,
+            hh_dir=hfs_dir / 'houdini',
+            toolkit_dir=hfs_dir / 'toolkit',
+            config_dir=hfs_dir / 'config',
+            sbin_dir=hfs_dir / 'sbin',
             hython=hython_path,
-            lib_dir=python_lib,
+            python_libs=python_lib,
             app_paths={},
         )

@@ -35,6 +35,11 @@ from zabob.common.find_houdini import (
     HoudiniInstall,
 )
 from zabob.common.infinite_proxy import InfiniteProxy
+from zabob.common.analyze_modules import (
+    EntryType, HoudiniStaticData, ModuleData,
+    import_or_warn, get_static_data_db_path,
+    get_static_module_data, save_static_data_to_db,
+)
 
 __all__ = (
     "ZABOB_COMMON_DIR",
@@ -69,4 +74,11 @@ __all__ = (
     "get_houdini",
     "HoudiniInstall",
     "InfiniteProxy",
+    "EntryType",
+    "ModuleData",
+    "HoudiniStaticData",
+    "import_or_warn",
+    "get_static_data_db_path",
+    "get_static_module_data",
+    "save_static_data_to_db",
 )

@@ -113,7 +113,7 @@ def run_houdini_script(script_path: Path|str|None=None,
                            **kwargs)
         else:
             return run(houdini.hython, *script, *args,
-                       *kwargs)
+                       **kwargs)
 
 @ click.command(
     name='hython',

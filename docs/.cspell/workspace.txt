@@ -275,7 +275,7 @@ stagemanager
 statehud
 stroketoolutils
 stylelintcache
-subprojeccts
+subprojects
 subproject
 SUBPROJECTS
 taskgraphtable

@@ -13,4 +13,4 @@ This is managed in the[workspace settings](../zabob.code-workspace) via the `fil
             "houdini/h*.*/": true,
 ```
 
-The [houdini/common](common/README.nd)
+The [houdini/common](zcommon/README.md)

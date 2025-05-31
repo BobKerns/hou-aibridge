@@ -33,6 +33,6 @@ The spelling dictionary is stored in [docs/.cspell/workspace.txt], rather than t
 
 The settings appear in the UI like this. User settings are personal, unshared changes. Workspace settings apply to the entire workspace (and are stored in [zabob.code-workspace](zabob.code-workspace), as described above). The "Folder" settings drop-down selects the per-project settings.
 
-## Referencing subprojects in `pyproject.py` files
+## Referencing subprojects in `pyproject.toml` files
 
 Here's an explanation of [when to use dot notation, hyphens, or underscores](PYPROJECT-TOML.md)

@@ -313,7 +313,7 @@ dist
 
 Thumbs.db
 
-# By default, hide dotfiles, then whihtelist the ones we want.
+# By default, hide dotfiles, then whitelist the ones we want.
 .*
 !.npmrc
 !.python-version

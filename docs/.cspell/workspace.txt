@@ -307,7 +307,7 @@ vscodeignore
 vscpp
 vuepress
 webassets
-whihtelist
+whitelist
 wikipages
 wscript
 xfixes

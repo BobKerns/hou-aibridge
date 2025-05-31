@@ -18,10 +18,10 @@ from semver import Version
 from zabob.common._find.types import HoudiniInstall
 from zabob.common.find_houdini import get_houdini, list_houdini_installations, show_houdini
 from zabob.common.subproc import run
+from zabob.common.hython import hython
 from zabob.core.houdini_versions import cli as houdini_cli, download_houdini_installer
 from zabob.core.main import main
 from zabob.core.paths import HOUDINI_PROJECTS, ZABOB_HOUDINI_DIR
-from zabob.core.hython import hython
 
 @main.group('houdini')
 def houdini_commands():

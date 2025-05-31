@@ -1,3 +1,12 @@
+#!/usr/bin/env uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "click",
+#     "psutil",
+#     "semver",
+# ]
+# ///
 '''
 Hython invoker
 '''
@@ -5,18 +14,29 @@ Hython invoker
 import os
 from pathlib import Path
 from collections.abc import Sequence
+import sys
 from typing import Any, Literal, overload
 
 import click
 from semver import Version
 
-from zabob.common import (
-    environment,
-    ZABOB_ZCOMMON_DIR, ZABOB_HOUDINI_DIR,
-    ZABOB_PYCACHE_DIR, ZABOB_ROOT,  get_houdini,
-    run, capture, exec_cmd, CompletedProcess, OptionalType, SemVerParamType
-)
-
+try:
+    from zabob.common import (
+        environment,
+        ZABOB_ZCOMMON_DIR, ZABOB_HOUDINI_DIR,
+        ZABOB_PYCACHE_DIR, ZABOB_ROOT,  get_houdini,
+        run, capture, exec_cmd, CompletedProcess, OptionalType, SemVerParamType,
+    )
+except ImportError:
+    script = Path(__file__).resolve()
+    src = script.parent.parent.parent
+    sys.path.insert(0, str(src))
+    from zabob.common import (
+        environment,
+        ZABOB_ZCOMMON_DIR, ZABOB_HOUDINI_DIR,
+        ZABOB_PYCACHE_DIR, ZABOB_ROOT, get_houdini,
+        run, capture, exec_cmd, CompletedProcess, OptionalType, SemVerParamType,
+    )
 
 @overload
 def run_houdini_script(script_path: Path|str|None=None,

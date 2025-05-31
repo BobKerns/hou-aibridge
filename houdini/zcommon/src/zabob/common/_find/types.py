@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
+from typing import Sequence
 from semver import Version
 import re
 
@@ -36,6 +37,10 @@ class HoudiniInstall:
     '${HHT}: Houdini toolkit directory'
     sbin_dir: Path
     "${HHS}: Houdini's sbin directory, containing system binaries like sesinetd"
+    lib_paths: Sequence[Path]
+    'Additional library paths for Houdini, e.g., for plugins or custom libraries'
+    env_path: Sequence[Path]
+    'Additional entries to add to the PATH environment variable'
     exec_prefix: Path  # Python executable prefix directory
     app_paths: dict[str, Path] # application installation directories
 

@@ -95,7 +95,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
 
         # Pick the highest version of Python 3.x libs. We doh't need to ask for the exact
         # version; we can do that later if we need it. Startimg hython is expensive.
-        python_version, lib_dir = max((
+        hy_version, lib_dir = max((
                                 (v, dir)
                                 for dir in hfs_dir.glob('houdini/python*.*libs')
                                 for v in _parse_pyversion(dir)
@@ -103,14 +103,15 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             key=lambda p: p[0],
             default=(Version(0), hfs_dir),
         )
-        release = f'{python_version.major}.{python_version.minor}'
-        exec_prefix = frameworks / 'Python.framework' / release
+        py_release = f'{hy_version.major}.{hy_version.minor}'
+        exec_prefix = frameworks / 'Python.framework' / py_release
         hhdir = hfs_dir / 'houdini'
         # We won't reject python versions <3.11, but we can't use them.
         # We can still report them.
+        libname = f'python{py_release}libs'
         yield HoudiniInstall(
             houdini_version=houdini_version,
-            python_version=python_version,
+            python_version=hy_version,
             version_dir=version_dir,
             bin_dir=bin_dir,
             exec_prefix=exec_prefix,
@@ -123,4 +124,45 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             toolkit_dir=hhdir / 'toolkit',
             config_dir=hfs_dir / 'config',
             app_paths=app_paths,
+            lib_paths= tuple((
+               *(p
+                    for glob in (
+                        f'houdini/{libname}',
+                        f'packages/*/{libname}',
+                        )
+                    for p in hfs_dir.glob(glob)
+                    if p.is_dir
+                ),
+               *(p
+                    for p in (
+                        lib_dir,
+                        lib_dir / 'site-packages',
+                        lib_dir / 'site-packages-forced',
+                        lib_dir / 'site-packages-ui-forced',
+                    )
+                    if p.is_dir()
+               ),
+            )),
+            env_path=tuple(
+                p
+                for p in (
+                        bin_dir,
+                        exec_prefix / 'bin',
+                        hfs_dir / 'toolkit/bin',
+                )
+                if p.is_dir()
+            ),
         )
+
+if __name__ == "__main__":
+    # For testing purposes, we can run this module directly to see the installations found
+    installations = find_installations()
+    for version, install in installations.items():
+        print(f"Found Houdini {version}: {install}")
+        print(f"  Python Version: {install.python_version}")
+        print(f"  HFS Directory: {install.hfs_dir}")
+        print(f"  Bin Directory: {install.bin_dir}")
+        print(f"  Hython Path: {install.hython}")
+        print(f"  App Paths: {install.app_paths}")
+        print(f"  Library Paths: {install.lib_paths}")
+        print(f"  Environment PATH Entries: {install.env_path}")

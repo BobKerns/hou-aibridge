@@ -35,7 +35,8 @@ namespaces = true
 packages = [ "zabob" ]
 package-dir = { "" = "src" }
 
-
+# Using setuptools instead of hatchling for now,
+# due to this issue: https://github.com/pypa/hatch/issues/1977
 # [build-system]
 # requires = ["hatchling"]
 # build-backend = "hatchling.build"

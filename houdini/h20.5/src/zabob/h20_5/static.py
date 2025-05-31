@@ -3,7 +3,6 @@ Routines to extract static data from Houdini 20.5.
 '''
 
 from collections.abc import Generator
-from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from inspect import (
@@ -12,7 +11,6 @@ from inspect import (
 )
 from pathlib import Path
 import sys
-import os
 from typing import Any
 from importlib import import_module
 import builtins
@@ -30,7 +28,9 @@ from zabob.common.common_paths import ZABOB_HOUDINI_DATA, ZABOB_OUT_DIR
 from zabob.common import InfiniteProxy
 
 if getattr(hou, 'ui', None) is None:
-    hou.ui = InfiniteProxy('hou')
+    hou.ui = InfiniteProxy(hou, 'hou.ui')
+if getattr(hou, 'qt', None) is None:
+    hou.qt = InfiniteProxy(hou, 'hou.qt')
 
 
 class EntryType(StrEnum):
@@ -67,6 +67,7 @@ def import_or_warn(module_name: str):
 MODULES = [
     loaded_module
     for m in (
+        'builtins',
         'hou', 'pdg', 'hrpyc', 'soptoolutils', 'canvaseventtypes',
         'viewerstate', 'viewerstate.utils', '_alembic_hom_extensions',
         'pxr', 'husd', 'husd.objtranslator', 'husd.backgroundrenderer',
@@ -76,14 +77,14 @@ MODULES = [
         'PyOpenColorIO', 'autorig', 'bakeanimation', 'baseinfowindow',
         'bvhviewer', 'channelwranglesnippet', 'charactertoolutils',
         'choptoolutils', 'clonecontrol',
-        #'cloud',
+        'cloud',
         'cloudEULA',
-        #'cloudsubmit',
+        'cloudsubmit',
         'cloudtoolutils',
-        # 'colorschemeutils',
-        # 'contextoptions',
+        'colorschemeutils',
+        'contextoptions',
         'cop2toolutils', 'coptoolutils', 'crowds',
-        'crowdstoolutils', 'curveutils', 'defaultstatetools', 'defaulttoolmenu',
+        'crowdstoolutils', 'curveutils', 'defaultstatetools', 'defaulttoolmenus',
         'defaulttools', 'digitalassetsupport', 'displaymessage',
         'dopclothproxy', 'dopclothtoolutils', 'dopfemtoolutils',
         'dopgeofiltertoolutils', 'dopinstance', 'dopparticlefluidtoolutils',
@@ -94,8 +95,8 @@ MODULES = [
         'fbxexportpreset', 'fileutils', 'furtoolutils',
         'gasresizedynamic',
         # 'generateHDAToolsForOTL', # EXITS!
-        'groom', 'groomingradial', 'halo', 'handleutils', 'hdefereval',
-        # 'hjsonrpc',
+        'groom', 'groomingradial', 'haio', 'handleutils', 'hdefereval',
+        'hjsonrpc',
         'hotkeys', 'hotkeys_prototype', 'houcppportion',
         'houdiniengineutils', 'houdinihelp', 'houdiniinternals',
         'houdiniInterpreter', 'houxmlrpc', 'hqrop', 'hscp',
@@ -103,69 +104,68 @@ MODULES = [
         'inlinecpp', 'insertionpointutils', 'introspect',
         'karma_stats', 'keymaputils', 'landmarking', 'layout',
         'lightlinker',  'lightmixer', 'lightstate', 'logviewer',
-        'lopcamutils', 'lopcamandlightutils', 'lopshaderutils',
+        'lopcamutils', 'loplightandcamutils', 'lopshaderutils',
         'loptoolutils', 'loputils', 'lpetags', 'materiallinker',
         'metaexpr', 'modelview', 'mssbuild', 'mtlx2hda', 'mtlx2karma',
         'muscletoolutils', 'mvexportutils',
-        # 'nodegraph',
-        # 'nodegraphalign',
-        # 'nodegraphautoscroll',
-        #'nodegraphbase',
-        # 'nodegraphconnect',
-        # 'nodegraphdisplay',
-        # 'nodegraphdispopts',
-        # 'nodegraphedittext',
-        # 'nodegraphfastfind',
+        'nodegraph',
+        'nodegraphalign',
+        'nodegraphautoscroll',
+        'nodegraphbase',
+        'nodegraphconnect',
+        'nodegraphdisplay',
+        'nodegraphdispopts',
+        'nodegraphedittext',
+        'nodegraphfastfind',
         'nodegraphflags',
-        # 'nodegraphfurutils',
-        # 'nodegraphgestures',
-        # 'nodegraphhotkeys',
-        # 'nodegraphlayout',
-        # 'nodegraphpalettes',
-        # 'nodegraphpopmenus',
+        'nodegraphfurutils',
+        'nodegraphgestures',
+        'nodegraphhotkeys',
+        'nodegraphlayout',
+        'nodegraphpalettes',
+        'nodegraphpopupmenus',
         'nodegraphprefs',
-        # 'nodegraphquicknav',
+        'nodegraphquicknav',
         'nodegraphradialmenu',
-        # 'nodegraphsearch',
-        # 'nodegraphstates',
+        'nodegraphstates',
         'nodegraphrename',
-        # 'nodegraphselectpos',
-        # 'nodegraphselecthooks',
-        # 'nodegraphsnap',
-        # 'nodegraphtitle',
-        # 'nodegraphoptui',
-        # 'nodegraphutils',
-        # 'nodegraphvellumutils',
-        # 'nodegraphview',
+        'nodegraphselectpos',
+        'nodegraphselecthophooks',
+        'nodegraphsnap',
+        'nodegraphtitle',
+        'nodegraphtopui',
+        'nodegraphutils',
+        'nodegraphvellumutils',
+        'nodegraphview',
         'nodesearch', 'nodeselectionutil', 'nodethemes', 'nodeutils',
         'objecttoolutils', 'ocio',
         # 'opnode_sum', # Script, not module.
 
-        # 'package',
+        'package',
         'packfoldermenu', 'parmutils', 'parsepeakuserlog',
         'particletoolutils', 'pdgd', 'pdgdatalayer', 'pdgjob',
-        # 'pdgpathmap',
+        'pdgpathmap',
         'pdgservicepanel',
-        # 'ppdgstateserver',
+        'pdgstateserver',
         'pdgutils',
         # 'perfmon_sum', # Script, not module.
         'pluginutils', 'poselib', 'posespacedeform', 'pyro2',
         'pythonscriptmenu', 'quickplanes', 'radialmenu', 'recipetoolutils',
         'renderstats', 'rendertracker',
-        # 'resourceui',
+        'resourceui',
         'resourceutils',
         'rigtoolutils', 'rmands', 'roptoolutils', 'roputils',
         'sas', 'scenegraphdetails', 'scenegraphlayers',
         'sceneviewerhooks',
-        # 'searchbox',
+        # 'searchbox', # Needs QtApplication before QtPixmap
         'shaderhda',
         'shadingutils', 'shelfutils', 'shopclerks',
         'shoptoolutils', 'simtracker', 'skytoolutils',
         'snippetmenu', 'soptoolutils', 'soputils',
         'stagemanager', 'statehud', 'stateutils',
         'stroketoolutils',
-        # 'taskgraphtable',
-        # 'taskgraphtablepanel',
+        'taskgraphtable',
+        'taskgraphtablepanel',
         'terraintoolutils', 'tilefx', 'toolprompts',
         'toolutils', 'top', 'topnettoolutils', 'toptoolutils',
         'toputils', 'uiutils', 'usdinlinelayermenu',
@@ -178,52 +178,52 @@ MODULES = [
     for loaded_module in import_or_warn(m)
 ]
 
-IGNORE_MODULES: set[str] = {
-    'sys', 'os', 'itertools', 'time', 'xml', 'xmlrpc', 'json',
-    're', 'subprocess', 'threading', 'multiprocessing', 'queue',
-    'logging', 'warnings', 'contextlib', 'functools', 'collections',
-    'collections.abc', 'itertools', 'operator', 'shutil', 'pathlib',
-    'concurrent', 'concurrent.futures', 'asyncio',
-    'socket', 'http', 'urllib',
-    'json.decoder', 'json.encoder', 'json.scanner', 'typing',
-    'sysconfig', 'importlib', 'importlib.util', 'builtins',
-    'math', 'random', 'statistics', 'functools', 'select',
-    'zlib', 'gzip', 'bz2', 'lzma', 'base64', 'hashlib',
-    'pickle', 'copy', 'copyreg', 'marshal', 'struct',
-    'array', 'weakref', 'types', 'codecs', 'encodings',
-    'inspect', 'traceback', 'pprint', 'cProfile', 'profile',
-    'timeit', 'cgitb', 'faulthandler', 'linecache', 'gc',
-    'io', 'numbers', 'shlex', 'heapq', 'ast', 'abc', 'datetime',
-    'csv', 'locale', 'fnmatch', 'glob', 'quopri', 'lxml.etree',
-    'email', 'email.charset', 'email.errors', 'email.encoders',
-    'contextvars', 'reprlib', 'signal', 'ssl', 'errno', 'html',
-    'mimetypes', 'genericpath', 'posixpath', 'stat', 'platform',
-    'binascii', 'resourceutils', 'future.standard_library',
-    'concurrent.futures', 'ctypes', 'ctypes.util', 'ctypes.wintypes',
-    'ctypes.macholib', 'ctypes.macholib.dyld', 'ctypes.macholib.framework',
-    'bisect', 'numpy', 'scipy', 'matplotlib', 'pandas',
-    'scikit-learn', 'sklearn', 'tensorflow', 'torch', 'torchvision',
-    'keras', 'tempfile', 'zipfile', 'tarfile', 'gzip', 'bz2',
-    'zipimport', 'pkgutil', 'PySide2.support', 'atexit', 'fcntl',
-    'lxml', 'markupsafe', 'string', 'mmap', 'posix',  'pwd', 'pyexpat',
-    'readline', 'resource', 'shiboken2', 'keyword', 'simplejson',
-    'decimal', 'termios', 'unicodedata', 'uuid', 'getpass', 'requests',
-    'code', 'poster', 'bookish', 'flask', 'click', 'werkzeug',
-    'dataclasses', 'textwrap', 'difflib', 'hnac', 'secrets', 'selectors',
-    'jinja2', 'tokenize', 'pydoc', 'configparser', 'html.parser',
-    'PySide2.QtWidgets', 'bookish.paths', 'bookish.search', 'urllib.parse',
-    'ipaddress', 'calendar', 'bookish.wiki.langpaths', 'bookish.util',
-    'jinja2.environment', 'jinja2.nodes', 'socketserver', 'codeop',
-    'hutil.Qt.QtWidgets', 'enum', 'pytz', 'xmlrpc.client',
-    'xml.parsers.expat', 'future', 'argparse', 'six',
-    'bookish.functions', 'bookish.stores', 'QtCompat',
-    'bookish.stores', 'bookish.compat',
-    'bookish.text.textify', 'bookish.avenue.avenue',
-    'bookish.wiki.pipeline', 'bookish.wiki.includes',
-    'bookish.wiki.wikipages', 'bookish.wiki.styles',
-    'bookish.avenue.patterns', 'bookish.langpath', 'jinja2.environment',
-    'PySide2.QtGui',
-}
+IGNORE_MODULES: frozenset[str] = frozenset[str]((
+    # 'sys', 'os', 'itertools', 'time', 'xml', 'xmlrpc', 'json',
+    # 're', 'subprocess', 'threading', 'multiprocessing', 'queue',
+    # 'logging', 'warnings', 'contextlib', 'functools', 'collections',
+    # 'collections.abc', 'itertools', 'operator', 'shutil', 'pathlib',
+    # 'concurrent', 'concurrent.futures', 'asyncio',
+    # 'socket', 'http', 'urllib',
+    # 'json.decoder', 'json.encoder', 'json.scanner', 'typing',
+    # 'sysconfig', 'importlib', 'importlib.util', 'builtins',
+    # 'math', 'random', 'statistics', 'functools', 'select',
+    # 'zlib', 'gzip', 'bz2', 'lzma', 'base64', 'hashlib',
+    # 'pickle', 'copy', 'copyreg', 'marshal', 'struct',
+    # 'array', 'weakref', 'types', 'codecs', 'encodings',
+    # 'inspect', 'traceback', 'pprint', 'cProfile', 'profile',
+    # 'timeit', 'cgitb', 'faulthandler', 'linecache', 'gc',
+    # 'io', 'numbers', 'shlex', 'heapq', 'ast', 'abc', 'datetime',
+    # 'csv', 'locale', 'fnmatch', 'glob', 'quopri', 'lxml.etree',
+    # 'email', 'email.charset', 'email.errors', 'email.encoders',
+    # 'contextvars', 'reprlib', 'signal', 'ssl', 'errno', 'html',
+    # 'mimetypes', 'genericpath', 'posixpath', 'stat', 'platform',
+    # 'binascii', 'resourceutils', 'future.standard_library',
+    # 'concurrent.futures', 'ctypes', 'ctypes.util', 'ctypes.wintypes',
+    # 'ctypes.macholib', 'ctypes.macholib.dyld', 'ctypes.macholib.framework',
+    #'bisect', 'numpy', 'scipy', 'matplotlib', 'pandas',
+    #'scikit-learn', 'sklearn', 'tensorflow', 'torch', 'torchvision',
+    #'keras', 'tempfile', 'zipfile', 'tarfile', 'gzip', 'bz2',
+    # 'zipimport', 'pkgutil', 'PySide2.support', 'atexit', 'fcntl',
+    # 'lxml', 'markupsafe', 'string', 'mmap', 'posix',  'pwd', 'pyexpat',
+    # 'readline', 'resource', 'shiboken2', 'keyword', 'simplejson',
+    # 'decimal', 'termios', 'unicodedata', 'uuid', 'getpass', 'requests',
+    # 'code', 'poster', 'bookish', 'flask', 'click', 'werkzeug',
+    # 'dataclasses', 'textwrap', 'difflib', 'hnac', 'secrets', 'selectors',
+    # 'jinja2', 'tokenize', 'pydoc', 'configparser', 'html.parser',
+    # 'PySide2.QtWidgets', 'bookish.paths', 'bookish.search', 'urllib.parse',
+    # 'ipaddress', 'calendar', 'bookish.wiki.langpaths', 'bookish.util',
+    # 'jinja2.environment', 'jinja2.nodes', 'socketserver', 'codeop',
+    # 'hutil.Qt.QtWidgets', 'enum', 'pytz', 'xmlrpc.client',
+    # 'xml.parsers.expat', 'future', 'argparse', 'six',
+    # 'bookish.functions', 'bookish.stores', 'QtCompat',
+    # 'bookish.stores', 'bookish.compat',
+    # 'bookish.text.textify', 'bookish.avenue.avenue',
+    # 'bookish.wiki.pipeline', 'bookish.wiki.includes',
+    # 'bookish.wiki.wikipages', 'bookish.wiki.styles',
+    # 'bookish.avenue.patterns', 'bookish.langpath', 'jinja2.environment',
+    # 'PySide2.QtGui',
+))
 
 @dataclass
 class HoudiniStaticData:
@@ -612,10 +612,10 @@ def save_static_data_to_db(db_path: Path|None=None,
             save(conn)
     print(f'static module data saved to {db_path}.')
 
-db = ZABOB_OUT_DIR / hou.applicationVersionString() / 'houdini_static_data.db'
+default_db = ZABOB_OUT_DIR / hou.applicationVersionString() / 'houdini_static_data.db'
 @click.command()
-@click.argument('db', type=click.Path(exists=False, dir_okay=False, path_type=Path), default=db)
-def main(db: Path):
+@click.argument('db', type=click.Path(exists=False, dir_okay=False, path_type=Path), default=default_db)
+def main(db: Path=default_db):
     """
     Main function to save Houdini static data to a database.
     Args:

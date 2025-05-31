@@ -13,7 +13,7 @@ _no_proxy = frozenset((
     '__getattr__', '__setattr__', '__getitem__',
     '__setitem__', '__iter__', '__len__', '__int__',
     '__float__', '__str__', '__call__', '__repr__',
-    '_path_', '_in_traceback_',
+    '_path_', '_in_traceback_', '_hou_',
 ))
 
 class InfiniteProxy:
@@ -25,7 +25,9 @@ class InfiniteProxy:
     """
     _in_traceback_: bool = False
     _path_: str
-    def __init__(self, path: str ):
+    _hou_: Any
+    def __init__(self, hou: Any, path: str ):
+        self._hou_ = hou
         self._path_ = path
         print(f'proxy: {path}')
     def __getattr__(self, name: str) -> Any:
@@ -40,7 +42,16 @@ class InfiniteProxy:
             return super().__getattribute__(name)
         path = f'{self._path_}.{name}'
         match name:
-            case this:
+            case 'colorFromName':
+                def colorFromName(*args, **kwargs):
+                    print(f'colorFromName({args}, {kwargs})')
+                    return self._hou_.Color()
+                return colorFromName
+            case '__mro_entries__':
+                def mro_entries(cls, *args, **kwargs):
+                    return ()
+                return mro_entries
+            case 'this':
                 if self._in_traceback_:
                     return path
                 try:
@@ -53,8 +64,8 @@ class InfiniteProxy:
                     while traceback:
                         print("{}: {}".format(traceback.tb_frame.f_code.co_filename,traceback.tb_lineno))
                         traceback = traceback.tb_next
-                    return InfiniteProxy(path)
-        return InfiniteProxy(path)
+                    return InfiniteProxy(self._hou_, path)
+        return InfiniteProxy(self._hou_, path)
 
     def __setattr__(self, name: str, value: Any):
         """
@@ -74,7 +85,7 @@ class InfiniteProxy:
         Returns:
             InfiniteProxy: A proxy for the item in the hou module.
         """
-        return InfiniteProxy(f'{self._path_}[{key}]')
+        return InfiniteProxy(self._hou_, f'{self._path_}[{key}]')
 
     def __setitem__(self, key: str, value: Any):
         """
@@ -100,12 +111,30 @@ class InfiniteProxy:
 
     def __int__(self) -> int:
         """
-        Convert the hou module to an integer.
+        Convert the value to an integer.
         Returns:
             int: Always returns 0.
         """
         print(f'int(self._path_)')
-        return 0
+        return 10
+
+    def __index__(self) -> int:
+        """
+        Convert the hou module to an index.
+        Returns:
+            int: Always returns 0.
+        """
+        print(f'index({self._path_})')
+        return 10
+
+    def __bool__(self) -> int:
+        """
+        Convert the hou module to an index.
+        Returns:
+            int: Always returns 0.
+        """
+        print(f'bool({self._path_})')
+        return False
 
     def __float__(self) -> float:
         """
@@ -136,4 +165,4 @@ class InfiniteProxy:
         """
         Call and return myself.
         """
-        return InfiniteProxy(f'{self._path_}()')
+        return InfiniteProxy(self._hou_, f'{self._path_}()')

@@ -37,6 +37,9 @@ from zabob.core.server import server
 from zabob.core.node import node_group
 from zabob.core.houdini import houdini_commands
 from zabob.core.houdini_versions import cli as houdini_cli
+from zabob.core.detect_env import (
+    check_environment, is_development, is_packaged,
+)
 
 def version():
     with suppress(ImportError):
@@ -82,4 +85,5 @@ __all__: Final[tuple[str, ...]] = (
     "ZABOB_BROWSE_LOG_FILE",
     'update', 'server', 'node_group',
     'main', 'setup', 'houdini_commands', 'houdini_cli',
+    'check_environment', 'is_development', 'is_packaged',
 )

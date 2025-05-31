@@ -10,6 +10,7 @@ import webbrowser
 import click
 import os
 
+from zabob.core.diagnostics import diagnostics
 from zabob.core.paths import ZABOB＿MARKSERV, ZABOB_ROOT
 from zabob.core.hython import hython
 from zabob.common.common_utils import INFO, QUIET, SILENT, VERBOSE, Level, DEBUG
@@ -137,6 +138,7 @@ def browse_docs(file: PathLike|str = ZABOB_ROOT / 'README.md') -> None:
     webbrowser.open(f'http://localhost:{html_port}/{file}')
 
 main.add_command(hython, name='hython')
+main.add_command(diagnostics)
 
 __all__ = (
     "main", 'sync_dependencies', 'browse_docs',

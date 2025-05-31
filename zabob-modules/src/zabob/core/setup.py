@@ -594,6 +594,9 @@ def dump_env(cmd: list[str],
         file (Path): The file to dump the environment variables to.
     """
 
+    if not cmd:
+        raise click.UsageError("No command provided. Please provide a command to run.")
+
     value = capture(*cmd,
                     shell=False,
                     cwd=cwd)

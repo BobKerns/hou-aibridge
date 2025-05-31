@@ -71,6 +71,8 @@ direnv allow
 - If dependencies are missing, ensure you’ve run `direnv allow` and installed all prerequisites.
 - For Node/Python version issues, check `.nvmrc` and `.python-version` in the relevant subproject.
 
+The `devtool diagnostics environment` tool gives detected information about the environment, whether packaged or development.
+
 ### Testing Strategy
 
 Testing is implemented across multiple environments:

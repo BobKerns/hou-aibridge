@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File (h20-5)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/bin/hython",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder:h20.5}/src${pathSeparator}${env:PYTHONPATH}"
+            },
+            "args": ["${command:pickArgs}"],
+        },
+        {
+            "name": "Python: Current File no-hython (h20-5)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder:h20.5}/src${pathSeparator}${env:PYTHONPATH}"
+            },
+            "args": ["${command:pickArgs}"],
+        }
+    ]
+}

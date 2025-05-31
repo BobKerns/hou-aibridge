@@ -5,10 +5,6 @@
             "path": "."
         },
         {
-            "name": "mcp-server",
-            "path": "mcp-server"
-        },
-        {
             "name": "h20.5",
             "path": "houdini/h20.5"
         },
@@ -19,6 +15,14 @@
         {
             "name": "hdas",
             "path": "houdini/hdas"
+        },
+        {
+            "name": "mcp-server",
+            "path": "mcp-server"
+        },
+        {
+            "name": "zcommon",
+            "path": "houdini/zcommon"
         },
         {
             "name": "zabob-modules",
@@ -35,6 +39,9 @@
         {
             "name": "docs",
             "path": "docs"
+        },
+        {
+            "path": "out"
         }
     ],
     "settings": {
@@ -45,6 +52,7 @@
             "**/node_modules": true,
             "**/dist": true,
             "**/out": true,
+            "out/**": true,
             ".vscode-test": true,
             ".vscode-test-insiders": true,
             "build": true,
@@ -59,8 +67,8 @@
             "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs,.envrc",
             "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
             "pyproject.toml": ".houdini-version,.python-version,uv.lock,.envrc",
-            "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore",
-            "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md"
+            "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore,pyrightconfig.json",
+            "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md,PYPROJECT-TOML.md"
         },
         "explorer.excludeGitIgnore": true,
         "git.repositoryScanIgnoredFolders": [
@@ -151,8 +159,8 @@
             "mcp-server/": true,
             "houdini/h*.*/": true,
             "houdini/hdas/": true,
+            "houdini/zcommon/": true,
             "dist": true,
-            "out": true,
             "node_modules": true,
             "zabob-modules/": true,
             "docs/": true,
@@ -166,6 +174,7 @@
             "*.bak": true,
             "#*": true,
             "*#": true,
+            ".venv/**/test*/**": true,
         },
         "cSpell.workspaceRootPath": "${workspaceFolder}",
         "cSpell.customDictionaries": {
@@ -202,22 +211,42 @@
             "gitignore"
         ],
         "python.analysis.exclude": [
-            "*.pyi",
             "**/.venv/**",
+            "**/node_modules/**",
+            "**/site-packages/**",
+            "*.pyi",
+            "**/.xvenv/**",
             "**/typings/**",
             "**/build/**",
         ],
         "python.analysis.ignore": [
-            ".venv/",
+            "**/.venv/**",
             "**/node_modules/**",
             "**/dist/**",
             "**/out/**",
             "**/.vscode-test/**",
             "**/.vscode-test-insiders/**",
             "**/.git/**",
-            "**/build/**",
+            "**/build/**"
         ],
         "python.analysis.typeCheckingMode": "standard",
+        "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.indexing": true,
+        "python.analysis.packageIndexDepths": [
+            {
+                "name": "zabob",
+                "depth": 10
+            },
+            {
+                "name": "*",
+                "depth": 1
+            }
+        ],
+        "python.analysis.extraPaths": [
+            "${workspaceFolder:zabob-modules}/src",
+            "${workspaceFolder:mcp-server}/src",
+            "${workspaceFolder:zcommon}/src"
+        ],
         "python.terminal.activateEnvironment": true,
         "python.terminal.activateEnvInCurrentTerminal": true,
         "python.testing.pytestEnabled": false,
@@ -238,6 +267,8 @@
             "MD041": false,
             "MD013": false,
         },
+        "vscode-decompiler.tool.ghidra.path": "/opt/homebrew/Caskroom/ghidra/11.3.2-20250415/ghidra_11.3.2_PUBLIC/support/analyzeHeadless",
+        "sqlite3-editor.ui.columnFilter.list.maxTableRecords": 10000,
     },
     "extensions": {
         "recommendations": [

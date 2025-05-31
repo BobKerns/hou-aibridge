@@ -1,5 +1,5 @@
 [project]
-name = "h20-5"
+name = "zabob-h20-5"
 version = "0.1.0"
 description = "Zabob connector for Houdini 20.5"
 readme = "README.md"
@@ -8,13 +8,38 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "click>=8.2.1",
     "hou>=0.1.0",
+    "semver>=3.0.4",
+    "zabob-common",
 ]
+
+[tool.zabob]
 use-hython = true
 
 [project.scripts]
-h20-5 = "h20_5:main"
+h20-5 = "zabob.h20_5:main"
 
+# [build-system]
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
+
+# Using setuptools instead of hatchling for now,
+# due to this issue: https://github.com/pypa/hatch/issues/1977
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["zabob.h20_5"]
+
+
+[tool.uv.sources]
+zabob-h20-5 = { workspace = true }
+zabob-common = { path = "../zcommon", editable = true }
+
+
+
+[tool.hatch.build.targets.wheel]
+include = [ "src/*" ]

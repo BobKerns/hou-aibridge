@@ -363,7 +363,7 @@ def save_static_data_to_db(db_path: Path|None=None,
                 parent_name TEXT DEFAULT NULL,
                 parent_type TEXT DEFAULT NULL,
                 PRIMARY KEY (name, type) ON CONFLICT REPLACE,
-                FOREIGN KEY (parent_name, parent_type) REFERENCES houdini_static_data(name, type)
+                FOREIGN KEY (parent_name, parent_type) REFERENCES houdini_module_data(name, type)
             ) STRICT
         ''')
         cursor.execute('''
@@ -380,7 +380,7 @@ def save_static_data_to_db(db_path: Path|None=None,
                     conn.commit()
                     progress(f'Processing module {datum.name}...')
                     cursor.execute('''
-                        INSERT OR REPLACE INTO houdini_static_modules (name, file)
+                        INSERT OR REPLACE INTO houdini_modules (name, file)
                         VALUES (?, ?)
                     ''', (datum.name, str(datum.file) if datum.file else None))
                 else:
@@ -407,7 +407,7 @@ def save_static_data_to_db(db_path: Path|None=None,
                         #if str(name) == 'BlendShape' or name == 'hou' or datum.type == EntryType.OBJECT:
                         #    breakpoint()
                         cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_static_data (name, type, datatype, docstring,
+                            INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring,
                                                                         parent_name, parent_type)
                             VALUES (?, ?, ?, ?, ?, ?)
                         ''', (
@@ -417,8 +417,9 @@ def save_static_data_to_db(db_path: Path|None=None,
                         #print(f'Processing {datum.type} {datum.name} without parent...')
                         cursor.execute('PRAGMA foreign_keys = OFF;')
                         conn.commit()
+                        # Change line number
                         cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_static_data (name, type, datatype, docstring, parent_name, parent_type)
+                            INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring, parent_name, parent_type)
                             VALUES (?, ?, ?, ?, NULL, NULL)
                         ''', (datum.name, name(datum.type), name(datum.datatype), datum.docstring))
                         cursor.execute('PRAGMA foreign_keys = ON;')

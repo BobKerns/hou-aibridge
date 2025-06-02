@@ -117,15 +117,15 @@ class InfiniteMock:
         """
         Convert the mock object to an index.
         Returns:
-            int: Always returns 0.
+            int: Always returns 10 (ro avoid division by zero).
         """
         return 10
 
-    def __bool__(self) -> int:
+    def __bool__(self) -> bool:
         """
         Convert the mock object to an index.
         Returns:
-            int: Always returns 0.
+            bool: Always returns False.
         """
         return False
 
@@ -133,9 +133,9 @@ class InfiniteMock:
         """
         Convert the mock object to a float.
         Returns:
-            float: Always returns 0.0.
+            float: Always returns 10.0 (to avoid division by zero).
         """
-        return 0.0
+        return 10.0
 
     def __str__(self) -> str:
         """

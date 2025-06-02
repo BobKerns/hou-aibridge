@@ -9,18 +9,27 @@ import stat
 import sys
 from pathlib import Path
 from configparser import ConfigParser, UNNAMED_SECTION
+from typing import Literal
 
 import click
 from semver import Version
 
 
 from zabob.common._find.types import HoudiniInstall
-from zabob.common.find_houdini import get_houdini, list_houdini_installations, show_houdini
-from zabob.common.subproc import run
+from zabob.common.find_houdini import (
+    get_houdini, list_houdini_installations, show_houdini,
+)
+from zabob.common.subproc import run, exec_cmd
 from zabob.common.hython import hython
-from zabob.core.houdini_versions import cli as houdini_cli, download_houdini_installer
+from zabob.common.click_types import SemVerParamType, OptionalType
+from zabob.core.detect_env import is_development
+from zabob.core.houdini_versions import (
+    cli as houdini_cli, download_houdini_installer,
+)
 from zabob.core.main import main
-from zabob.core.paths import HOUDINI_PROJECTS, ZABOB_HOUDINI_DIR
+from zabob.core.paths import (
+    HOUDINI_PROJECTS, ZABOB_HOUDINI_DATA, ZABOB_HOUDINI_DIR, ZABOB_OUT_DIR,
+)
 
 @main.group('houdini')
 def houdini_commands():
@@ -250,12 +259,65 @@ def setup_houdini_venv_cmd(directory: Path|None=None,
         print(f"Error: {e}")
         sys.exit(1)
 
+
+@houdini_commands.command('load-data')
+@click.option('--version', '-v',
+              type=OptionalType(SemVerParamType(min_parts=2, max_parts=3)),
+              default=None,
+              help="Houdini version to load data for (default: latest)")
+@click.option('--mode', '-m',
+              type=click.Choice(['dev', 'test', 'prod'], case_sensitive=False),
+              default='prod',
+              help="Determines the default database path to use. "
+                   "If 'dev', it will use the development database, "
+                   "'test' will use the test database, and 'prod' will use the production database.")
+@click.option('--db', '-d',
+              type=OptionalType(click.Path(exists=True, dir_okay=False, path_type=Path)),
+              default=None,
+              help="Path to the Houdini data database file (default: use built-in path)")
+def load_data(version: Version|None=None,
+              db: Path|None=None,
+              mode: Literal['dev', 'test', 'prod'] = 'prod'):
+    """
+    Load the data for the specified Houdini version.
+    If version is None, it will load the latest version.
+    """
+    if version is None:
+        # If no version is specified, use the latest version
+        version = max(HOUDINI_PROJECTS.keys())
+    version_name = f'{version.major}.{version.minor}'
+    module_name_1 = version_name.replace('.', '_')
+    module_name = f'zabob.h{module_name_1}.static'
+    python_path = os.getenv('PYTHONPATH', '').split(os.pathsep)
+    if is_development():
+        dev_path = str(ZABOB_HOUDINI_DIR / f'h{version_name}/src')
+        if dev_path not in python_path:
+            python_path.insert(0, dev_path)
+        common_path = str(ZABOB_HOUDINI_DIR / 'zcommon/src')
+        if common_path not in python_path:
+            python_path.insert(0, common_path)
+    houdini = get_houdini(version)
+    pythonpath = [p for p in python_path if p]  # Filter out empty paths
+    if houdini is None:
+        raise FileNotFoundError(f"No Houdini installation matching version {version} found")
+    if db is None:
+        # Use the default database path for the specified version
+        match mode:
+            case 'dev':
+                db = ZABOB_OUT_DIR / f'{version.major}_{version.minor}' / 'houdini_data_dev.db'
+            case 'test':
+                # Same as dev for now. Tests might always supply the path explicitly, so
+                # this is just a placeholder.
+                db = ZABOB_OUT_DIR / f'{version.major}_{version.minor}' / 'houdini_data_test.db'
+            case _:
+                # Default to production database
+                db = ZABOB_HOUDINI_DATA / f'{version.major}_{version.minor}' / 'houdini_data.db'
+    exec_cmd(houdini.hython, '-m', module_name, '--', db,
+             env={'PYTHONPATH': os.pathsep.join(python_path)},)
+
 houdini_commands.add_command(show_houdini, 'show-houdini')
 houdini_commands.add_command(list_houdini_installations, 'installations')
 houdini_commands.add_command(hython, 'hython')
 for name, command in houdini_cli.commands.items():
     # Register the command with the main group
     houdini_commands.add_command(command, name)
-
-
-    # Add the command to the Houdini commands gr

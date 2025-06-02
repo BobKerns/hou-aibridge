@@ -184,7 +184,7 @@ IGNORE_MODULES: frozenset[str] = frozenset[str]((
 default_db = ZABOB_OUT_DIR / hou.applicationVersionString() / 'houdini_static_data.db'
 @click.command()
 @click.argument('db', type=click.Path(exists=False, dir_okay=False, path_type=Path), default=default_db)
-def main(db: Path=default_db):
+def load_data(db: Path=default_db):
     """
     Main function to save Houdini static data to a database.
     Args:
@@ -197,4 +197,4 @@ def main(db: Path=default_db):
     print(f"Static data saved to {db}")
 
 if __name__ == "__main__":
-    main()
+    load_data()

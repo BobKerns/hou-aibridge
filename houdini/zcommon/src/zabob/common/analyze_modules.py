@@ -10,6 +10,7 @@ from enum import Enum, StrEnum
 from importlib import import_module
 from inspect import getdoc, getmembers, isclass, isdatadescriptor, isfunction, ismethod, ismethoddescriptor, ismodule
 from pathlib import Path
+from re import sub
 import sqlite3
 import sys
 from types import ModuleType
@@ -18,7 +19,7 @@ from typing import Any
 from semver import Version
 
 from zabob.common import InfiniteMock
-from zabob.common.common_paths import ZABOB_HOUDINI_DATA
+from zabob.common.common_paths import ZABOB_HOUDINI_DATA, ZABOB_ROOT
 from zabob.common.common_utils import environment
 from zabob.common.timer import timer
 
@@ -52,15 +53,21 @@ def candidates_in_dir(path: Path) -> Generator[str, None, None]:
     """
     if not path.is_dir():
         return
+    if ZABOB_ROOT in path.parents:
+        # If the path is inside the zabob root, skip it.
+        return
     for item in path.iterdir():
         if item.is_file() and item.suffix == '.py':
             yield item.stem
+        if item.name == 'site-packages':
+            continue
         elif item.is_dir() and (item / '__init__.py').exists():
             yield from (
                 item.name + '.' + subitem.stem
                 for subitem in item.iterdir()
                 if subitem.is_file() and subitem.suffix == '.py'
                 and subitem.name != '__init__.py'
+                and subitem.name != '__main__.py'
             )
             # Finally, the parent.
             yield item.name
@@ -73,6 +80,8 @@ def candidates_in_dir(path: Path) -> Generator[str, None, None]:
                             if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
                 for subitem in pkg.iterdir()
                 if subitem.is_file() and subitem.suffix == '.py'
+                if subitem.name != '__init__.py'
+                if subitem.name != '__main__.py'
             )
             yield from (
                 f'{item.name}.{pkg.stem}'''

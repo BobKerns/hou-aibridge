@@ -1,0 +1,6 @@
+query-filters:
+  - exclude:
+      # Generates spurious warnings about the check for free ports.
+      # This intentionally momentarily binds to all network interfaces
+      # but does not enable connections.
+      id: py/bind-socket-all-network-interfaces

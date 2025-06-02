@@ -325,6 +325,7 @@ def get_static_data_db_path(out_dir: Path=ZABOB_HOUDINI_DATA) -> Path:
     Returns:
         The path to the static data database for the specified Houdini version.
     """
+    import hou
     version = Version.parse(*hou.applicationVersion())
     outpath = out_dir / str(version) / 'houdini_static_data.db'
     outpath.parent.mkdir(parents=True, exist_ok=True)

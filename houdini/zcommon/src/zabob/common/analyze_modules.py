@@ -17,6 +17,7 @@ from typing import Any
 
 from semver import Version
 
+from zabob.common import InfiniteMock
 from zabob.common.common_paths import ZABOB_HOUDINI_DATA
 from zabob.common.common_utils import environment
 from zabob.common.timer import timer
@@ -119,6 +120,12 @@ def get_static_module_data(include: Sequence[ModuleType], ignore: Container[str]
         dict: A dictionary containing the static data.
     """
     import hou
+
+    if getattr(hou, 'ui', None) is None:
+        hou.ui = InfiniteMock(hou, 'hou.ui')
+    if getattr(hou, 'qt', None) is None:
+        hou.qt = InfiniteMock(hou, 'hou.qt')
+
     seen = set()
     builtin_function_or_method = type(builtins.repr)
     def dtype(v) -> builtins.type:

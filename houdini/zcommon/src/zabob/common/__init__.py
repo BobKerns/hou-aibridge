@@ -34,7 +34,7 @@ from zabob.common.find_houdini import (
     get_houdini,
     HoudiniInstall,
 )
-from zabob.common.infinite_proxy import InfiniteProxy
+from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
     EntryType, HoudiniStaticData, ModuleData,
     get_static_module_data, save_static_data_to_db,
@@ -79,7 +79,7 @@ __all__ = (
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",
-    "InfiniteProxy",
+    "InfiniteMock",
     "EntryType",
     "ModuleData",
     "HoudiniStaticData",

@@ -16,7 +16,7 @@ _no_proxy = frozenset((
     '_path_', '_in_traceback_', '_hou_',
 ))
 
-class InfiniteProxy:
+class InfiniteMock:
     """
     A proxy class that allows infinite access to attributes.
     This class is used to access attributes the UI attribute of
@@ -64,8 +64,8 @@ class InfiniteProxy:
                     while traceback:
                         print("{}: {}".format(traceback.tb_frame.f_code.co_filename,traceback.tb_lineno))
                         traceback = traceback.tb_next
-                    return InfiniteProxy(self._hou_, path)
-        return InfiniteProxy(self._hou_, path)
+                    return InfiniteMock(self._hou_, path)
+        return InfiniteMock(self._hou_, path)
 
     def __setattr__(self, name: str, value: Any):
         """
@@ -77,7 +77,7 @@ class InfiniteProxy:
         if name in _no_proxy:
             return super().__setattr__(name, value)
 
-    def __getitem__(self, key: str) -> 'InfiniteProxy':
+    def __getitem__(self, key: str) -> 'InfiniteMock':
         """
         Get an item from the hou module.
         Args:
@@ -85,7 +85,7 @@ class InfiniteProxy:
         Returns:
             InfiniteProxy: A proxy for the item in the hou module.
         """
-        return InfiniteProxy(self._hou_, f'{self._path_}[{key}]')
+        return InfiniteMock(self._hou_, f'{self._path_}[{key}]')
 
     def __setitem__(self, key: str, value: Any):
         """
@@ -161,8 +161,8 @@ class InfiniteProxy:
         """
         return f'InfiniteProxy({self._path_})'
 
-    def __call__(self, *args, **kwargs) -> 'InfiniteProxy':
+    def __call__(self, *args, **kwargs) -> 'InfiniteMock':
         """
         Call and return myself.
         """
-        return InfiniteProxy(self._hou_, f'{self._path_}()')
+        return InfiniteMock(self._hou_, f'{self._path_}()')

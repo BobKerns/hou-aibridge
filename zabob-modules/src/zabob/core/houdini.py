@@ -22,7 +22,7 @@ from zabob.common.find_houdini import (
 from zabob.common.subproc import run, exec_cmd
 from zabob.common.hython import hython
 from zabob.common.click_types import SemVerParamType, OptionalType
-from zabob.core.detect_env import is_development
+from zabob.common.detect_env import is_development
 from zabob.core.houdini_versions import (
     cli as houdini_cli, download_houdini_installer,
 )

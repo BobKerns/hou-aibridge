@@ -4,8 +4,7 @@ Diagnostic tools.
 
 from click import group
 
-from zabob.core.detect_env import check_environment
-
+from zabob.common import check_environment
 
 @group("diagnostics")
 def diagnostics():

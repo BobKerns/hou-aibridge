@@ -11,7 +11,7 @@ from functools import cache
 import click
 
 from zabob.common import ZABOB_ROOT, VERBOSE
-from zabob.core import ZABOB_MODULES_DIR
+from zabob.common.common_paths import ZABOB_COMMON_DIR
 
 
 class EnvironmentType(StrEnum):
@@ -54,7 +54,7 @@ def detect_environment() -> Signals:
     signals.IN_SITE_PACKAGES = "site-packages" in str(module_path)
 
     signals.GIT_DIRECTORY = (ZABOB_ROOT / ".git").exists()
-    signals.PYPROJECT_TOML = (ZABOB_MODULES_DIR / "pyproject.toml").exists()
+    signals.PYPROJECT_TOML = (ZABOB_COMMON_DIR / "pyproject.toml").exists()
     signals.VSCODE_CONFIG = (ZABOB_ROOT / ".vscode").exists()
     signals.WORKSPACE_FILE = (ZABOB_ROOT / "zabob.code-workspace").exists()
 

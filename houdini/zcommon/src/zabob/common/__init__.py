@@ -39,6 +39,13 @@ from zabob.common.analyze_modules import (
     EntryType, HoudiniStaticData, ModuleData,
     import_or_warn, get_static_data_db_path,
     get_static_module_data, save_static_data_to_db,
+    modules_in_path,
+)
+from zabob.common.detect_env import (
+    detect_environment,
+    is_development,
+    is_packaged,
+    check_environment,# noqa: F401
 )
 
 __all__ = (
@@ -78,7 +85,12 @@ __all__ = (
     "ModuleData",
     "HoudiniStaticData",
     "import_or_warn",
+    "modules_in_path",
     "get_static_data_db_path",
     "get_static_module_data",
     "save_static_data_to_db",
+    "detect_environment",
+    "is_development",
+    "is_packaged",
+    "check_environment",
 )

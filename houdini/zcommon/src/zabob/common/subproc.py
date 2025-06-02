@@ -26,10 +26,11 @@ from zabob.common.common_utils import DEBUG
 
 def debug_cmd(cmd: Sequence[str],
               cwd: os.PathLike|str|None=None,
-               env: dict[str,str]|None=None) -> None:
+              env: dict[str,str]|None=None) -> None:
     """
     Print the current working directory and environment variables for debugging.
     Args:
+        cmd (Sequence[str]): The command to run.
         cwd (os.PathLike|str|None): The current working directory.
         env (dict[str,str]|None): The environment variables.
     """

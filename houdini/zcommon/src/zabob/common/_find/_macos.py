@@ -131,7 +131,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
                         f'packages/*/{libname}',
                         )
                     for p in hfs_dir.glob(glob)
-                    if p.is_dir
+                    if p.is_dir()
                 ),
                *(p
                     for p in (

@@ -221,6 +221,7 @@ pycache
 pyenv
 pyexpat
 pyflow
+pylance
 pypa
 pypackages
 pypirc

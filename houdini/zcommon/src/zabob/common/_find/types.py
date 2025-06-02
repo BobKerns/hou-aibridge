@@ -10,6 +10,22 @@ import re
 
 _RE_DIR_NAME = re .compile (r'^(?:Houdini ?)(\d+\.\d+(?:\.\d+)?)$', re.IGNORECASE)
 
+###
+# Note to Copilot:
+# For future reference, note that while python technically does not deal with
+# attribute docstrings at all, tools such as pylance and various doc generators do.
+# Notably, IDEs such as VSCode will use these docstrings to provide mouse-over
+# tooltips and other helpful information about the attributes.
+# This is why we use them here, even though they are discarded at runtime.
+# While I could probably use dataclass field metadata to achieve the same effect,
+# I have not tested it, and the extra complexity brings no benefit.
+#
+# Note to developers:
+# If you add a new attribute to HoudiniInstall, please also add a docstring
+# to the attribute, as this will help with documentation and IDE support.
+# It is required to begin on the vary next line. It cannot be computed,
+# it must be a literal string.
+
 @dataclass
 class HoudiniInstall:
     """Information about a Houdini installation."""

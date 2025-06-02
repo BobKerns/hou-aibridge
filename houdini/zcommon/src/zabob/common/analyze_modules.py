@@ -315,24 +315,8 @@ def get_static_module_data(include: Sequence[ModuleType], ignore: Container[str]
     for module in include:
         yield from load_module(module)
 
-def get_static_data_db_path(out_dir: Path=ZABOB_HOUDINI_DATA) -> Path:
-    """
-    Get the path to the static data database for a specific Houdini version.
 
-    Args:
-        out_dir (Path): The output directory parent where the database will be stored.
-
-    Returns:
-        The path to the static data database for the specified Houdini version.
-    """
-    import hou
-    version = Version.parse(*hou.applicationVersion())
-    outpath = out_dir / str(version) / 'houdini_static_data.db'
-    outpath.parent.mkdir(parents=True, exist_ok=True)
-    return outpath
-
-
-def save_static_data_to_db(db_path: Path|None=None,
+def save_static_data_to_db(db_path: Path,
                            out_dir: Path=ZABOB_HOUDINI_DATA,
                            connection: sqlite3.Connection|None=None,
                            include: Sequence[ModuleType] = (),
@@ -342,7 +326,7 @@ def save_static_data_to_db(db_path: Path|None=None,
     Save the static data to a SQLite database.
 
     Args:
-        db_path (str): The path to the SQLite database file.
+        db_path (Path): The path to the SQLite database file.
     """
     def save(conn: sqlite3.Connection):
         """
@@ -437,8 +421,6 @@ def save_static_data_to_db(db_path: Path|None=None,
     if connection is not None:
         save(connection)
     else:
-        if db_path is None:
-            db_path = get_static_data_db_path(out_dir)
         print(f'Saving static data to {db_path}...')
         with sqlite3.connect(db_path) as conn:
             save(conn)

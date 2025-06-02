@@ -37,9 +37,8 @@ from zabob.common.find_houdini import (
 from zabob.common.infinite_proxy import InfiniteProxy
 from zabob.common.analyze_modules import (
     EntryType, HoudiniStaticData, ModuleData,
-    import_or_warn, get_static_data_db_path,
     get_static_module_data, save_static_data_to_db,
-    modules_in_path,
+    modules_in_path, import_or_warn,
 )
 from zabob.common.detect_env import (
     detect_environment,
@@ -49,7 +48,7 @@ from zabob.common.detect_env import (
 )
 
 __all__ = (
-    "ZABOB_COMMON_DIR", 
+    "ZABOB_COMMON_DIR",
     "ZABOB_ZCOMMON_DIR",
     "ZABOB_HOUDINI_DIR",
     "ZABOB_ROOT",
@@ -86,7 +85,6 @@ __all__ = (
     "HoudiniStaticData",
     "import_or_warn",
     "modules_in_path",
-    "get_static_data_db_path",
     "get_static_module_data",
     "save_static_data_to_db",
     "detect_environment",

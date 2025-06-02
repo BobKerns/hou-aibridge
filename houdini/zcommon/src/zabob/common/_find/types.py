@@ -38,7 +38,7 @@ class HoudiniInstall:
     bin_dir: Path
     "${HB}: Houdini's bin directory, containing executables like houdini, hython, etc."
     hfs_dir: Path
-    "${JFS}: Houdini's built-in types, scripts, extensions, and more."
+    "${HFS}: Houdini's built-in types, scripts, extensions, and more."
     hython: Path
     'Path to the hython executable'
     hdso_libs: Path

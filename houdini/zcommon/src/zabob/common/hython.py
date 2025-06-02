@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 from collections.abc import Sequence
 import sys
-from typing import Any, Literal, overload
+from typing import Literal, overload
 
 import click
 from semver import Version

@@ -111,7 +111,7 @@ class InfiniteMock:
         """
         Convert the value to an integer.
         Returns:
-            int: Always returns 0.
+            int: Always returns 10 (to avoid division by zero).
         """
         return 10
 

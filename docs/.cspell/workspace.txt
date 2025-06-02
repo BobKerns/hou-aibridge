@@ -54,6 +54,7 @@ dotenv
 dragdroputils
 drivertoolutils
 dsolib
+dynld
 envrc
 esbuild
 eslintcache

@@ -302,16 +302,18 @@ def load_data(version: Version|None=None,
         raise FileNotFoundError(f"No Houdini installation matching version {version} found")
     if db is None:
         # Use the default database path for the specified version
+        v = houdini.houdini_version
+        vdir = f'{v.major}.{v.minor}.{v.patch}'
         match mode:
             case 'dev':
-                db = ZABOB_OUT_DIR / f'{version.major}_{version.minor}' / 'houdini_data_dev.db'
+                db = ZABOB_OUT_DIR / vdir / 'houdini_data_dev.db'
             case 'test':
                 # Same as dev for now. Tests might always supply the path explicitly, so
                 # this is just a placeholder.
-                db = ZABOB_OUT_DIR / f'{version.major}_{version.minor}' / 'houdini_data_test.db'
+                db = ZABOB_OUT_DIR / vdir / 'houdini_data_test.db'
             case _:
                 # Default to production database
-                db = ZABOB_HOUDINI_DATA / f'{version.major}_{version.minor}' / 'houdini_data.db'
+                db = ZABOB_HOUDINI_DATA / vdir / 'houdini_data.db'
     exec_cmd(houdini.hython, '-m', module_name, '--', db,
              env={'PYTHONPATH': os.pathsep.join(python_path)},)
 

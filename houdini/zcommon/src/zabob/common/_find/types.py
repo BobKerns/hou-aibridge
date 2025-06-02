@@ -20,7 +20,7 @@ _RE_DIR_NAME = re .compile (r'^(?:Houdini ?)(\d+\.\d+(?:\.\d+)?)$', re.IGNORECAS
 # While I could probably use dataclass field metadata to achieve the same effect,
 # I have not tested it, and the extra complexity brings no benefit.
 #
-# Note to developers:
+# Note to developers, who may have been referred here by bad advice from Copilot:
 # If you add a new attribute to HoudiniInstall, please also add a docstring
 # to the attribute, as this will help with documentation and IDE support.
 # It is required to begin on the vary next line. It cannot be computed,

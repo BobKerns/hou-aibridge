@@ -4,7 +4,7 @@ Analyze the modules that are available in the current Houdini environment.
 
 
 import builtins
-from collections.abc import Container, Generator, Sequence
+from collections.abc import Container, Generator, Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from importlib import import_module
@@ -23,6 +23,83 @@ from zabob.common.common_utils import environment
 from zabob.common.timer import timer
 
 
+def modules_in_path(path: Sequence[str|Path],
+                    ignore: Container[str]=()) -> Generator[ModuleType, None, None]:
+    """
+    Import modules from the given path.
+    Args:
+        path (Sequence[str|Path]): A sequence of paths to import modules from.
+        ignore (Container[str]): A container of module names to ignore.
+    Yields:
+        ModuleType: The imported module.
+    """
+    paths = (Path(p) for p in path)
+    return (m
+        for p in paths
+        for candidate in candidates_in_dir(p)
+        if candidate not in ignore
+        if 'zabob' not in candidate
+        for m in import_or_warn(candidate)
+    )
+
+def candidates_in_dir(path: Path) -> Generator[str, None, None]:
+    """
+    Generate candidate module names from a directory path.
+    Args:
+        path (Path): The directory path to search for modules.
+    Yields:
+        str: The candidate module name.
+    """
+    if not path.is_dir():
+        return
+    for item in path.iterdir():
+        if item.is_file() and item.suffix == '.py':
+            yield item.stem
+        elif item.is_dir() and (item / '__init__.py').exists():
+            yield from (
+                item.name + '.' + subitem.stem
+                for subitem in item.iterdir()
+                if subitem.is_file() and subitem.suffix == '.py'
+                and subitem.name != '__init__.py'
+            )
+            # Finally, the parent.
+            yield item.name
+        elif item.is_dir():
+            # If it's a directory without __init__.py, it may still be a namespace package.
+            yield from (
+                f'{item.name}.{pkg.stem}.{subitem.stem}'
+                for pkg in (pkgdir
+                            for pkgdir in item.iterdir()
+                            if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
+                for subitem in pkg.iterdir()
+                if subitem.is_file() and subitem.suffix == '.py'
+            )
+            yield from (
+                f'{item.name}.{pkg.stem}'''
+                for pkg in (pkgdir
+                            for pkgdir in item.iterdir()
+                            if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
+            )
+
+from contextlib import contextmanager
+
+@contextmanager
+def prevent_exit():
+    """Context manager that prevents sys.exit() from terminating the process."""
+    original_exit = sys.exit
+
+    def exit_handler(code=0):
+        # Instead of exiting, raise a custom exception
+        raise RuntimeError(f"Module attempted to exit with code {code}")
+
+    # Replace sys.exit temporarily
+    sys.exit = exit_handler
+    try:
+        yield
+    finally:
+        # Always restore the original exit function
+        sys.exit = original_exit
+
 def import_or_warn(module_name: str):
     """
     Import a module and warn if it fails.
@@ -32,11 +109,15 @@ def import_or_warn(module_name: str):
         module: The imported module, or None if the import failed.
     """
     try:
-        with environment(HOUDINI_ENABLE_HOM_EXTENSIONS='1',):
-            print(f"Importing {module_name}...")
-            yield import_module(module_name)
+        with environment(HOUDINI_ENABLE_HOM_EXTENSIONS='1'):
+            with prevent_exit():
+                print(f"Importing {module_name}...")
+                yield import_module(module_name)
     except Exception as e:
-        print(f"Warning: Failed to import {module_name}: {e}", file=sys.stderr)
+        if "attempted to exit" in str(e):
+            print(f"Warning: Module {module_name} attempted to exit, skipping", file=sys.stderr)
+        else:
+            print(f"Warning: Failed to import {module_name}: {e}", file=sys.stderr)
 
 
 class EntryType(StrEnum):
@@ -101,7 +182,9 @@ def get_members_safe(obj: Any):
         print(f"Warning: Failed to get members of {obj}: {e}", file=sys.stderr)
 
 
-def get_static_module_data(include: Sequence[ModuleType], ignore: Container[str]) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
+def get_static_module_data(include: Iterable[ModuleType],
+                           ignore: Container[str],
+        ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
     """
     Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
     etc. exposed by the hou module.
@@ -326,7 +409,7 @@ def get_static_module_data(include: Sequence[ModuleType], ignore: Container[str]
 def save_static_data_to_db(db_path: Path,
                            out_dir: Path=ZABOB_HOUDINI_DATA,
                            connection: sqlite3.Connection|None=None,
-                           include: Sequence[ModuleType] = (),
+                           include: Iterable[ModuleType] = (),
                            ignore: Container[str] = ()
                         ):
     """

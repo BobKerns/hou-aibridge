@@ -3,6 +3,7 @@ Routines to extract static data from Houdini 20.5.
 '''
 
 from pathlib import Path
+import sys
 
 import click
 
@@ -129,6 +130,9 @@ MODULES = [
 ]
 
 IGNORE_MODULES: frozenset[str] = frozenset[str]((
+    'unittest.__main__', 'opcode_sum', 'perfmon_sum', 'searchbox',
+    'generateHDAToolsForOTL', 'test.autotest', 'test.tf_inherit_check',
+    'test._test_embed_structseq'
     # 'sys', 'os', 'itertools', 'time', 'xml', 'xmlrpc', 'json',
     # 're', 'subprocess', 'threading', 'multiprocessing', 'queue',
     # 'logging', 'warnings', 'contextlib', 'functools', 'collections',
@@ -187,7 +191,7 @@ def load_data(db: Path=default_db):
     """
     db.parent.mkdir(parents=True, exist_ok=True)
     save_static_data_to_db(db_path=db,
-                           include=MODULES,
+                           include=modules_in_path(sys.path, IGNORE_MODULES),
                            ignore=IGNORE_MODULES)
     print(f"Static data saved to {db}")
 

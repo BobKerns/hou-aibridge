@@ -5,7 +5,6 @@ Find Houdini hiding on Windows
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
-from importlib.util import decode_source
 from pathlib import Path
 from itertools import chain
 from functools import reduce

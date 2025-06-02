@@ -41,7 +41,7 @@
             "path": "docs"
         },
         {
-            "path": "out"
+            "path": "dev_out"
         }
     ],
     "settings": {
@@ -51,8 +51,8 @@
             "**/.venv": true,
             "**/node_modules": true,
             "**/dist": true,
-            "**/out": true,
-            "out/**": true,
+            "**/dev_out": true,
+            "dev_out/**": true,
             ".vscode-test": true,
             ".vscode-test-insiders": true,
             "build": true,
@@ -78,6 +78,7 @@
             ".vscode-test-insiders",
             "dist",
             "out",
+            "dev_out",
         ],
         "latex-workshop.latex.watch.files.ignore": [
             "**/*.bbx",
@@ -111,6 +112,11 @@
             "/dev/null",
             ".vscode-test",
             ".vscode-test-insiders",
+            "dev_out",
+            "dist",
+            "out",
+            "node_modules",
+            "**/.venv",
             "**/*.pyc"
         ],
         "cSpell.spellCheckOnlyWorkspaceFiles": true,
@@ -127,6 +133,11 @@
             "**/*.log",
             "*.code-workspace",
             "*.lock",
+            "**/dev_out/**",
+            "**/dist/**",
+            "**/out/**",
+            "**/build/**",
+            "**/.venv/**",
         ],
         "shebang.associations": [
             {

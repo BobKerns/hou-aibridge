@@ -12,7 +12,7 @@ ZABOB_ZCOMMON_DIR: Path = _ZABOB_SRC_DIR.parent
 ZABOB_HOUDINI_DIR: Path = ZABOB_ZCOMMON_DIR.parent
 ZABOB_ROOT: Path = ZABOB_HOUDINI_DIR.parent
 
-ZABOB_OUT_DIR: Path = ZABOB_ROOT / "out"
+ZABOB_OUT_DIR: Path = ZABOB_ROOT / "dev_out"
 
 ZABOB_HOME_DIR: Path = Path.home() / ".zabob"
 ZABOB_HOUDINI_DATA: Path = ZABOB_HOME_DIR / "houdini"

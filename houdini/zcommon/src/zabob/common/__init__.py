@@ -34,7 +34,18 @@ from zabob.common.find_houdini import (
     get_houdini,
     HoudiniInstall,
 )
-from zabob.common.infinite_proxy import InfiniteProxy
+from zabob.common.infinite_mock import InfiniteMock
+from zabob.common.analyze_modules import (
+    EntryType, HoudiniStaticData, ModuleData,
+    get_static_module_data, save_static_data_to_db,
+    modules_in_path, import_or_warn,
+)
+from zabob.common.detect_env import (
+    detect_environment,
+    is_development,
+    is_packaged,
+    check_environment,
+)
 
 __all__ = (
     "ZABOB_COMMON_DIR",
@@ -68,5 +79,16 @@ __all__ = (
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",
-    "InfiniteProxy",
+    "InfiniteMock",
+    "EntryType",
+    "ModuleData",
+    "HoudiniStaticData",
+    "import_or_warn",
+    "modules_in_path",
+    "get_static_module_data",
+    "save_static_data_to_db",
+    "detect_environment",
+    "is_development",
+    "is_packaged",
+    "check_environment",
 )

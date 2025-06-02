@@ -20,7 +20,6 @@
         "*.bak": true,
         "#*": true,
         "*#": true,
-        ".venv/**/test*/**": true,
-        "out": true
+        ".venv/**/test*/**": true
     }
 }

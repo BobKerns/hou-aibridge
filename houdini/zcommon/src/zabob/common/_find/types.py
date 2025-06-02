@@ -3,22 +3,60 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
+from typing import Sequence
 from semver import Version
 import re
 
 
 _RE_DIR_NAME = re .compile (r'^(?:Houdini ?)(\d+\.\d+(?:\.\d+)?)$', re.IGNORECASE)
 
+###
+# Note to Copilot:
+# For future reference, note that while python technically does not deal with
+# attribute docstrings at all, tools such as pylance and various doc generators do.
+# Notably, IDEs such as VSCode will use these docstrings to provide mouse-over
+# tooltips and other helpful information about the attributes.
+# This is why we use them here, even though they are discarded at runtime.
+# While I could probably use dataclass field metadata to achieve the same effect,
+# I have not tested it, and the extra complexity brings no benefit.
+#
+# Note to developers, who may have been referred here by bad advice from Copilot:
+# If you add a new attribute to HoudiniInstall, please also add a docstring
+# to the attribute, as this will help with documentation and IDE support.
+# It is required to begin on the vary next line. It cannot be computed,
+# it must be a literal string.
+
 @dataclass
 class HoudiniInstall:
     """Information about a Houdini installation."""
     houdini_version: Version
+    'The version of this Houdini installation, e.g., 20.5.584'
     python_version: Version
+    'The version of python used by this houdini installation.'
     version_dir: Path
+    'The root of the houdini installation, specific to version'
     bin_dir: Path
-    hfs_dir: Path # Houdini's built-in types, scripts, extensions, and more.
+    "${HB}: Houdini's bin directory, containing executables like houdini, hython, etc."
+    hfs_dir: Path
+    "${HFS}: Houdini's built-in types, scripts, extensions, and more."
     hython: Path
-    lib_dir: Path # Python library directory
+    'Path to the hython executable'
+    hdso_libs: Path
+    "${HDSO}: Houdini's shared libraries directory, containing .so/.dynld/.dll files"
+    python_libs: Path
+    '${HHP}: # Houdini Python library directory'
+    hh_dir: Path
+    '${HH}'
+    config_dir: Path
+    '${HHC}'
+    toolkit_dir: Path
+    '${HHT}: Houdini toolkit directory'
+    sbin_dir: Path
+    "${HHS}: Houdini's sbin directory, containing system binaries like sesinetd"
+    lib_paths: Sequence[Path]
+    'Additional library paths for Houdini, e.g., for plugins or custom libraries'
+    env_path: Sequence[Path]
+    'Additional entries to add to the PATH environment variable'
     exec_prefix: Path  # Python executable prefix directory
     app_paths: dict[str, Path] # application installation directories
 

@@ -8,6 +8,7 @@ and handling errors. The functions are designed to be used in
 the context of a command line interface (CLI).
 '''
 
+from collections.abc import Sequence
 from contextlib import suppress
 from shutil import which
 from typing import Any, TYPE_CHECKING, Never
@@ -23,6 +24,24 @@ if TYPE_CHECKING:
 
 from zabob.common.common_utils import DEBUG
 
+def debug_cmd(cmd: Sequence[str],
+              cwd: os.PathLike|str|None=None,
+              env: dict[str,str]|None=None) -> None:
+    """
+    Print the current working directory and environment variables for debugging.
+    Args:
+        cmd (Sequence[str]): The command to run.
+        cwd (os.PathLike|str|None): The current working directory.
+        env (dict[str,str]|None): The environment variables.
+    """
+    if DEBUG.enabled:
+        cwd = Path(cwd or Path.cwd())
+        DEBUG(f"Current working directory: {cwd}")
+        if env is not None:
+            for key, value in env.items():
+                DEBUG(f"Env:  {key}={value}")
+        DEBUG(f"Command: {' '.join(cmd)}")
+
 def run(*cmds: Any,
         cwd: os.PathLike|str|None=None,
         env: dict[str,str]|None=None,
@@ -36,8 +55,7 @@ def run(*cmds: Any,
     cmd[0] = which(cmd[0]) or cmd[0]
     cwd = Path(cwd or Path.cwd())
     DEBUG(f"{cwd.name}> {' '.join(cmd)}")
-    if cwd:
-        DEBUG(f"Working directory: {cwd}")
+    debug_cmd(cmd, cwd, env)
     if dry_run:
         return subprocess.CompletedProcess(cmd, 0)
     env = env or os.environ.copy()
@@ -65,8 +83,7 @@ def exec_cmd(*cmds: Any,
     cmd[0] = which(cmd[0]) or cmd[0]
     cwd = Path(cwd or Path.cwd())
     DEBUG(f"{cwd.name}> {' '.join(cmd)}")
-    if cwd:
-        DEBUG(f"Working directory: {cwd}")
+    debug_cmd(cmd, cwd, env)
     env = env or os.environ.copy()
     if shell:
         DEBUG("Running command in shell mode.")
@@ -85,9 +102,7 @@ def capture(*cmds: Any,
     cmd = [str(arg) for arg in cmds]
     cmd[0] = which(cmd[0]) or cmd[0]
     env = env or os.environ.copy()
-    DEBUG(f"Running command: {' '.join(cmd)}")
-    if cwd:
-        DEBUG(f"Working directory: {cwd}")
+    debug_cmd(cmd, cwd, env)
     result: subprocess.CompletedProcess = subprocess.run(cmd,
                                                         cwd=str(cwd) if cwd is not None else None,
                                                         capture_output=True,
@@ -118,9 +133,7 @@ def spawn(*cmds: Any,
     cmd = [str(arg) for arg in cmds]
     cmd[0] = which(cmd[0]) or cmd[0]
     env = env or os.environ.copy()
-    DEBUG(f"Running command: {' '.join(cmd)}")
-    if cwd:
-        DEBUG(f"Working directory: {cwd}")
+    debug_cmd(cmd, cwd, env)
     proc = subprocess.Popen(cmd,
                             cwd=str(cwd) if cwd is not None else None,
                             env=env,

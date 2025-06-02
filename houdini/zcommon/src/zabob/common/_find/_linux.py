@@ -49,7 +49,7 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             return
 
         # Find Python library directories using glob pattern
-        python_version, python_lib = max((
+        py_version, lib_dir = max((
                 (v, dir)
                 for dir in hfs_dir.glob('houdini/python*.*libs')
                 for v in _parse_pyversion(dir)
@@ -58,18 +58,53 @@ def _process_installation(version_dir: Path) -> Iterable[HoudiniInstall]:
             default=(Version(0), hfs_dir),
             )
 
-        if python_version.major < 3:
+        if py_version.major < 3:
             return
-
+        exec_prefix =version_dir / 'python'
+        py_release = f'{py_version.major}.{py_version.minor}'
+        libname = f'python{py_release}libs'
         # Create the installation entry
         yield HoudiniInstall(
             houdini_version=houdini_version,
-            python_version=_version(python_version),
+            python_version=_version(py_version),
             version_dir=version_dir,
-            exec_prefix=version_dir, #TODO: Verify this
+            exec_prefix=exec_prefix, #TODO: Verify this
             hfs_dir=version_dir,
+            hdso_libs= hfs_dir / 'dsolib',
             bin_dir=bin_dir,
+            hh_dir=hfs_dir / 'houdini',
+            toolkit_dir=hfs_dir / 'toolkit',
+            config_dir=hfs_dir / 'config',
+            sbin_dir=hfs_dir / 'sbin',
             hython=hython_path,
-            lib_dir=python_lib,
+            python_libs=lib_dir,
             app_paths={},
+            lib_paths= tuple((
+               *(p
+                    for glob in (
+                        f'houdini/{libname}',
+                        f'packages/*/{libname}',
+                        )
+                    for p in hfs_dir.glob(glob)
+                    if p.is_dir()
+                ),
+               *(p
+                    for p in (
+                        lib_dir,
+                        lib_dir / 'site-packages',
+                        lib_dir / 'site-packages-forced',
+                        lib_dir / 'site-packages-ui-forced',
+                    )
+                    if p.is_dir()
+               ),
+            )),
+            env_path=tuple(
+                p
+                for p in (
+                        bin_dir,
+                        exec_prefix / 'bin',
+                        hfs_dir / 'toolkit/bin',
+                )
+                if p.is_dir()
+            ),
         )

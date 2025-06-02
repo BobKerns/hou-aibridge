@@ -5,23 +5,31 @@ Commands relating to Houdini
 from importlib import resources
 import os
 import shutil
-import site
 import stat
 import sys
 from pathlib import Path
 from configparser import ConfigParser, UNNAMED_SECTION
+from typing import Literal
 
 import click
 from semver import Version
 
 
 from zabob.common._find.types import HoudiniInstall
-from zabob.common.find_houdini import get_houdini, list_houdini_installations, show_houdini
-from zabob.common.subproc import run
-from zabob.core.houdini_versions import cli as houdini_cli, download_houdini_installer
+from zabob.common.find_houdini import (
+    get_houdini, list_houdini_installations, show_houdini,
+)
+from zabob.common.subproc import run, exec_cmd
+from zabob.common.hython import hython
+from zabob.common.click_types import SemVerParamType, OptionalType
+from zabob.common.detect_env import is_development
+from zabob.core.houdini_versions import (
+    cli as houdini_cli, download_houdini_installer,
+)
 from zabob.core.main import main
-from zabob.core.paths import HOUDINI_PROJECTS, ZABOB_HOUDINI_DIR
-from zabob.core.hython import hython
+from zabob.core.paths import (
+    HOUDINI_PROJECTS, ZABOB_HOUDINI_DATA, ZABOB_HOUDINI_DIR, ZABOB_OUT_DIR,
+)
 
 @main.group('houdini')
 def houdini_commands():
@@ -73,9 +81,7 @@ def install_hython_launcher(venv_path, system_python=None) -> tuple[Path, Path]:
     return target_path, bin_dir
 
 def configure_houdini_venv(venv_path: Path,
-                           houdini_path: Path,
-                           site_libs_path: Path,
-                           lib_path: Path,
+                           houdini: HoudiniInstall,
                            system_python=None):
     """
     Configure a virtual environment for Houdini.
@@ -90,10 +96,9 @@ def configure_houdini_venv(venv_path: Path,
     """
 
     venv_path = Path(venv_path).resolve()
-    houdini_path = Path(houdini_path).resolve()
 
     # Install the hython launcher
-    hython_path, bin_dir = install_hython_launcher(venv_path, system_python)
+    hython_path, bin_dir = install_hython_launcher(venv_path, houdini)
 
     # Update pyenv.cfg with Houdini information
     pyenv_cfg_path = venv_path / "pyvenv.cfg"
@@ -106,26 +111,22 @@ def configure_houdini_venv(venv_path: Path,
     if 'hython' not in config:
         config.add_section('hython')
 
-    config.set('hython', 'hython', str(houdini_path))
-    config.set(UNNAMED_SECTION, 'home', str(houdini_path.parent ))
- # Remove existing home if it exists
-
+    config.set('hython', 'hython', str(houdini.hython))
+    config.set(UNNAMED_SECTION, 'home', str(houdini.hh_dir ))
 
     # Write back to pyenv.cfg without the [DEFAULT] section
     with pyenv_cfg_path.open('w') as f:
         config.write(f)
 
+    py_major_minor = f"{houdini.python_version.major}_{houdini.python_version.minor}"
+
+    site_libs_path = venv_path / 'lib' / f'python{py_major_minor}' / 'site-packages'
+    site_libs_path.mkdir(parents=True, exist_ok=True)
     pth_path = site_libs_path / '_houdini.pth'
     with pth_path.open('w') as f:
-        f.write(str(lib_path) + os.linesep)
+        f.write(str(houdini.python_libs) + os.linesep)
 
     hython_path = bin_dir / 'hython'
-    for p in ('python', 'python3'):
-        # Remove existing symlinks if they exist
-        python_path = venv_path / 'bin' / p
-        python_path.unlink(missing_ok=True)
-        # Create a symlink to the hython launcher
-        python_path.symlink_to(hython_path.relative_to(venv_path / 'bin'))
     return hython_path
 
 def get_hython_paths(version: Version|None,
@@ -221,8 +222,8 @@ def setup_houdini_venv_from_current(directory: Path|None=None,
             houdini_path = houdini.hython
             site_lib_path = venv_path / 'lib' / f'python{houdini.python_version.major}.{houdini.python_version.minor}' / 'site-packages'
             site_lib_path.mkdir(parents=True, exist_ok=True)
-            lib_dir = houdini.lib_dir
-            return configure_houdini_venv(venv_path, houdini_path, site_lib_path, lib_dir)
+            lib_dir = houdini.python_libs
+            return configure_houdini_venv(venv_path, houdini)
 
         # If we've reached ZABOB_HOUDINI_DIR, stop and raise an error
         if directory.samefile(ZABOB_HOUDINI_DIR):
@@ -258,12 +259,67 @@ def setup_houdini_venv_cmd(directory: Path|None=None,
         print(f"Error: {e}")
         sys.exit(1)
 
+
+@houdini_commands.command('load-data')
+@click.option('--version', '-v',
+              type=OptionalType(SemVerParamType(min_parts=2, max_parts=3)),
+              default=None,
+              help="Houdini version to load data for (default: latest)")
+@click.option('--mode', '-m',
+              type=click.Choice(['dev', 'test', 'prod'], case_sensitive=False),
+              default='prod',
+              help="Determines the default database path to use. "
+                   "If 'dev', it will use the development database, "
+                   "'test' will use the test database, and 'prod' will use the production database.")
+@click.option('--db', '-d',
+              type=OptionalType(click.Path(exists=True, dir_okay=False, path_type=Path)),
+              default=None,
+              help="Path to the Houdini data database file (default: use built-in path)")
+def load_data(version: Version|None=None,
+              db: Path|None=None,
+              mode: Literal['dev', 'test', 'prod'] = 'prod'):
+    """
+    Load the data for the specified Houdini version.
+    If version is None, it will load the latest version.
+    """
+    if version is None:
+        # If no version is specified, use the latest version
+        version = max(HOUDINI_PROJECTS.keys())
+    version_name = f'{version.major}.{version.minor}'
+    module_name_1 = version_name.replace('.', '_')
+    module_name = f'zabob.h{module_name_1}.static'
+    python_path = os.getenv('PYTHONPATH', '').split(os.pathsep)
+    if is_development():
+        dev_path = str(ZABOB_HOUDINI_DIR / f'h{version_name}/src')
+        if dev_path not in python_path:
+            python_path.insert(0, dev_path)
+        common_path = str(ZABOB_HOUDINI_DIR / 'zcommon/src')
+        if common_path not in python_path:
+            python_path.insert(0, common_path)
+    houdini = get_houdini(version)
+    pythonpath = [p for p in python_path if p]  # Filter out empty paths
+    if houdini is None:
+        raise FileNotFoundError(f"No Houdini installation matching version {version} found")
+    if db is None:
+        # Use the default database path for the specified version
+        v = houdini.houdini_version
+        vdir = f'{v.major}.{v.minor}.{v.patch}'
+        match mode:
+            case 'dev':
+                db = ZABOB_OUT_DIR / vdir / 'houdini_data_dev.db'
+            case 'test':
+                # Same as dev for now. Tests might always supply the path explicitly, so
+                # this is just a placeholder.
+                db = ZABOB_OUT_DIR / vdir / 'houdini_data_test.db'
+            case _:
+                # Default to production database
+                db = ZABOB_HOUDINI_DATA / vdir / 'houdini_data.db'
+    exec_cmd(houdini.hython, '-m', module_name, '--', db,
+             env={'PYTHONPATH': os.pathsep.join(python_path)},)
+
 houdini_commands.add_command(show_houdini, 'show-houdini')
 houdini_commands.add_command(list_houdini_installations, 'installations')
 houdini_commands.add_command(hython, 'hython')
 for name, command in houdini_cli.commands.items():
     # Register the command with the main group
     houdini_commands.add_command(command, name)
-
-
-    # Add the command to the Houdini commands gr

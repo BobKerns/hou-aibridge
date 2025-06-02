@@ -1,12 +1,10 @@
 '''
-An infinite proxy, where you can follow any chain of attributes or items
+An infinite mock object, where you can follow any chain of attributes or items
 within reason, even invoking methods, without knowing anything about the
 underlying object. This allows loading otherwise unloadable modules.
 '''
 
-
 from typing import Any
-
 
 _no_proxy = frozenset((
     'in_traceback', '_path_', '__path_',
@@ -16,11 +14,11 @@ _no_proxy = frozenset((
     '_path_', '_in_traceback_', '_hou_',
 ))
 
-class InfiniteProxy:
+class InfiniteMock:
     """
-    A proxy class that allows infinite access to attributes.
-    This class is used to access attributes the UI attribute of
-    the hou module, allowing modules which reference it to load
+    A mock class that allows infinite access to attributes.
+    This class is used to access attributes the UI and qt attributes of
+    the hou module, allowing modules which reference them to load
     successfully.
     """
     _in_traceback_: bool = False
@@ -29,14 +27,13 @@ class InfiniteProxy:
     def __init__(self, hou: Any, path: str ):
         self._hou_ = hou
         self._path_ = path
-        print(f'proxy: {path}')
     def __getattr__(self, name: str) -> Any:
         """
-        Get an attribute from the hou module.
+        Get an attribute from the mock object.
         Args:
             name (str): The name of the attribute to get.
         Returns:
-            Any: The attribute from the hou module.
+            Any: The attribute from the mock object.
         """
         if name in _no_proxy:
             return super().__getattribute__(name)
@@ -62,14 +59,17 @@ class InfiniteProxy:
                     self.in_traceback = True
                     traceback = e.__traceback__
                     while traceback:
-                        print("{}: {}".format(traceback.tb_frame.f_code.co_filename,traceback.tb_lineno))
+                        # Print to console for immediate feedback in tuning InfiniteMock
+                        # May log to database in the future.
+                        print("{}: {}".format(traceback.tb_frame.f_code.co_filename,
+                                              traceback.tb_lineno))
                         traceback = traceback.tb_next
-                    return InfiniteProxy(self._hou_, path)
-        return InfiniteProxy(self._hou_, path)
+                    return InfiniteMock(self._hou_, path)
+        return InfiniteMock(self._hou_, path)
 
     def __setattr__(self, name: str, value: Any):
         """
-        Set an attribute in the hou module.
+        Set an attribute in the mock object.
         Args:
             name (str): The name of the attribute to set.
             value (Any): The value to set the attribute to.
@@ -77,19 +77,19 @@ class InfiniteProxy:
         if name in _no_proxy:
             return super().__setattr__(name, value)
 
-    def __getitem__(self, key: str) -> 'InfiniteProxy':
+    def __getitem__(self, key: str) -> 'InfiniteMock':
         """
-        Get an item from the hou module.
+        Get an item from the mock object.
         Args:
             key (str): The key of the item to get.
         Returns:
-            InfiniteProxy: A proxy for the item in the hou module.
+            InfiniteMock: A mock object for an unavailable item in the hou module.
         """
-        return InfiniteProxy(self._hou_, f'{self._path_}[{key}]')
+        return InfiniteMock(self._hou_, f'{self._path_}[{key}]')
 
     def __setitem__(self, key: str, value: Any):
         """
-        Set an item in the hou module.
+        Set an item in the mock object.
         Args:
             key (str): The key of the item to set.
             value (Any): The value to set the item to.
@@ -97,57 +97,51 @@ class InfiniteProxy:
         pass
 
     def __iter__(self):
-        print(f'iter({self._path_})')
         return iter(())
 
     def __len__(self) -> int:
         """
-        Get the length of the hou module.
+        Get the length of the mock object.
         Returns:
-            int: The length of the hou module, which is always 0.
+            int: The length of the object, which is always 0.
         """
-        print(f'len({self._path_})')
         return 0
 
     def __int__(self) -> int:
         """
         Convert the value to an integer.
         Returns:
-            int: Always returns 0.
+            int: Always returns 10 (to avoid division by zero).
         """
-        print(f'int(self._path_)')
         return 10
 
     def __index__(self) -> int:
         """
-        Convert the hou module to an index.
+        Convert the mock object to an index.
         Returns:
-            int: Always returns 0.
+            int: Always returns 10 (ro avoid division by zero).
         """
-        print(f'index({self._path_})')
         return 10
 
-    def __bool__(self) -> int:
+    def __bool__(self) -> bool:
         """
-        Convert the hou module to an index.
+        Convert the mock object to an index.
         Returns:
-            int: Always returns 0.
+            bool: Always returns False.
         """
-        print(f'bool({self._path_})')
         return False
 
     def __float__(self) -> float:
         """
-        Convert the hou module to a float.
+        Convert the mock object to a float.
         Returns:
-            float: Always returns 0.0.
+            float: Always returns 10.0 (to avoid division by zero).
         """
-        print(f'float(self._path_)')
-        return 0.0
+        return 10.0
 
     def __str__(self) -> str:
         """
-        Convert the hou module to a string.
+        Convert the mock object to a string.
         Returns:
             str: Always returns an empty string.
         """
@@ -155,14 +149,14 @@ class InfiniteProxy:
 
     def __repr__(self) -> str:
         """
-        Get a string representation of the hou module.
+        Get a string representation of the mock object.
         Returns:
-            str: A string representation of the hou module.
+            str: A string representation of the mock object.
         """
-        return f'InfiniteProxy({self._path_})'
+        return f'InfiniteMock({self._path_})'
 
-    def __call__(self, *args, **kwargs) -> 'InfiniteProxy':
+    def __call__(self, *args, **kwargs) -> 'InfiniteMock':
         """
         Call and return myself.
         """
-        return InfiniteProxy(self._hou_, f'{self._path_}()')
+        return InfiniteMock(self._hou_, f'{self._path_}()')

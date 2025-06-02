@@ -103,12 +103,23 @@ def show_houdini(version: Version|None=None):
                     'bin_dir',
                     'hython',
                     'hfs_dir',
-                    'lib_dir',
+                    'python_libs',
+                    'hdso_libs',
+                    'hh_dir',
+                    'config_dir',
+                    'toolkit_dir',
+                    'sbin_dir',
                 ):
 
             title = key.replace('_', ' ').title()
             title = title.replace('hfs', 'HFS')
             print(f"      {title:>14s}: {Path(getattr(houdini, key)).relative_to(version_dir)}")
+        print("      PATH entries:")
+        for p in houdini.env_path:
+            print(f"        {p.relative_to(version_dir)}")
+        print("      Python library paths:")
+        for p in houdini.lib_paths:
+            print(f"        {p.relative_to(version_dir)}")
 
     except FileNotFoundError as e:
         print(e)

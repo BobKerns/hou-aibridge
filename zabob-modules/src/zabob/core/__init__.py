@@ -6,6 +6,10 @@ from typing import Final
 import json
 from contextlib import suppress
 
+# Items from zabob.common to re-export
+from zabob.common import (
+    detect_environment, is_development, is_packaged,
+)
 from zabob.core.utils import (
     repo_relative, find_git, same_commit, is_clean,
 )
@@ -37,9 +41,6 @@ from zabob.core.server import server
 from zabob.core.node import node_group
 from zabob.core.houdini import houdini_commands
 from zabob.core.houdini_versions import cli as houdini_cli
-from zabob.core.detect_env import (
-    check_environment, is_development, is_packaged,
-)
 
 def version():
     with suppress(ImportError):
@@ -85,5 +86,5 @@ __all__: Final[tuple[str, ...]] = (
     "ZABOB_BROWSE_LOG_FILE",
     'update', 'server', 'node_group',
     'main', 'setup', 'houdini_commands', 'houdini_cli',
-    'check_environment', 'is_development', 'is_packaged',
+    'detect_environment', 'is_development', 'is_packaged',
 )

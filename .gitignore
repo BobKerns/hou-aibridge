@@ -343,3 +343,12 @@ houdini_versions_cache.json
 *\#
 \#*
 
+# Ignore development output directories, but allow configuration files and IDE settings
+# Only the .vscode directory is used now, but make .envrc, .gitignore, and .gitattributes
+# easily available if needed.
+dev_out/**
+!dev_out/.envrc
+!dev_out/.gitignore
+!dev_out/.gitattributes
+!dev_out/.vscode
+!dev_out/.vscode/**

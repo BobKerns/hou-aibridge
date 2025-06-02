@@ -18,7 +18,7 @@ from zabob.common import (
 IGNORE_MODULES: frozenset[str] = frozenset[str]((
     'unittest.__main__', 'opcode_sum', 'perfmon_sum', 'searchbox',
     'generateHDAToolsForOTL', 'test.autotest', 'test.tf_inherit_check',
-    'test._test_embed_structseq', 'plumbum.lib',
+    'test._test_embed_structseq', 'plumbum.lib', 'idlelib.idle',
 ))
 
 

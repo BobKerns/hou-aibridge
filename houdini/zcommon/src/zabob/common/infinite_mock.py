@@ -59,6 +59,8 @@ class InfiniteMock:
                     self.in_traceback = True
                     traceback = e.__traceback__
                     while traceback:
+                        # Print to console for immediate feedback in tuning InfiniteMock
+                        # May log to database in the future.
                         print("{}: {}".format(traceback.tb_frame.f_code.co_filename,
                                               traceback.tb_lineno))
                         traceback = traceback.tb_next

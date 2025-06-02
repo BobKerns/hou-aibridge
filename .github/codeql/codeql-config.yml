@@ -1,0 +1,3 @@
+queries:
+  - exclude:
+      id: py/bind-socket-all-network-interfaces

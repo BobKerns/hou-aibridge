@@ -5,7 +5,6 @@ Commands relating to Houdini
 from importlib import resources
 import os
 import shutil
-import site
 import stat
 import sys
 from pathlib import Path

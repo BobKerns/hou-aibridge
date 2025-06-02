@@ -10,8 +10,8 @@ import hou
 
 from zabob.common import (
     ZABOB_OUT_DIR, import_or_warn, save_static_data_to_db,
+    InfiniteProxy,
 )
-from zabob.common import InfiniteProxy
 
 if getattr(hou, 'ui', None) is None:
     hou.ui = InfiniteProxy(hou, 'hou.ui')

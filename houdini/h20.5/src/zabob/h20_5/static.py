@@ -2,8 +2,11 @@
 Routines to extract static data from Houdini 20.5.
 '''
 
+from collections.abc import Mapping
 from pathlib import Path
 import sys
+from types import MappingProxyType
+from webbrowser import get
 
 import click
 
@@ -11,173 +14,31 @@ import hou
 
 from zabob.common import (
     ZABOB_OUT_DIR,
-    import_or_warn, save_static_data_to_db, modules_in_path,
+    save_static_data_to_db, modules_in_path, get_stored_modules,
 )
 
 
-MODULES = [
-    loaded_module
-    for m in (
-        'builtins',
-        'hou', 'pdg', 'hrpyc', 'soptoolutils', 'canvaseventtypes',
-        'viewerstate', 'viewerstate.utils', '_alembic_hom_extensions',
-        'pxr', 'husd', 'husd.objtranslator', 'husd.backgroundrenderer',
-        'nodegraphview', 'nodegraphdisplay',
-        'OpenGL', 'OpenGL.GL', 'OpenGL.GLU', 'OpenGL.GLUT', 'OpenGL.AGL',
-        'MaterialX', 'coloraide', 'imageio', 'mercantile', 'PIL',
-        'PyOpenColorIO', 'autorig', 'bakeanimation', 'baseinfowindow',
-        'bvhviewer', 'channelwranglesnippet', 'charactertoolutils',
-        'choptoolutils', 'clonecontrol',
-        'cloud',
-        'cloudEULA',
-        'cloudsubmit',
-        'cloudtoolutils',
-        'colorschemeutils',
-        'contextoptions',
-        'cop2toolutils', 'coptoolutils', 'crowds',
-        'crowdstoolutils', 'curveutils', 'defaultstatetools', 'defaulttoolmenus',
-        'defaulttools', 'digitalassetsupport', 'displaymessage',
-        'dopclothproxy', 'dopclothtoolutils', 'dopfemtoolutils',
-        'dopgeofiltertoolutils', 'dopinstance', 'dopparticlefluidtoolutils',
-        'doppoptoolutils', 'doppyrotoolutils', 'doprbdtoolutils',
-        'dopsmoketoolutils', 'dopsparsepyrotools', 'dopstatictoolutils',
-        'doptoolutils', 'dopwiretoolutils', 'dragdroputils', 'drivertoolutils',
-        'edit', 'expression_functions', 'expressionmenu',
-        'fbxexportpreset', 'fileutils', 'furtoolutils',
-        'gasresizedynamic',
-        # 'generateHDAToolsForOTL', # EXITS!
-        'groom', 'groomingradial', 'haio', 'handleutils', 'hdefereval',
-        'hjsonrpc',
-        'hotkeys', 'hotkeys_prototype', 'houcppportion',
-        'houdiniengineutils', 'houdinihelp', 'houdiniinternals',
-        'houdiniInterpreter', 'houxmlrpc', 'hqrop', 'hscp',
-        'husd', 'husdui', 'husktrace', 'hutil', 'hwebserver', 'images2gif',
-        'inlinecpp', 'insertionpointutils', 'introspect',
-        'karma_stats', 'keymaputils', 'landmarking', 'layout',
-        'lightlinker',  'lightmixer', 'lightstate', 'logviewer',
-        'lopcamutils', 'loplightandcamutils', 'lopshaderutils',
-        'loptoolutils', 'loputils', 'lpetags', 'materiallinker',
-        'metaexpr', 'modelview', 'mssbuild', 'mtlx2hda', 'mtlx2karma',
-        'muscletoolutils', 'mvexportutils',
-        'nodegraph',
-        'nodegraphalign',
-        'nodegraphautoscroll',
-        'nodegraphbase',
-        'nodegraphconnect',
-        'nodegraphdisplay',
-        'nodegraphdispopts',
-        'nodegraphedittext',
-        'nodegraphfastfind',
-        'nodegraphflags',
-        'nodegraphfurutils',
-        'nodegraphgestures',
-        'nodegraphhotkeys',
-        'nodegraphlayout',
-        'nodegraphpalettes',
-        'nodegraphpopupmenus',
-        'nodegraphprefs',
-        'nodegraphquicknav',
-        'nodegraphradialmenu',
-        'nodegraphstates',
-        'nodegraphrename',
-        'nodegraphselectpos',
-        'nodegraphselecthophooks',
-        'nodegraphsnap',
-        'nodegraphtitle',
-        'nodegraphtopui',
-        'nodegraphutils',
-        'nodegraphvellumutils',
-        'nodegraphview',
-        'nodesearch', 'nodeselectionutil', 'nodethemes', 'nodeutils',
-        'objecttoolutils', 'ocio',
-        # 'opnode_sum', # Script, not module.
-
-        'package',
-        'packfoldermenu', 'parmutils', 'parsepeakuserlog',
-        'particletoolutils', 'pdgd', 'pdgdatalayer', 'pdgjob',
-        'pdgpathmap',
-        'pdgservicepanel',
-        'pdgstateserver',
-        'pdgutils',
-        # 'perfmon_sum', # Script, not module.
-        'pluginutils', 'poselib', 'posespacedeform', 'pyro2',
-        'pythonscriptmenu', 'quickplanes', 'radialmenu', 'recipetoolutils',
-        'renderstats', 'rendertracker',
-        'resourceui',
-        'resourceutils',
-        'rigtoolutils', 'rmands', 'roptoolutils', 'roputils',
-        'sas', 'scenegraphdetails', 'scenegraphlayers',
-        'sceneviewerhooks',
-        # 'searchbox', # Needs QtApplication before QtPixmap
-        'shaderhda',
-        'shadingutils', 'shelfutils', 'shopclerks',
-        'shoptoolutils', 'simtracker', 'skytoolutils',
-        'snippetmenu', 'soptoolutils', 'soputils',
-        'stagemanager', 'statehud', 'stateutils',
-        'stroketoolutils',
-        'taskgraphtable',
-        'taskgraphtablepanel',
-        'terraintoolutils', 'tilefx', 'toolprompts',
-        'toolutils', 'top', 'topnettoolutils', 'toptoolutils',
-        'toputils', 'uiutils', 'usdinlinelayermenu',
-        'usdprimicons', 'usdrenderers', 'usdroputils',
-        'vexpressionmenu', 'viewerhandle', 'viewerstate',
-        'volumetoolutils', 'vop2mtlx', 'vopcallbacks',
-        'vopfxmenu', 'vopnettoolutils', 'voptoolutils',
-        'webapiclient',
-    )
-    for loaded_module in import_or_warn(m)
-]
-
-IGNORE_MODULES: frozenset[str] = frozenset[str]((
-    'unittest.__main__', 'opcode_sum', 'perfmon_sum', 'searchbox',
-    'generateHDAToolsForOTL', 'test.autotest', 'test.tf_inherit_check',
-    'test._test_embed_structseq'
-    # 'sys', 'os', 'itertools', 'time', 'xml', 'xmlrpc', 'json',
-    # 're', 'subprocess', 'threading', 'multiprocessing', 'queue',
-    # 'logging', 'warnings', 'contextlib', 'functools', 'collections',
-    # 'collections.abc', 'itertools', 'operator', 'shutil', 'pathlib',
-    # 'concurrent', 'concurrent.futures', 'asyncio',
-    # 'socket', 'http', 'urllib',
-    # 'json.decoder', 'json.encoder', 'json.scanner', 'typing',
-    # 'sysconfig', 'importlib', 'importlib.util', 'builtins',
-    # 'math', 'random', 'statistics', 'functools', 'select',
-    # 'zlib', 'gzip', 'bz2', 'lzma', 'base64', 'hashlib',
-    # 'pickle', 'copy', 'copyreg', 'marshal', 'struct',
-    # 'array', 'weakref', 'types', 'codecs', 'encodings',
-    # 'inspect', 'traceback', 'pprint', 'cProfile', 'profile',
-    # 'timeit', 'cgitb', 'faulthandler', 'linecache', 'gc',
-    # 'io', 'numbers', 'shlex', 'heapq', 'ast', 'abc', 'datetime',
-    # 'csv', 'locale', 'fnmatch', 'glob', 'quopri', 'lxml.etree',
-    # 'email', 'email.charset', 'email.errors', 'email.encoders',
-    # 'contextvars', 'reprlib', 'signal', 'ssl', 'errno', 'html',
-    # 'mimetypes', 'genericpath', 'posixpath', 'stat', 'platform',
-    # 'binascii', 'resourceutils', 'future.standard_library',
-    # 'concurrent.futures', 'ctypes', 'ctypes.util', 'ctypes.wintypes',
-    # 'ctypes.macholib', 'ctypes.macholib.dyld', 'ctypes.macholib.framework',
-    #'bisect', 'numpy', 'scipy', 'matplotlib', 'pandas',
-    #'scikit-learn', 'sklearn', 'tensorflow', 'torch', 'torchvision',
-    #'keras', 'tempfile', 'zipfile', 'tarfile', 'gzip', 'bz2',
-    # 'zipimport', 'pkgutil', 'PySide2.support', 'atexit', 'fcntl',
-    # 'lxml', 'markupsafe', 'string', 'mmap', 'posix',  'pwd', 'pyexpat',
-    # 'readline', 'resource', 'shiboken2', 'keyword', 'simplejson',
-    # 'decimal', 'termios', 'unicodedata', 'uuid', 'getpass', 'requests',
-    # 'code', 'poster', 'bookish', 'flask', 'click', 'werkzeug',
-    # 'dataclasses', 'textwrap', 'difflib', 'hnac', 'secrets', 'selectors',
-    # 'jinja2', 'tokenize', 'pydoc', 'configparser', 'html.parser',
-    # 'PySide2.QtWidgets', 'bookish.paths', 'bookish.search', 'urllib.parse',
-    # 'ipaddress', 'calendar', 'bookish.wiki.langpaths', 'bookish.util',
-    # 'jinja2.environment', 'jinja2.nodes', 'socketserver', 'codeop',
-    # 'hutil.Qt.QtWidgets', 'enum', 'pytz', 'xmlrpc.client',
-    # 'xml.parsers.expat', 'future', 'argparse', 'six',
-    # 'bookish.functions', 'bookish.stores', 'QtCompat',
-    # 'bookish.stores', 'bookish.compat',
-    # 'bookish.text.textify', 'bookish.avenue.avenue',
-    # 'bookish.wiki.pipeline', 'bookish.wiki.includes',
-    # 'bookish.wiki.wikipages', 'bookish.wiki.styles',
-    # 'bookish.avenue.patterns', 'bookish.langpath', 'jinja2.environment',
-    # 'PySide2.QtGui',
-))
+IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
+    'opnode_sum': "A script, not a module",
+    'perfmon_sum': "A script, not a module.",
+    "pycparser._build_tables": "A script that writes files.",
+    **{k: "Crashes hython 20.5"
+       for k in (
+                'dashbox.ui', 'dashbox.textedit', 'dashbox.common', 'dashbox',
+                'generateHDAToolsForOTL', 'test.autotest', 'test.tf_inherit_check',
+                'test._test_embed_structseq', 'idlelib.idle', 'ocio.editor',
+                'hrecipes.models', 'hrecipes.manager', 'pdgd.datalayerserver',
+                'assettools', 'searchbox',
+                'searchbox.panetabs', 'searchbox.paths', 'searchbox.ui',
+                'searchbox.categories', 'searchbox.parms', 'searchbox.tools',
+                'searchbox.preferences', 'searchbox.hotkeys', 'searchbox.common',
+                'searchbox.viewport_settings', 'searchbox.solaris', 'searchbox.radialmenus',
+                'searchbox.help', 'searchbox.expression', 'layout.view', 'layout.assetgallery',
+                'layout.panel', 'layout.brushpanel', 'stagemanager.panel',
+                'shibokensupport.signature.parser',
+            )
+       }
+    })
 
 
 default_db = ZABOB_OUT_DIR / hou.applicationVersionString() / 'houdini_static_data.db'
@@ -191,9 +52,14 @@ def load_data(db: Path=default_db):
     """
     db.parent.mkdir(parents=True, exist_ok=True)
     save_static_data_to_db(db_path=db,
-                           include=modules_in_path(sys.path, IGNORE_MODULES),
-                           ignore=IGNORE_MODULES)
+                           include=modules_in_path(sys.path,
+                                                   ignore=IGNORE_MODULES,
+                                                   done=get_stored_modules(db)),
+                           ignore=IGNORE_MODULES,
+                           )
     print(f"Static data saved to {db}")
+
+
 
 if __name__ == "__main__":
     load_data()

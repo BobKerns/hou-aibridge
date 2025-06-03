@@ -27,7 +27,9 @@ from zabob.common.click_types import (
 from zabob.common.common_utils import (
     _version, Level, LEVELS,
     DEBUG, INFO, QUIET, SILENT, VERBOSE,
-    environment,
+    environment, prevent_atexit, prevent_exit,
+    none_or, values, not_none, not_none1, not_none2,
+    if_true, if_false,
 )
 from zabob.common.find_houdini import (
     find_houdini_installations,
@@ -38,7 +40,7 @@ from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
     EntryType, HoudiniStaticData, ModuleData,
     get_static_module_data, save_static_data_to_db,
-    modules_in_path, import_or_warn,
+    modules_in_path, import_or_warn, get_stored_modules,
 )
 from zabob.common.detect_env import (
     detect_environment,
@@ -76,6 +78,15 @@ __all__ = (
     "SILENT",
     "VERBOSE",
     "environment",
+    "prevent_atexit",
+    "prevent_exit",
+    "none_or",
+    "values",
+    "not_none",
+    "not_none1",
+    "not_none2",
+    "if_true",
+    "if_false",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",
@@ -84,6 +95,7 @@ __all__ = (
     "ModuleData",
     "HoudiniStaticData",
     "import_or_warn",
+    "get_stored_modules",
     "modules_in_path",
     "get_static_module_data",
     "save_static_data_to_db",

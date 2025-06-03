@@ -22,6 +22,7 @@ IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
     'opnode_sum': "A script, not a module",
     'perfmon_sum': "A script, not a module.",
     "pycparser._build_tables": "A script that writes files.",
+    "PIL.PyAccess": "Creates files.",
     **{k: "Crashes hython 20.5"
        for k in (
                 'dashbox.ui', 'dashbox.textedit', 'dashbox.common', 'dashbox',

@@ -40,7 +40,7 @@ from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
     EntryType, HoudiniStaticData, ModuleData,
     get_static_module_data, save_static_data_to_db,
-    modules_in_path, import_or_warn,
+    modules_in_path, import_or_warn, get_stored_modules,
 )
 from zabob.common.detect_env import (
     detect_environment,
@@ -95,6 +95,7 @@ __all__ = (
     "ModuleData",
     "HoudiniStaticData",
     "import_or_warn",
+    "get_stored_modules",
     "modules_in_path",
     "get_static_module_data",
     "save_static_data_to_db",

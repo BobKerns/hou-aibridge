@@ -1,132 +1,91 @@
 '''
 Analyze the modules that are available in the current Houdini environment.
+
+This is a streaming architecture based on nested generators.
+
+Conceptually, it starts with a list of strings yielded from `sys.path`, which are
+turned into `Path` objects, which are scanned for directories representing
+python packages, and files which potentially represent python modules. Apparent
+packages have their component module file `Path` objects yielded first, followed by
+the package directory itself. This is done to ensure that the package directory
+is always yielded after its components.
+
+The next layer attempts to import these modules. If the import fails, it yields
+a `ModuleData` object with the name of the module, the file and directory it was found in,
+a status of the Exception that was raised, and a reason being the message of the Exception.
+
+If the import is rejected, it yields a `ModuleData` object with the name of the module,
+the file it was found in, a status of 'IGNORE', and a reason being the value from the
+`ignore` mapping.
+
+If module name has already been processed, it is skipped; nothing is yielded for it.
+
+If the import succeeds, it yields a `ModuleData` object with the name of the module,
+the file and directory (or None if not available), and a status of None This indicts that
+the module was successfully imported its analysis will follow. A status of 'OK' is set
+in the database only after all items in the module have been processed, as failure can
+occur at any point during the analysis. Failures during analysis will result in another
+`ModuleData` object being yielded with the status set to the Exception that was raised,
+and a reason being the message of the Exception. This allows the database to record the
+failure without losing the module's name and file information, and retaining the partial
+results of the analysis.
+
+If the module is a package, it is traversed recursively, yielding `HoudiniStaticData` objects,
+which contain the name, type, data type, docstring, parent name and parent type of the item.
+The items are classified as modules, classes, functions, methods, enums, constants, attributes,
+objects, and enum types. The parent information is included if the item is a member of a class
+or module. Modules encountered at any point are recursed into after the other members are
+processed, to avoid intermixing data from different modules, so the module/items alternation
+preserved.
+
+The database handler receives this alternation of `ModuleData` and `HoudiniStaticData`.
+The information in the `ModuleData` is added to the `houdini_modules` table. If it is
+a successful import, the count of items in the the module is set to zero.
+
+The `HoudiniStaticData` objects are then added to the `houdini_module_data` table.
+
+When the next module (or failure of the current module) is encountered, the previous
+module's data is updated with the count and status.
+
+The amount or storage used at any one time is minimal, except for the cumulative loading
+of modules. The loading process can be stopped at any time, and picked up in another process.
+This allows for parallel processing of modules, though the amount of parallelism is determined
+by the underlying database.
+
+It also allows the to be resumed after a failure, or to be partitioned to limit the amount of
+memory from loaded modules at nny one time.
+
+It also allows for analysis of additional modules that were not present initially, as when the
+user installs additional packages or modules after the initial analysis.
+
 '''
 
 
 import builtins
-from collections.abc import Container, Generator, Iterable, Sequence
+from collections.abc import Container, Generator, Iterable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from importlib import import_module
-from inspect import getdoc, getmembers, isclass, isdatadescriptor, isfunction, ismethod, ismethoddescriptor, ismodule
+from inspect import (
+    getdoc, getmembers, isclass, isdatadescriptor, isfunction,
+    ismethod, ismethoddescriptor, ismodule,
+)
 from pathlib import Path
-from re import sub
-import sqlite3
 import sys
 from types import ModuleType
-from typing import Any
+from typing import Any, Literal
+import warnings
+from collections import deque
 
-from semver import Version
+import sqlite3
 
 from zabob.common import InfiniteMock
-from zabob.common.common_paths import ZABOB_HOUDINI_DATA, ZABOB_ROOT
-from zabob.common.common_utils import environment
+from zabob.common.common_paths import ZABOB_ROOT
+from zabob.common.common_utils import (
+    environment, not_none1, prevent_atexit, prevent_exit, none_or, values
+)
 from zabob.common.timer import timer
-
-
-def modules_in_path(path: Sequence[str|Path],
-                    ignore: Container[str]=()) -> Generator[ModuleType, None, None]:
-    """
-    Import modules from the given path.
-    Args:
-        path (Sequence[str|Path]): A sequence of paths to import modules from.
-        ignore (Container[str]): A container of module names to ignore.
-    Yields:
-        ModuleType: The imported module.
-    """
-    paths = (Path(p) for p in path)
-    return (m
-        for p in paths
-        for candidate in candidates_in_dir(p)
-        if candidate not in ignore
-        if 'zabob' not in candidate
-        for m in import_or_warn(candidate)
-    )
-
-def candidates_in_dir(path: Path) -> Generator[str, None, None]:
-    """
-    Generate candidate module names from a directory path.
-    Args:
-        path (Path): The directory path to search for modules.
-    Yields:
-        str: The candidate module name.
-    """
-    if not path.is_dir():
-        return
-    if ZABOB_ROOT in path.parents:
-        # If the path is inside the zabob root, skip it.
-        return
-    for item in path.iterdir():
-        if item.is_file() and item.suffix == '.py':
-            yield item.stem
-        if item.name == 'site-packages':
-            continue
-        elif item.is_dir() and (item / '__init__.py').exists():
-            yield from (
-                item.name + '.' + subitem.stem
-                for subitem in item.iterdir()
-                if subitem.is_file() and subitem.suffix == '.py'
-                and subitem.name != '__init__.py'
-                and subitem.name != '__main__.py'
-            )
-            # Finally, the parent.
-            yield item.name
-        elif item.is_dir():
-            # If it's a directory without __init__.py, it may still be a namespace package.
-            yield from (
-                f'{item.name}.{pkg.stem}.{subitem.stem}'
-                for pkg in (pkgdir
-                            for pkgdir in item.iterdir()
-                            if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
-                for subitem in pkg.iterdir()
-                if subitem.is_file() and subitem.suffix == '.py'
-                if subitem.name != '__init__.py'
-                if subitem.name != '__main__.py'
-            )
-            yield from (
-                f'{item.name}.{pkg.stem}'''
-                for pkg in (pkgdir
-                            for pkgdir in item.iterdir()
-                            if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
-            )
-
-from contextlib import contextmanager
-
-@contextmanager
-def prevent_exit():
-    """Context manager that prevents sys.exit() from terminating the process."""
-    original_exit = sys.exit
-
-    def exit_handler(code=0):
-        # Instead of exiting, raise a custom exception
-        raise RuntimeError(f"Module attempted to exit with code {code}")
-
-    # Replace sys.exit temporarily
-    sys.exit = exit_handler
-    try:
-        yield
-    finally:
-        # Always restore the original exit function
-        sys.exit = original_exit
-
-def import_or_warn(module_name: str):
-    """
-    Import a module and warn if it fails.
-    Args:
-        module_name (str): The name of the module to import.
-    Returns:
-        module: The imported module, or None if the import failed.
-    """
-    try:
-        with environment(HOUDINI_ENABLE_HOM_EXTENSIONS='1'):
-            with prevent_exit():
-                print(f"Importing {module_name}...")
-                yield import_module(module_name)
-    except Exception as e:
-        if "attempted to exit" in str(e):
-            print(f"Warning: Module {module_name} attempted to exit, skipping", file=sys.stderr)
-        else:
-            print(f"Warning: Failed to import {module_name}: {e}", file=sys.stderr)
 
 
 class EntryType(StrEnum):
@@ -174,7 +133,182 @@ class ModuleData:
         file (Path): The file path of the module.
     """
     name: str
-    file: Path|None
+    directory: Path|None = None
+    file: Path|None=None
+    count: int|None= None
+    status: Literal['OK', 'IGNORE']|Exception|None = None
+    reason: str|None = None
+    def __post_init__(self):
+        """
+        Post-initialization to set the directory based on the file path.
+        If the file is not None, set the directory to its parent path.
+        """
+        if self.file is not None:
+            self.directory = self.file.parent
+        if isinstance(self.status, Exception):
+            if self.reason is None:
+                self.reason = str(self.status)
+
+
+def modules_in_path(path: Sequence[str|Path],
+                    ignore: Mapping[str, str]|None=None,
+                    done: Iterable[str]=()) -> Generator[ModuleType|ModuleData, None, None]:
+    """
+    Import modules from the given path.
+    Args:
+        path (Sequence[str|Path]): A sequence of paths to import modules from.
+        ignore (Container[str]): A container of module names to ignore.
+        done: (Iterable[str]): An iterable of module names that have already been processed.
+    Yields:
+        ModuleType: The imported module.
+    """
+    ignore = ignore or {}
+    paths = (Path(p) for p in path)
+    seen: set[ModuleType] = set()
+    done = set(done)
+    def reject(m: ModuleType|ModuleData, file: Path|None):
+        """
+        Check if the module is a duplicate.
+        Args:
+            m (ModuleType|ModuleData): The module or `ModuleData` to check.
+        Yields:
+            ModuleData if the module is rejected, otherwise the module itself.
+        """
+        if isinstance(m, ModuleData):
+            # Already rejected module, pass it along.
+            yield m
+            return
+        if m in seen:
+            # Duplicate module, skip it.
+            return
+        if not ismodule(m) or isinstance(m, InfiniteMock):
+            # Not a module, skip it.
+            return
+        file = none_or(getattr(m, '__file__', file), Path)
+        for name in reject_name(m.__name__, file):
+            seen.add(m)
+            yield m
+
+    def reject_name(name: str, file: Path|None) -> Generator[str|ModuleData, None, None]:
+        """
+        Check if the module is a duplicate.
+        Args:
+            name (str): The module name to check.
+        Returns:
+            bool: True if the module is rejected, False otherwise.
+        """
+        if name in done:
+            # Already seen this module, skip it.
+            return
+        if name.startswith('zabob.'):
+            # Zabob modules are not to be imported here.
+            return
+        if name in ignore:
+            yield ModuleData(name=name, file=file, status='IGNORE', reason=ignore[name])
+        else:
+            yield name
+
+    # A step at a time, go from candidate module name + file, to either
+    # the module itself, or a ModuleData object describing why it was rejected.
+    yield from (m
+        for p in paths
+        for candidate, file in candidates_in_dir(p)
+        for name in reject_name(candidate, file)
+        for mod in import_or_warn(name)
+        for m in reject(mod, file)
+    )
+    # Do a final pass over sys.modules
+    yield from (m
+                for mod in sys.modules.values()
+                for file in values (getattr(mod, '__file__', None),)
+                for m in reject(mod, none_or(file, Path) )
+    )
+
+
+def candidates_in_dir(path: Path) -> Generator[tuple[str, Path], None, None]:
+    """
+    Generate candidate module names from a directory path.
+    Args:
+        path (Path): The directory path to search for modules.
+    Yields:
+        str: The candidate module name.
+    """
+    if not path.is_dir():
+        return
+    if ZABOB_ROOT in path.parents:
+        # If the path is inside the zabob root, skip it.
+        return
+    for item in path.iterdir():
+        if item.is_file() and item.suffix == '.py':
+            yield (item.stem, item)
+        if item.name == 'site-packages':
+            continue
+        if item.name == 'test':
+            continue
+        elif item.is_dir() and (item / '__init__.py').exists():
+            yield from (
+                (item.name + '.' + subitem.stem, subitem)
+                for subitem in item.iterdir()
+                if subitem.is_file() and subitem.suffix == '.py'
+                and subitem.name != '__init__.py'
+                and subitem.name != '__main__.py'
+            )
+            # Finally, the parent.
+            yield (item.name, item)
+        elif item.is_dir():
+            # If it's a directory without __init__.py, it may still be a namespace package.
+            yield from (
+                (f'{item.name}.{pkg.stem}.{subitem.stem}', subitem)
+                for pkg in (pkgdir
+                            for pkgdir in item.iterdir()
+                            if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
+                for subitem in pkg.iterdir()
+                if subitem.is_file() and subitem.suffix == '.py'
+                if subitem.name != '__init__.py'
+                if subitem.name != '__main__.py'
+            )
+            yield from (
+                (f'{item.name}.{pkg.stem}', pkg)
+                for pkg in (pkgdir
+                            for pkgdir in item.iterdir()
+                            if pkgdir.is_dir() and (pkgdir / '__init__.py').exists())
+            )
+
+def import_or_warn(module_name: str|ModuleData, file: Path|None=None) -> Generator[ModuleType|ModuleData, None, None]:
+    """
+    Import a module and warn if it fails.
+    Args:
+        module_name (str): The name of the module to import.
+        file (Path|None): The file path of the module, if available.
+    Yields:
+        module: The imported module, or a `ModuleData` if the import failed.
+    """
+    if not isinstance(module_name, str):
+        # If it's already a ModuleData, yield it directly.
+        yield module_name
+        return
+    # Protect against modules that try to exit the interpreter
+    try:
+        with environment(HOUDINI_ENABLE_HOM_EXTENSIONS='1'):
+            with prevent_exit():
+                with prevent_atexit():
+                    print(f"Importing {module_name}...")
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings('ignore',
+                                                message='pyside_type_init:_resolve_value',
+                                                category=RuntimeWarning)
+                        warnings.simplefilter('ignore', DeprecationWarning)
+                        module = import_module(module_name)
+                        if ismodule(module):
+                            yield module
+                        else:
+                            raise TypeError(f"{module_name} is not a module, skipping")
+    except Exception as e:
+        if "attempted to exit" in str(e):
+            print(f"Warning: Module {module_name} attempted to exit, skipping", file=sys.stderr)
+        else:
+            print(f"Warning: Failed to import {module_name}: {e}", file=sys.stderr)
+        yield ModuleData(name=module_name, file=file, status=e)
 
 
 def get_members_safe(obj: Any):
@@ -191,8 +325,9 @@ def get_members_safe(obj: Any):
         print(f"Warning: Failed to get members of {obj}: {e}", file=sys.stderr)
 
 
-def get_static_module_data(include: Iterable[ModuleType],
-                           ignore: Container[str],
+def get_static_module_data(include: Iterable[ModuleType|ModuleData],
+                           ignore: Mapping[str, str],
+                           done: Iterable[str]
         ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
     """
     Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
@@ -212,13 +347,40 @@ def get_static_module_data(include: Iterable[ModuleType],
         dict: A dictionary containing the static data.
     """
     import hou
-
     if getattr(hou, 'ui', None) is None:
         hou.ui = InfiniteMock(hou, 'hou.ui')
     if getattr(hou, 'qt', None) is None:
         hou.qt = InfiniteMock(hou, 'hou.qt')
-
-    seen = set()
+    if getattr(hou, 'viewportVisualizers', None) is None:
+        hou.viewportVisualizers = InfiniteMock(hou, 'hou.viewportVisualizers')
+    sys.modules['hdefereval'] = InfiniteMock(hou, 'hou.hdefereval') # type: ignore[assignment]
+    with suppress(Exception):
+        # Try to import the hou module from zabob.common, if it exists.
+        import hutils.PySide # type: ignore[import]
+        sys.modules['hutil.PySide.Qt'] = hutils.PySide = InfiniteMock(hou, 'hutils.PySide.Qt') # type: ignore[assignment]
+        sys.modules['hutil.PySide.QTGui'] = hutil.PySide.QtGui = InfiniteMock(hou, 'hutils.PySide.QtGui') # type: ignore[assignment]
+        sys.modules['hutil.PySide.QtActions'] = hutil.PySide.QtActions = InfiniteMock(hou, 'hutils.PySide.QtActions') # type: ignore[assignment]
+        sys.modules['hutil.PySide.QtWidgets'] = hutils.PySide.QtWidgets = InfiniteMock(hou, 'hutils.PySide.QtWidgets') # type: ignore[assignment]
+        sys.modules['hutil.PySide.QtCore'] = hutils.PySide.QtCore = InfiniteMock(hou, 'hutils.PySide.QtCore') # type: ignore[assignment]
+        sys.modules['hutil.Qt'] = hutils.Qt = InfiniteMock(hou, 'hutils.Qt') # type: ignore[assignment]
+        sys.modules['hutil.Qt.QtGui'] = hutils.Qt.QtGui = InfiniteMock(hou, 'hutils.Qt.QtGui') # type: ignore[assignment]
+        sys.modules['hutil.Qt.QtWidgets'] = hutils.Qt.QtWidgets = InfiniteMock(hou, 'hutils.Qt.QtWidgets') # type: ignore[assignment]
+        sys.modules['hutil.Qt.QtCore'] = hutils.Qt.QtCore = InfiniteMock(hou, 'hutils.Qt.QtCore') # type: ignore[assignment]
+    with suppress(Exception):
+        import PySide # type: ignore[import]
+        sys.modules['PySide.Qt'] = PySide = InfiniteMock(hou, 'PySide2.Qt') # type: ignore[assignment]
+        sys.modules['PySide.QTGui'] = PySide.QtGui = InfiniteMock(hou, 'PySide.QtGui') # type: ignore[assignment]
+        sys.modules['PySide.QtActions'] = PySide.QtActions = InfiniteMock(hou, 'PySide.QtActions') # type: ignore[assignment]
+        sys.modules['PySide.QtWidgets'] = PySide.QtWidgets = InfiniteMock(hou, 'PySide.QtWidgets') # type: ignore[assignment]
+        sys.modules['PySide.QtCore'] = PySide.QtCore = InfiniteMock(hou, 'PySide.QtCore') # type: ignore[assignment]
+    with suppress(Exception):
+        import PySide2 # type: ignore[import]
+        sys.modules['PySide2.Qt'] = PySide2 = InfiniteMock(hou, 'PySide2.Qt') # type: ignore[assignment]
+        sys.modules['PySide2.QTGui'] = PySide2.QtGui = InfiniteMock(hou, 'PySide2.QtGui') # type: ignore[assignment]
+        sys.modules['PySide2.QtActions'] = PySide2.QtActions = InfiniteMock(hou, 'PySide2.QtActions') # type: ignore[assignment]
+        sys.modules['PySide2.QtWidgets'] = PySide2.QtWidgets = InfiniteMock(hou, 'PySide2.QtWidgets') # type: ignore[assignment]
+        sys.modules['PySide2.QtCore'] = PySide2.QtCore = InfiniteMock(hou, 'PySide2.QtCore') # type: ignore[assignment]
+    seen = set(done)
     builtin_function_or_method = type(builtins.repr)
     def dtype(v) -> builtins.type:
         t = type(v)
@@ -292,6 +454,20 @@ def get_static_module_data(include: Iterable[ModuleType],
             parent_type=parent.type if parent else None
         )
 
+    queue: deque[tuple[HoudiniStaticData, ModuleType]] = deque()
+    '''
+    A queue to hold the modules to be processed. Holds tuples of (`HoudiniStaticData`, `ModuleType`),
+    where the `HoudiniStaticData` is the the parent module data, and the `ModuleType` is the module
+    to be processed.  This is essentially breadth-first traversal of the module tree.
+
+    This serves ensure the module/items alternation is preserved, so that the backend can count
+    and track the items in each module, and close off the module with its final status when all items
+    have been processed. The database could be replaced with a report generator and generate a report
+    without nesting of modules and items.
+
+    This isn't strictly necessary.
+    '''
+
     def load_module(module, parent: HoudiniStaticData|None=None) ->Generator[HoudiniStaticData|ModuleData, None, None]:
         """
         Load a module and its members, yielding HoudiniStaticData instances for each item.
@@ -305,13 +481,22 @@ def get_static_module_data(include: Iterable[ModuleType],
         if module in seen:
             return
         seen.add(module)
-        if module.__name__ in ignore:
+        if module.__name__ in done:
+            # Been here, done that.
             return
-        file = getattr(module, '__file__', None)
-        name = module.__name__
+        file = none_or(getattr(module, '__file__', None), Path)
         if file is not None:
-            file = Path(file).resolve()
-        yield ModuleData(name, file)
+            file = file.resolve()
+        if module.__name__ in ignore:
+            name = module.__name__
+            yield ModuleData(name=name,
+                            file=file,
+                            count=None,
+                            status='IGNORE',
+                            reason=ignore[name])
+            return
+        name = module.__name__
+        yield ModuleData(name, file=file)
         module_data = mk_datum(module, EntryType.MODULE,
                                parent,
                                name=name)
@@ -319,9 +504,8 @@ def get_static_module_data(include: Iterable[ModuleType],
         for member_name, member in get_members_safe(module):
             if member_name.startswith('_'):
                 continue
-            if ismodule(member) or isinstance(member, ModuleType):
-                yield from load_module(member,
-                                       parent=module_data)
+            if ismodule(member) and not isinstance(member, InfiniteMock):
+                queue.append((module_data, member))
             elif isclass(member):
                 yield from load_class(member,
                                       parent=module_data)
@@ -346,6 +530,14 @@ def get_static_module_data(include: Iterable[ModuleType],
                 yield mk_datum(member, EntryType.OBJECT,
                                parent=module_data,
                                name=member_name)
+
+        while len(queue) > 0:
+            # Process the queue until it's empty.
+            # This ensures that modules are processed in the order they were found,
+            # and that module/items alternation is preserved.
+            parent_data, module = queue.popleft()
+            # Process the next module in the queue.
+            yield from load_module(module, parent=parent_data)
 
     def load_class(cls, parent: HoudiniStaticData,
                    name: str|None=None
@@ -396,9 +588,8 @@ def get_static_module_data(include: Iterable[ModuleType],
             if name.startswith('_'):
                     continue
 
-            if ismodule(member):
-                yield from load_module(member,
-                                       parent=class_data)
+            if ismodule(member) and not isinstance(member, InfiniteMock):
+                queue.append((class_data, member))
             elif isclass(member):
                 yield from load_class(member,
                                       parent=class_data,
@@ -412,21 +603,29 @@ def get_static_module_data(include: Iterable[ModuleType],
                                parent=class_data,
                                name=member_name)
     for module in include:
-        yield from load_module(module)
+        if not isinstance(module, ModuleType):
+            # If it's already a ModuleData, yield it directly.
+            yield module
+        else:
+            yield from load_module(module)
 
 
-def save_static_data_to_db(db_path: Path,
-                           out_dir: Path=ZABOB_HOUDINI_DATA,
+def save_static_data_to_db(db_path: Path|None=None,
                            connection: sqlite3.Connection|None=None,
-                           include: Iterable[ModuleType] = (),
-                           ignore: Container[str] = ()
+                           include: Iterable[ModuleType|ModuleData] = (),
+                           ignore: Mapping[str, str]|None =None
                         ):
     """
-    Save the static data to a SQLite database.
+    Save the static data to a SQLite database. Either a DB path or an existing connection must be provided.
+    This function initializes the database tables if they do not exist, and then
 
     Args:
-        db_path (Path): The path to the SQLite database file.
+        db_path (Path|None): The path to the SQLite database file.
+        connection (sqlite3.Connection|None): An existing SQLite connection, if available.
+        include (Iterable[ModuleType|ModuleData]): An iterable of modules to include in the static data.
+        ignore (Mapping[str, str]|None): A mapping of module names to ignore, with reasons.
     """
+    ignore = ignore or {}
     def save(conn: sqlite3.Connection):
         """
         Save the static data to the database.
@@ -452,21 +651,68 @@ def save_static_data_to_db(db_path: Path,
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS houdini_modules (
                 name TEXT NOT NULL PRIMARY KEY,
-                file TEXT DEFAULT NULL
+                directory TEXT DEFAULT NULL,
+                file TEXT DEFAULT NULL,
+                count INTEGER DEFAULT NULL,
+                status TEXT DEFAULT NULL,
+                reason TEXT DEFAULT NULL
             ) STRICT
         ''')
 
+        # Write-Aahead Logging (WAL) mode permits concurrent reads and writes,
+        # which is useful for long-running operations like this.
+        # It also allows the database to be accessed by multiple processes, so
+        # long as they are on the same machine.
+        cursor.execute("PRAGMA journal_mode=WAL;")
         with timer('Storing') as progress:
             # Insert or update static data
-            for datum in get_static_module_data(include, ignore):
+            item_count = 0
+            cur_module: ModuleData|None = None
+            for datum in get_static_module_data(include=include,
+                                                ignore=ignore,
+                                                done=get_stored_modules(connection=conn)):
                 if isinstance(datum, ModuleData):
+                    if cur_module is not None:
+                        # Commit the previous module data
+                        cursor.execute('''
+                            UPDATE houdini_modules
+                            SET count = ?, status = ?, reason = ?
+                            WHERE name = ?
+                        ''', (
+                            item_count,
+                            'OK',
+                            None,
+                            cur_module.name))
+
                     conn.commit()
-                    progress(f'Processing module {datum.name}...')
+                    status = datum.status
+                    if isinstance(status, Exception):
+                        t = type(status)
+                        if hasattr(t, '__name__'):
+                            status = t.__name__
+                        else:
+                            status = str(t)
                     cursor.execute('''
-                        INSERT OR REPLACE INTO houdini_modules (name, file)
-                        VALUES (?, ?)
-                    ''', (datum.name, str(datum.file) if datum.file else None))
+                        INSERT OR REPLACE INTO houdini_modules (name, directory, file, count, status, reason)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (
+                            datum.name,
+                            none_or(datum.directory, str),
+                            none_or(datum.file, str),
+                            datum.count,
+                            status,
+                            datum.reason))
+                    item_count = 0
+                    if datum.status is not None:
+                        progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
+                        continue
+                    progress(f'Processing module {datum.name}...')
+                    cur_module = datum
+                    conn.commit
                 else:
+                    item_count += 1
+                    if item_count % 100 == 0:
+                        conn.commit()
                     def name(d: Any) -> str:
                         if isinstance(d, Enum):
                             return str(d)
@@ -517,10 +763,70 @@ def save_static_data_to_db(db_path: Path,
             cursor.execute('''
             VACUUM;
             ''')
-    if connection is not None:
-        save(connection)
-    else:
-        print(f'Saving static data to {db_path}...')
-        with sqlite3.connect(db_path) as conn:
-            save(conn)
-    print(f'static module data saved to {db_path}.')
+
+    match db_path, connection:
+        case None, None:
+            raise ValueError("Either db_path or connection must be provided.")
+        case Path(), None:
+            print(f'Saving static data to {db_path}...')
+            if not db_path.exists():
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+            with sqlite3.connect(db_path, isolation_level='EXCLUSIVE') as conn:
+                save(conn)
+            print(f'static module data saved to {db_path}.')
+        case _, sqlite3.Connection():
+            save(connection)
+
+def get_stored_modules(db_path: Path|None=None,
+                       connection: sqlite3.Connection|None=None,
+                       ) -> Generator[str, None, None]:
+    """
+    Get names of modules already stored in the database.
+
+    Args:
+        db_path (Path): Path to the SQLite database file.
+        conn (sqlite3.Connection|None): An existing SQLite connection, if available.
+
+    Yields:
+        str: Name of each module stored in the database.
+    """
+    def retrieve(conn: sqlite3.Connection) -> Generator[str, None, None]:
+        """
+        Retrieve stored module names from the database.
+        Args:
+            conn (sqlite3.Connection): The SQLite connection to use.
+        Yields:
+            str: Name of each module stored in the database.
+        """
+
+        try:
+            cursor = conn.cursor()
+
+            # Check if table exists
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='houdini_modules'
+            """)
+
+            if not cursor.fetchone():
+                return
+
+            # Query module names
+            cursor.execute("SELECT name FROM houdini_modules where status = 'OK'")
+
+            for row in cursor.fetchall():
+                yield row[0]
+        except sqlite3.Error as e:
+            print(f"Error retrieving stored modules: {e}", file=sys.stderr)
+    match db_path, connection:
+        case None, None:
+            raise ValueError("Either db_path or conn must be provided.")
+        case _, sqlite3.Connection():
+            yield from retrieve(connection)
+        case Path(), None:
+            if not db_path.exists():
+                return
+            with sqlite3.connect(db_path) as connection:
+                yield from retrieve(connection)
+
+

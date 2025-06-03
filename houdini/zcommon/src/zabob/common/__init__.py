@@ -27,7 +27,9 @@ from zabob.common.click_types import (
 from zabob.common.common_utils import (
     _version, Level, LEVELS,
     DEBUG, INFO, QUIET, SILENT, VERBOSE,
-    environment,
+    environment, prevent_atexit, prevent_exit,
+    none_or, values, not_none, not_none1, not_none2,
+    if_true, if_false,
 )
 from zabob.common.find_houdini import (
     find_houdini_installations,
@@ -76,6 +78,15 @@ __all__ = (
     "SILENT",
     "VERBOSE",
     "environment",
+    "prevent_atexit",
+    "prevent_exit",
+    "none_or",
+    "values",
+    "not_none",
+    "not_none1",
+    "not_none2",
+    "if_true",
+    "if_false",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",

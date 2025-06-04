@@ -23,6 +23,7 @@ IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
     'perfmon_sum': "A script, not a module.",
     "pycparser._build_tables": "A script that writes files.",
     "PIL.PyAccess": "Creates files.",
+    "hutil.pbkdf2": "Creates files.",
     **{k: "Crashes hython 20.5"
        for k in (
                 'dashbox.ui', 'dashbox.textedit', 'dashbox.common', 'dashbox',
@@ -36,7 +37,7 @@ IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
                 'searchbox.viewport_settings', 'searchbox.solaris', 'searchbox.radialmenus',
                 'searchbox.help', 'searchbox.expression', 'layout.view', 'layout.assetgallery',
                 'layout.panel', 'layout.brushpanel', 'stagemanager.panel',
-                'shibokensupport.signature.parser',
+                'shibokensupport.signature.parser', "apex.transientconstraint",
             )
        }
     })

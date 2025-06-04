@@ -89,9 +89,63 @@ from zabob.common.common_utils import (
 )
 from zabob.common.timer import timer
 
+
+def reject(m: ModuleType|ModuleData,
+            seen: set[ModuleType],
+            done: set[str],
+            ignore: Mapping[str, str],
+             file: Path|None,
+             ):
+    """
+    Check if the module is a duplicate.
+    Args:
+        m (ModuleType|ModuleData): The module or `ModuleData` to check.
+    Yields:
+        ModuleData if the module is rejected, otherwise the module itself.
+    """
+    if isinstance(m, ModuleData):
+        # Already rejected module, pass it along.
+        yield m
+        return
+    if m in seen:
+        # Duplicate module, skip it.
+        return
+    if not ismodule(m) or isinstance(m, InfiniteMock):
+        # Not a module, skip it.
+        return
+    file = none_or(getattr(m, '__file__', file), Path)
+    for name in reject_name(m.__name__, done, ignore, file):
+        seen.add(m)
+        yield m
+
+
+def reject_name(name: str,
+                done: set[str],
+                ignore: Mapping[str, str],
+                file: Path|None) -> Generator[str|ModuleData, None, None]:
+    """
+    Check if the module is a duplicate.
+    Args:
+        name (str): The module name to check.
+    Returns:
+        bool: True if the module is rejected, False otherwise.
+    """
+    if name in done:
+        # Already seen this module, skip it.
+        return
+    if name.startswith('zabob.'):
+        # Zabob modules are not to be imported here.
+        return
+    if name in ignore:
+        yield ModuleData(name=name, file=file, status='IGNORE', reason=ignore[name])
+    else:
+        yield name
+
 def modules_in_path(path: Sequence[str|Path],
-                    ignore: Mapping[str, str]|None=None,
-                    done: Iterable[str]=()) -> Generator[ModuleType|ModuleData, None, None]:
+                    seen: set[ModuleType]|None=None,
+                    done: set[str]|None=None,
+                    ignore: Mapping[str, str]| None = None,
+                    ) -> Generator[ModuleType|ModuleData, None, None]:
     """
     Import modules from the given path.
     Args:
@@ -101,66 +155,29 @@ def modules_in_path(path: Sequence[str|Path],
     Yields:
         ModuleType: The imported module.
     """
+    seen = seen or set()
+    done = done or set()
     ignore = ignore or {}
     paths = (Path(p) for p in path)
-    seen: set[ModuleType] = set()
-    done = set(done)
-    def reject(m: ModuleType|ModuleData, file: Path|None):
-        """
-        Check if the module is a duplicate.
-        Args:
-            m (ModuleType|ModuleData): The module or `ModuleData` to check.
-        Yields:
-            ModuleData if the module is rejected, otherwise the module itself.
-        """
-        if isinstance(m, ModuleData):
-            # Already rejected module, pass it along.
-            yield m
-            return
-        if m in seen:
-            # Duplicate module, skip it.
-            return
-        if not ismodule(m) or isinstance(m, InfiniteMock):
-            # Not a module, skip it.
-            return
-        file = none_or(getattr(m, '__file__', file), Path)
-        for name in reject_name(m.__name__, file):
-            seen.add(m)
-            yield m
-
-    def reject_name(name: str, file: Path|None) -> Generator[str|ModuleData, None, None]:
-        """
-        Check if the module is a duplicate.
-        Args:
-            name (str): The module name to check.
-        Returns:
-            bool: True if the module is rejected, False otherwise.
-        """
-        if name in done:
-            # Already seen this module, skip it.
-            return
-        if name.startswith('zabob.'):
-            # Zabob modules are not to be imported here.
-            return
-        if name in ignore:
-            yield ModuleData(name=name, file=file, status='IGNORE', reason=ignore[name])
-        else:
-            yield name
 
     # A step at a time, go from candidate module name + file, to either
     # the module itself, or a ModuleData object describing why it was rejected.
     yield from (m
         for p in paths
         for candidate, file in candidates_in_dir(p)
-        for name in reject_name(candidate, file)
+        for name in reject_name(candidate, done, ignore, file)
         for mod in import_or_warn(name)
-        for m in reject(mod, file)
+        for m in reject(mod, seen, done, ignore,  file)
     )
     # Do a final pass over sys.modules
     yield from (m
                 for mod in sys.modules.values()
                 for file in values (getattr(mod, '__file__', None),)
-                for m in reject(mod, none_or(file, Path) )
+                for m in reject(mod,
+                                seen=seen,
+                                done=done,
+                                ignore=ignore,
+                                file=none_or(file, Path) )
     )
 
 
@@ -173,6 +190,7 @@ def candidates_in_dir(path: Path) -> Generator[tuple[str, Path], None, None]:
         path (Path): The directory path to search for modules.
     Yields:
         str: The candidate module name.
+        Path: The file path of the module.
     """
     if not path.is_dir():
         return
@@ -262,6 +280,7 @@ def get_members_safe(obj: Any):
         yield from getmembers(obj)
     except Exception as e:
         print(f"Warning: Failed to get members of {obj}: {e}", file=sys.stderr)
+
 
 _hou_initialized: bool = False
 def _init_hou() -> ModuleType:

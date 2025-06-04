@@ -31,11 +31,16 @@ class InfiniteMock(ModuleType):
     This class is used to access attributes the UI and qt attributes of
     the hou module, allowing modules which reference them to load
     successfully.
+
+    It is a subclass of `ModuleType`, allowing it to satisfy
+    checks for being a module.
     """
     _in_traceback_: bool = False
     __name__: str
     _hou_: Any
     def __init__(self, hou: Any, path: str ):
+        # This is a mock object, hence we do not actually initialize
+        # the superclasses' __init__ methods.
         self._hou_ = hou
         self.__name__ = path
     def __getattr__(self, name: str) -> Any:
@@ -91,7 +96,7 @@ class InfiniteMock(ModuleType):
         if name in _no_mock:
             return super().__setattr__(name, value)
 
-    def __getitem__(self, key: str) -> 'InfiniteMock':
+    def __getitem__(self, key):
         """
         Get an item from the mock object.
         Args:

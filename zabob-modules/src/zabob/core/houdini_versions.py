@@ -658,7 +658,7 @@ def show_command(version: Version,
             info('Library type', build['build_type'])
         info("Download URL", f"https://www.sidefx.com/{build['download_url']}")
         info("File name", name)
-        info("Size", "{build['size']:,d} bytes")
+        info("Size", f"{build['size']:,d} bytes")
         info("HASH", build['hash'])
         if cache_file.exists():
             info("Status",  "Downloaded")

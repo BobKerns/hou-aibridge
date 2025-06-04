@@ -62,7 +62,7 @@ user installs additional packages or modules after the initial analysis.
 
 
 import builtins
-from collections.abc import Container, Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum, StrEnum
@@ -80,79 +80,72 @@ from collections import deque
 
 import sqlite3
 
-from zabob.common import InfiniteMock
+from zabob.common.infinite_mock import InfiniteMock
+from zabob.common.analysis_db import analysis_db, analysis_db_writer, get_stored_modules
+from zabob.common.analysis_types import EntryType, HoudiniStaticData, ModuleData
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    environment, not_none1, prevent_atexit, prevent_exit, none_or, values
+    do_all, environment, get_name, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
 
 
-class EntryType(StrEnum):
+def reject(m: ModuleType|ModuleData,
+            seen: set[ModuleType],
+            done: set[str],
+            ignore: Mapping[str, str],
+             file: Path|None,
+             ):
     """
-    Enum for entry types in the Houdini static data.
+    Check if the module is a duplicate.
+    Args:
+        m (ModuleType|ModuleData): The module or `ModuleData` to check.
+    Yields:
+        ModuleData if the module is rejected, otherwise the module itself.
     """
-    MODULE = 'module'
-    CLASS = 'class'
-    FUNCTION = 'function'
-    METHOD = 'method'
-    ENUM = 'enum'
-    CONSTANT = 'constant'
-    OBJECT = 'object'
-    ATTRIBUTE = 'attribute'
-    ENUM_TYPE = 'EnumType'
+    if isinstance(m, ModuleData):
+        # Already rejected module, pass it along.
+        yield m
+        return
+    if m in seen:
+        # Duplicate module, skip it.
+        return
+    if not ismodule(m) or isinstance(m, InfiniteMock):
+        # Not a module, skip it.
+        return
+    file = none_or(getattr(m, '__file__', file), Path)
+    for name in reject_name(m.__name__, done, ignore, file):
+        seen.add(m)
+        yield m
 
 
-@dataclass
-class HoudiniStaticData:
+def reject_name(name: str,
+                done: set[str],
+                ignore: Mapping[str, str],
+                file: Path|None) -> Generator[str|ModuleData, None, None]:
     """
-    A class to represent static data extracted from Houdini 20.5.
-
-    Attributes:
-        name (str): The name of the Houdini item (module, class, function, etc.).
-        type (str): The type of the Houdini item (e.g., 'module', 'class', 'function', 'constant', etc.).
-        datatype (str): The data type of the Houdini item (e.g., 'int', 'str', 'hou.EnumValue', etc.).
-        docstring (str|None): The docstring of the Houdini item, or None if not available.
-        parent_name (str|None): The name of the parent Houdini item, if applicable.
-        parent_type (str|None): The type of the parent Houdini item, if applicable.
+    Check if the module is a duplicate.
+    Args:
+        name (str): The module name to check.
+    Returns:
+        bool: True if the module is rejected, False otherwise.
     """
-    name: str
-    type: EntryType
-    datatype: builtins.type
-    docstring: str|None = None
-    parent_name: str|None = None
-    parent_type: str|None = None
-
-@dataclass
-class ModuleData:
-    """
-    A class to represent module data extracted from Houdini 20.5.
-
-    Attributes:
-        name (str): The name of the module.
-        file (Path): The file path of the module.
-    """
-    name: str
-    directory: Path|None = None
-    file: Path|None=None
-    count: int|None= None
-    status: Literal['OK', 'IGNORE']|Exception|None = None
-    reason: str|None = None
-    def __post_init__(self):
-        """
-        Post-initialization to set the directory based on the file path.
-        If the file is not None, set the directory to its parent path.
-        """
-        if self.file is not None:
-            self.directory = self.file.parent
-        if isinstance(self.status, Exception):
-            if self.reason is None:
-                self.reason = str(self.status)
-
+    if name in done:
+        # Already seen this module, skip it.
+        return
+    if name.startswith('zabob.'):
+        # Zabob modules are not to be imported here.
+        return
+    if name in ignore:
+        yield ModuleData(name=name, file=file, status='IGNORE', reason=ignore[name])
+    else:
+        yield name
 
 def modules_in_path(path: Sequence[str|Path],
-                    ignore: Mapping[str, str]|None=None,
-                    done: Iterable[str]=()) -> Generator[ModuleType|ModuleData, None, None]:
+                    seen: set[ModuleType]|None=None,
+                    done: set[str]|None=None,
+                    ignore: Mapping[str, str]| None = None,
+                    ) -> Generator[ModuleType|ModuleData, None, None]:
     """
     Import modules from the given path.
     Args:
@@ -162,76 +155,42 @@ def modules_in_path(path: Sequence[str|Path],
     Yields:
         ModuleType: The imported module.
     """
+    seen = seen or set()
+    done = done or set()
     ignore = ignore or {}
     paths = (Path(p) for p in path)
-    seen: set[ModuleType] = set()
-    done = set(done)
-    def reject(m: ModuleType|ModuleData, file: Path|None):
-        """
-        Check if the module is a duplicate.
-        Args:
-            m (ModuleType|ModuleData): The module or `ModuleData` to check.
-        Yields:
-            ModuleData if the module is rejected, otherwise the module itself.
-        """
-        if isinstance(m, ModuleData):
-            # Already rejected module, pass it along.
-            yield m
-            return
-        if m in seen:
-            # Duplicate module, skip it.
-            return
-        if not ismodule(m) or isinstance(m, InfiniteMock):
-            # Not a module, skip it.
-            return
-        file = none_or(getattr(m, '__file__', file), Path)
-        for name in reject_name(m.__name__, file):
-            seen.add(m)
-            yield m
-
-    def reject_name(name: str, file: Path|None) -> Generator[str|ModuleData, None, None]:
-        """
-        Check if the module is a duplicate.
-        Args:
-            name (str): The module name to check.
-        Returns:
-            bool: True if the module is rejected, False otherwise.
-        """
-        if name in done:
-            # Already seen this module, skip it.
-            return
-        if name.startswith('zabob.'):
-            # Zabob modules are not to be imported here.
-            return
-        if name in ignore:
-            yield ModuleData(name=name, file=file, status='IGNORE', reason=ignore[name])
-        else:
-            yield name
 
     # A step at a time, go from candidate module name + file, to either
     # the module itself, or a ModuleData object describing why it was rejected.
     yield from (m
         for p in paths
         for candidate, file in candidates_in_dir(p)
-        for name in reject_name(candidate, file)
+        for name in reject_name(candidate, done, ignore, file)
         for mod in import_or_warn(name)
-        for m in reject(mod, file)
+        for m in reject(mod, seen, done, ignore,  file)
     )
     # Do a final pass over sys.modules
     yield from (m
                 for mod in sys.modules.values()
                 for file in values (getattr(mod, '__file__', None),)
-                for m in reject(mod, none_or(file, Path) )
+                for m in reject(mod,
+                                seen=seen,
+                                done=done,
+                                ignore=ignore,
+                                file=none_or(file, Path) )
     )
 
 
 def candidates_in_dir(path: Path) -> Generator[tuple[str, Path], None, None]:
     """
     Generate candidate module names from a directory path.
+
+    `Path` -> `str` (module name).
     Args:
         path (Path): The directory path to search for modules.
     Yields:
         str: The candidate module name.
+        Path: The file path of the module.
     """
     if not path.is_dir():
         return
@@ -241,9 +200,7 @@ def candidates_in_dir(path: Path) -> Generator[tuple[str, Path], None, None]:
     for item in path.iterdir():
         if item.is_file() and item.suffix == '.py':
             yield (item.stem, item)
-        if item.name == 'site-packages':
-            continue
-        if item.name == 'test':
+        if item.name in ('test', 'site-packages', 'site-packages-forced'):
             continue
         elif item.is_dir() and (item / '__init__.py').exists():
             yield from (
@@ -325,28 +282,21 @@ def get_members_safe(obj: Any):
         print(f"Warning: Failed to get members of {obj}: {e}", file=sys.stderr)
 
 
-def get_static_module_data(include: Iterable[ModuleType|ModuleData],
-                           ignore: Mapping[str, str],
-                           done: Iterable[str]
-        ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
+_hou_initialized: bool = False
+def _init_hou() -> ModuleType:
     """
-    Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
-    etc. exposed by the hou module.
-
-    This function traverses the hou module and its submodules, collecting information
-    about each item, including its name, type, data type, docstring, Houdini version,
-    and parent information if applicable.
-
-    Yields:
-        HoudiniStaticData: An instance of HoudiniStaticData for each item found in the hou module.
-        ModuleData: An instance of ModuleData for each module found in the hou module.
-    The data includes:
-
+    Initialize the hou module and its submodules, mocking them if necessary.
+    This function ensures that the hou module and its submodules are available
+    and mocks what can be mocked to maximize what modules can be analyzed.
 
     Returns:
-        dict: A dictionary containing the static data.
+        ModuleType: The initialized hou module.
     """
+    global _hou_initialized
     import hou
+    if _hou_initialized:
+        # Already initialized, return the hou module.
+        return hou
     if getattr(hou, 'ui', None) is None:
         hou.ui = InfiniteMock(hou, 'hou.ui')
     if getattr(hou, 'qt', None) is None:
@@ -355,7 +305,6 @@ def get_static_module_data(include: Iterable[ModuleType|ModuleData],
         hou.viewportVisualizers = InfiniteMock(hou, 'hou.viewportVisualizers')
     sys.modules['hdefereval'] = InfiniteMock(hou, 'hou.hdefereval') # type: ignore[assignment]
     with suppress(Exception):
-        # Try to import the hou module from zabob.common, if it exists.
         import hutils.PySide # type: ignore[import]
         sys.modules['hutil.PySide.Qt'] = hutils.PySide = InfiniteMock(hou, 'hutils.PySide.Qt') # type: ignore[assignment]
         sys.modules['hutil.PySide.QTGui'] = hutil.PySide.QtGui = InfiniteMock(hou, 'hutils.PySide.QtGui') # type: ignore[assignment]
@@ -380,79 +329,272 @@ def get_static_module_data(include: Iterable[ModuleType|ModuleData],
         sys.modules['PySide2.QtActions'] = PySide2.QtActions = InfiniteMock(hou, 'PySide2.QtActions') # type: ignore[assignment]
         sys.modules['PySide2.QtWidgets'] = PySide2.QtWidgets = InfiniteMock(hou, 'PySide2.QtWidgets') # type: ignore[assignment]
         sys.modules['PySide2.QtCore'] = PySide2.QtCore = InfiniteMock(hou, 'PySide2.QtCore') # type: ignore[assignment]
+    _hou_initialized = True
+    return hou
+
+
+def _docstring(v):
+    """
+    Get the docstring of a Houdini object, excluding the parent class docstring if it matches.
+    Args:
+        v (Any): The Houdini object to get the docstring for.
+    Returns:
+        str|None: The docstring of the object, or None if it is the same as the parent class docstring.
+    """
+    own = getdoc(v)
+    if own is None:
+        return None
+    parent = getdoc(type(v))
+    if own == parent:
+        return None
+    return getdoc(v) or None
+
+
+def ishouenumtype(v):
+    """
+    Check if the given value is a Houdini enum type.
+    Args:
+        v (Any): The value to check.
+    Returns:
+        bool: True if the value is a Houdini enum type, False otherwise.
+    """
+    hou = _init_hou()
+    return (isinstance(v, type)
+            and any(isinstance(m, hou.EnumValue)
+                    for n, m in get_members_safe(v)
+                    if not n.startswith('_')
+                    if not n == 'thisown')
+            and all(isinstance(m, hou.EnumValue)
+                    for n, m in get_members_safe(hou.primType)
+                    if not n.startswith('_')
+                    if n != 'thisown'))
+
+
+builtin_function_or_method = type(builtins.repr)
+
+def _dtype(v) -> builtins.type:
+    '''
+    Get the data type of a Houdini object, mapping tuple types to `tuple`
+    for easier understanding.
+    '''
+    t = type(v)
+    name = t.__name__
+    if 'tuple' in name or 'Tuple' in name:
+        return tuple
+    return t
+
+
+
+def _mk_datum(item: Any, type: EntryType, parent: HoudiniStaticData|None=None, name: str|None=None) -> HoudiniStaticData:
+    """
+    Create a HoudiniStaticData instance.
+
+    Args:
+        item (Any): The item to create a HoudiniStaticData instance for.
+        type (EntryType): The type of the item (e.g., 'module', 'class', 'function', 'constant', etc.).
+        parent (HoudiniStaticData|None): The parent HoudiniStaticData instance, if any.
+        name (str|None): The name of the item. If not provided, it will be derived from the item.
+    Returns:
+        HoudiniStaticData: An instance of HoudiniStaticData with the item's details.
+    """
+    name = name or getattr(item, '__name__', None) or str(item)
+    assert name is not None, f"Item {item} has no name."
+    datatype = _dtype(item)
+    if type == 'function' and parent and parent.type == 'class':
+        type = EntryType.METHOD
+    if name == 'EnumValue':
+        type = EntryType.CLASS
+    elif datatype == 'EnumValue':
+        type = EntryType.ENUM
+        datatype = parent.datatype if parent else datatype
+    return HoudiniStaticData(
+        name=name,
+        type=type,
+        datatype=datatype,
+        docstring=_docstring(item),
+        parent_name=parent.name if parent else None,
+        parent_type=parent.type if parent else None
+    )
+
+def _load_class(cls, parent: HoudiniStaticData,
+                seen: set[str],
+                queue: deque[tuple[HoudiniStaticData, ModuleType]],
+                name: str|None=None,
+                ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
+    """
+    Load class members and their static data.
+    Args:
+        cls (type): The class to load.
+        parent (HoudiniStaticData): The parent HoudiniStaticData instance.
+    Yields:
+        HoudiniStaticData: An instance of HoudiniStaticData for each class member found.
+    """
+    if cls in seen:
+        return
+    hou = _init_hou()
+    seen.add(cls)
+    name = name or cls.__name__
+    if name.startswith('_'):
+        return
+    type = EntryType.CLASS
+    if cls is hou.EnumValue:
+        type = EntryType.CLASS
+    if issubclass(cls, (Enum, hou.EnumValue)):
+        type = EntryType.ENUM
+    elif ishouenumtype(cls):
+        type = EntryType.ENUM_TYPE
+    class_data = _mk_datum(cls, type, parent)
+    yield class_data
+    for member_name, member in get_members_safe(cls):
+        if member_name.startswith('_'):
+            continue
+        match member:
+            case _ if ismethod(member):
+                type = EntryType.METHOD
+            case _ if (isfunction(member)
+                        or ismethoddescriptor(member)
+                        or isinstance(member, builtin_function_or_method)
+            ):
+                if parent.type == EntryType.CLASS:
+                    type = EntryType.METHOD
+                else:
+                    type = EntryType.FUNCTION
+            case _ if isdatadescriptor(member):
+                type = EntryType.ATTRIBUTE
+            case _ if isclass(member):
+                type = EntryType.CLASS
+            case _:
+                type = EntryType.OBJECT
+        if name.startswith('_'):
+                continue
+
+        if ismodule(member) and not isinstance(member, InfiniteMock):
+            queue.append((class_data, member))
+        elif isclass(member):
+            yield from _load_class(member,
+                                    parent=class_data,
+                                    seen=seen,
+                                    queue=queue,
+                                    name=f'{name}.{member_name}')
+        elif isinstance(member, property):
+            yield _mk_datum(member, EntryType.ATTRIBUTE,
+                            parent=class_data,
+                            name=member_name)
+        else:
+            yield _mk_datum(member, type,
+                            parent=class_data,
+                            name=member_name)
+
+
+def _load_module(module,
+                seen: set[str],
+                done: set[str],
+                ignore: Mapping[str, str],
+                queue: deque[tuple[HoudiniStaticData, ModuleType]],
+                parent: HoudiniStaticData|None=None,
+                ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
+    """
+    Load a module and its members, yielding HoudiniStaticData instances for each item.
+    Args:
+        module (module): The module to load.
+        parent (HoudiniStaticData|None): The parent HoudiniStaticData instance, if any.
+    Yields:
+        HoudiniStaticData: An instance of HoudiniStaticData for each item found in the module (including the module).
+        ModuleData: An instance of ModuleData for the module itself.
+    """
+    if module in seen:
+        return
+    seen.add(module)
+    if module.__name__ in done:
+        # Been here, done that.
+        return
+    file = none_or(getattr(module, '__file__', None), Path)
+    if file is not None:
+        file = file.resolve()
+    if module.__name__ in ignore:
+        name = module.__name__
+        yield ModuleData(name=name,
+                        file=file,
+                        count=None,
+                        status='IGNORE',
+                        reason=ignore[name])
+        return
+    name = module.__name__
+    yield ModuleData(name, file=file)
+    module_data = _mk_datum(module, EntryType.MODULE,
+                            parent,
+                            name=name)
+    yield module_data
+    hou = _init_hou()
+    for member_name, member in get_members_safe(module):
+        if member_name.startswith('_'):
+            continue
+        if ismodule(member) and not isinstance(member, InfiniteMock):
+            queue.append((module_data, member))
+        elif isclass(member):
+            yield from _load_class(member,
+                                    parent=module_data,
+                                    seen=seen,
+                                    queue=queue,)
+        elif isfunction(member):
+            yield _mk_datum(member, EntryType.FUNCTION,
+                            parent=module_data,
+                            name=member_name)
+        elif isinstance(member, (Enum, hou.EnumValue)):
+            yield _mk_datum(member, EntryType.ENUM,
+                            parent=module_data,
+                            name=member_name)
+        elif (
+            ismethod(member)
+            or ismethoddescriptor(member)
+            or isinstance(member, builtin_function_or_method)
+        ):
+            # Extracted directly from a module, it's just another callable.
+            yield _mk_datum(member, EntryType.FUNCTION,
+                            parent=module_data,
+                            name=member_name)
+        else:
+            yield _mk_datum(member, EntryType.OBJECT,
+                            parent=module_data,
+                            name=member_name)
+
+    while len(queue) > 0:
+        # Process the queue until it's empty.
+        # This ensures that modules are processed in the order they were found,
+        # and that module/items alternation is preserved.
+        parent_data, module = queue.popleft()
+        # Process the next module in the queue.
+        yield from _load_module(module,
+                            seen=seen,
+                            done=done,
+                            ignore=ignore,
+                            queue=queue,
+                            parent=parent_data)
+
+
+def _load_modules(include: Iterable[ModuleType|ModuleData],
+                           ignore: Mapping[str, str],
+                           done: Iterable[str]
+        ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
+    """
+    Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
+    etc. exposed by the hou module.
+
+    This function traverses the hou module and its submodules, collecting information
+    about each item, including its name, type, data type, docstring, Houdini version,
+    and parent information if applicable.
+
+    Yields:
+        HoudiniStaticData: An instance of HoudiniStaticData for each item found in the hou module.
+        ModuleData: An instance of ModuleData for each module found in the hou module.
+    The data includes:
+
+
+    Returns:
+        dict: A dictionary containing the static data.
+    """
+    hou = _init_hou()
     seen = set(done)
-    builtin_function_or_method = type(builtins.repr)
-    def dtype(v) -> builtins.type:
-        t = type(v)
-        name = t.__name__
-        if 'tuple' in name or 'Tuple' in name:
-            return tuple
-        return t
-
-    def docstring(v):
-        """
-        Get the docstring of a Houdini object, excluding the parent class docstring if it matches.
-        Args:
-            v (Any): The Houdini object to get the docstring for.
-        Returns:
-            str|None: The docstring of the object, or None if it is the same as the parent class docstring.
-        """
-        own = getdoc(v)
-        if own is None:
-            return None
-        parent = getdoc(type(v))
-        if own == parent:
-            return None
-        return getdoc(v) or None
-
-    def ishouenumtype(v):
-        """
-        Check if the given value is a Houdini enum type.
-        Args:
-            v (Any): The value to check.
-        Returns:
-            bool: True if the value is a Houdini enum type, False otherwise.
-        """
-        return (isinstance(v, type)
-                and any(isinstance(m, hou.EnumValue)
-                        for n, m in get_members_safe(v)
-                        if not n.startswith('_')
-                        if not n == 'thisown')
-                and all(isinstance(m, hou.EnumValue)
-                        for n, m in get_members_safe(hou.primType)
-                        if not n.startswith('_')
-                        if n != 'thisown'))
-
-    def mk_datum(item: Any, type: EntryType, parent: HoudiniStaticData|None=None, name: str|None=None) -> HoudiniStaticData:
-        """
-        Create a HoudiniStaticData instance.
-
-        Args:
-            item (Any): The item to create a HoudiniStaticData instance for.
-            type (EntryType): The type of the item (e.g., 'module', 'class', 'function', 'constant', etc.).
-            parent (HoudiniStaticData|None): The parent HoudiniStaticData instance, if any.
-            name (str|None): The name of the item. If not provided, it will be derived from the item.
-        Returns:
-            HoudiniStaticData: An instance of HoudiniStaticData with the item's details.
-        """
-        name = name or getattr(item, '__name__', None) or str(item)
-        assert name is not None, f"Item {item} has no name."
-        datatype = dtype(item)
-        if type == 'function' and parent and parent.type == 'class':
-            type = EntryType.METHOD
-        if name == 'EnumValue':
-            type = EntryType.CLASS
-        elif datatype == 'EnumValue':
-            type = EntryType.ENUM
-            datatype = parent.datatype if parent else datatype
-        return HoudiniStaticData(
-            name=name,
-            type=type,
-            datatype=datatype,
-            docstring=docstring(item),
-            parent_name=parent.name if parent else None,
-            parent_type=parent.type if parent else None
-        )
 
     queue: deque[tuple[HoudiniStaticData, ModuleType]] = deque()
     '''
@@ -468,146 +610,17 @@ def get_static_module_data(include: Iterable[ModuleType|ModuleData],
     This isn't strictly necessary.
     '''
 
-    def load_module(module, parent: HoudiniStaticData|None=None) ->Generator[HoudiniStaticData|ModuleData, None, None]:
-        """
-        Load a module and its members, yielding HoudiniStaticData instances for each item.
-        Args:
-            module (module): The module to load.
-            parent (HoudiniStaticData|None): The parent HoudiniStaticData instance, if any.
-        Yields:
-            HoudiniStaticData: An instance of HoudiniStaticData for each item found in the module (including the module).
-            ModuleData: An instance of ModuleData for the module itself.
-        """
-        if module in seen:
-            return
-        seen.add(module)
-        if module.__name__ in done:
-            # Been here, done that.
-            return
-        file = none_or(getattr(module, '__file__', None), Path)
-        if file is not None:
-            file = file.resolve()
-        if module.__name__ in ignore:
-            name = module.__name__
-            yield ModuleData(name=name,
-                            file=file,
-                            count=None,
-                            status='IGNORE',
-                            reason=ignore[name])
-            return
-        name = module.__name__
-        yield ModuleData(name, file=file)
-        module_data = mk_datum(module, EntryType.MODULE,
-                               parent,
-                               name=name)
-        yield module_data
-        for member_name, member in get_members_safe(module):
-            if member_name.startswith('_'):
-                continue
-            if ismodule(member) and not isinstance(member, InfiniteMock):
-                queue.append((module_data, member))
-            elif isclass(member):
-                yield from load_class(member,
-                                      parent=module_data)
-            elif isfunction(member):
-                yield mk_datum(member, EntryType.FUNCTION,
-                               parent=module_data,
-                               name=member_name)
-            elif isinstance(member, (Enum, hou.EnumValue)):
-                yield mk_datum(member, EntryType.ENUM,
-                               parent=module_data,
-                               name=member_name)
-            elif (
-                ismethod(member)
-                or ismethoddescriptor(member)
-                or isinstance(member, builtin_function_or_method)
-            ):
-                # Extracted directly from a module, it's just another callable.
-                yield mk_datum(member, EntryType.FUNCTION,
-                               parent=module_data,
-                               name=member_name)
-            else:
-                yield mk_datum(member, EntryType.OBJECT,
-                               parent=module_data,
-                               name=member_name)
 
-        while len(queue) > 0:
-            # Process the queue until it's empty.
-            # This ensures that modules are processed in the order they were found,
-            # and that module/items alternation is preserved.
-            parent_data, module = queue.popleft()
-            # Process the next module in the queue.
-            yield from load_module(module, parent=parent_data)
-
-    def load_class(cls, parent: HoudiniStaticData,
-                   name: str|None=None
-                   ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
-        """
-        Load class members and their static data.
-        Args:
-            cls (type): The class to load.
-            parent (HoudiniStaticData): The parent HoudiniStaticData instance.
-        Yields:
-            HoudiniStaticData: An instance of HoudiniStaticData for each class member found.
-        """
-        if cls in seen:
-            return
-        seen.add(cls)
-        name = name or cls.__name__
-        if name.startswith('_'):
-            return
-        type = EntryType.CLASS
-        if cls is hou.EnumValue:
-            type = EntryType.CLASS
-        if issubclass(cls, (Enum, hou.EnumValue)):
-            type = EntryType.ENUM
-        elif ishouenumtype(cls):
-            type = EntryType.ENUM_TYPE
-        class_data = mk_datum(cls, type, parent)
-        yield class_data
-        for member_name, member in get_members_safe(cls):
-            if member_name.startswith('_'):
-                continue
-            match member:
-                case _ if ismethod(member):
-                    type = EntryType.METHOD
-                case _ if (isfunction(member)
-                           or ismethoddescriptor(member)
-                           or isinstance(member, builtin_function_or_method)
-                ):
-                    if parent.type == EntryType.CLASS:
-                        type = EntryType.METHOD
-                    else:
-                        type = EntryType.FUNCTION
-                case _ if isdatadescriptor(member):
-                    type = EntryType.ATTRIBUTE
-                case _ if isclass(member):
-                    type = EntryType.CLASS
-                case _:
-                    type = EntryType.OBJECT
-            if name.startswith('_'):
-                    continue
-
-            if ismodule(member) and not isinstance(member, InfiniteMock):
-                queue.append((class_data, member))
-            elif isclass(member):
-                yield from load_class(member,
-                                      parent=class_data,
-                                      name=f'{name}.{member_name}')
-            elif isinstance(member, property):
-                yield mk_datum(member, EntryType.ATTRIBUTE,
-                               parent=class_data,
-                               name=member_name)
-            else:
-                yield mk_datum(member, type,
-                               parent=class_data,
-                               name=member_name)
     for module in include:
         if not isinstance(module, ModuleType):
             # If it's already a ModuleData, yield it directly.
             yield module
         else:
-            yield from load_module(module)
+            yield from _load_module(module,
+                                    seen=set(seen),
+                                    done=set(done),
+                                    ignore=ignore,
+                                    queue=queue,)
 
 
 def save_static_data_to_db(db_path: Path|None=None,
@@ -626,207 +639,24 @@ def save_static_data_to_db(db_path: Path|None=None,
         ignore (Mapping[str, str]|None): A mapping of module names to ignore, with reasons.
     """
     ignore = ignore or {}
-    def save(conn: sqlite3.Connection):
-        """
-        Save the static data to the database.
-        Args:
-            conn (sqlite3.Connection): The SQLite connection to use.
-        """
-        cursor = conn.cursor()
-        print('Initializing tables...')
-        cursor.execute('PRAGMA foreign_keys = ON;')
-        # Create tables if they doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS houdini_module_data (
-                name TEXT NOT NULL,
-                type TEXT NOT NULL,
-                datatype TEXT NOT NULL,
-                docstring TEXT,
-                parent_name TEXT DEFAULT NULL,
-                parent_type TEXT DEFAULT NULL,
-                PRIMARY KEY (name, type) ON CONFLICT REPLACE,
-                FOREIGN KEY (parent_name, parent_type) REFERENCES houdini_module_data(name, type)
-            ) STRICT
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS houdini_modules (
-                name TEXT NOT NULL PRIMARY KEY,
-                directory TEXT DEFAULT NULL,
-                file TEXT DEFAULT NULL,
-                count INTEGER DEFAULT NULL,
-                status TEXT DEFAULT NULL,
-                reason TEXT DEFAULT NULL
-            ) STRICT
-        ''')
-
-        # Write-Aahead Logging (WAL) mode permits concurrent reads and writes,
-        # which is useful for long-running operations like this.
-        # It also allows the database to be accessed by multiple processes, so
-        # long as they are on the same machine.
-        cursor.execute("PRAGMA journal_mode=WAL;")
-        with timer('Storing') as progress:
-            # Insert or update static data
-            item_count = 0
-            cur_module: ModuleData|None = None
-            for datum in get_static_module_data(include=include,
-                                                ignore=ignore,
-                                                done=get_stored_modules(connection=conn)):
-                if isinstance(datum, ModuleData):
-                    if cur_module is not None:
-                        # Commit the previous module data
-                        cursor.execute('''
-                            UPDATE houdini_modules
-                            SET count = ?, status = ?, reason = ?
-                            WHERE name = ?
-                        ''', (
-                            item_count,
-                            'OK',
-                            None,
-                            cur_module.name))
-
-                    conn.commit()
-                    status = datum.status
-                    if isinstance(status, Exception):
-                        t = type(status)
-                        if hasattr(t, '__name__'):
-                            status = t.__name__
-                        else:
-                            status = str(t)
-                    cursor.execute('''
-                        INSERT OR REPLACE INTO houdini_modules (name, directory, file, count, status, reason)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (
-                            datum.name,
-                            none_or(datum.directory, str),
-                            none_or(datum.file, str),
-                            datum.count,
-                            status,
-                            datum.reason))
-                    item_count = 0
-                    if datum.status is not None:
-                        progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
-                        continue
-                    progress(f'Processing module {datum.name}...')
-                    cur_module = datum
-                    conn.commit
-                else:
-                    item_count += 1
-                    if item_count % 100 == 0:
-                        conn.commit()
-                    def name(d: Any) -> str:
-                        if isinstance(d, Enum):
-                            return str(d)
-                        if isinstance(d, str):
-                            return str(d)
-                        n = getattr(d, 'name', None)
-                        if callable(n):
-                            try:
-                               n = n()
-                            except Exception:
-                                n = None
-                        if n is not None:
-                            return str(n)
-                        return (
-                            getattr(d, '__name__', None)
-                            or str(d)
-                        )
-
-                    if datum.parent_name is not None:
-                        #print(f'Processing {datum.type} {datum.name} with parent {datum.parent_name}...')
-                        #if str(name) == 'BlendShape' or name == 'hou' or datum.type == EntryType.OBJECT:
-                        #    breakpoint()
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring,
-                                                                        parent_name, parent_type)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (
-                            datum.name, name(datum.type), name(datum.datatype), datum.docstring,
-                            datum.parent_name, name(datum.parent_type)))
-                    else:
-                        #print(f'Processing {datum.type} {datum.name} without parent...')
-                        cursor.execute('PRAGMA foreign_keys = OFF;')
-                        conn.commit()
-                        # Change line number
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring, parent_name, parent_type)
-                            VALUES (?, ?, ?, ?, NULL, NULL)
-                        ''', (datum.name, name(datum.type), name(datum.datatype), datum.docstring))
-                        cursor.execute('PRAGMA foreign_keys = ON;')
-                        conn.commit()
+    with analysis_db(db_path=db_path,
+                     connection=connection,
+                     write=True) as conn:
+        with analysis_db_writer(connection=conn) as writer:
+            with timer('Storing') as progress:
+                # Insert or update static data
+                item_count = 0
+                cur_module: ModuleData|None = None
+                for datum in _load_modules(include=include,
+                                                    ignore=ignore,
+                                                    done=get_stored_modules(connection=conn)):
+                    do_all(writer(datum))
 
         # Commit last module.
         conn.commit()
 
         # Vacuum the database to optimize it. Most of the time this is not needed,
         # but if reloading the tables during development, it shows the actual space needed.
-        with timer('Vacuuming database'):
-            cursor.execute('''
-            VACUUM;
-            ''')
-
-    match db_path, connection:
-        case None, None:
-            raise ValueError("Either db_path or connection must be provided.")
-        case Path(), None:
-            print(f'Saving static data to {db_path}...')
-            if not db_path.exists():
-                db_path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(db_path, isolation_level='EXCLUSIVE') as conn:
-                save(conn)
-            print(f'static module data saved to {db_path}.')
-        case _, sqlite3.Connection():
-            save(connection)
-
-def get_stored_modules(db_path: Path|None=None,
-                       connection: sqlite3.Connection|None=None,
-                       ) -> Generator[str, None, None]:
-    """
-    Get names of modules already stored in the database.
-
-    Args:
-        db_path (Path): Path to the SQLite database file.
-        conn (sqlite3.Connection|None): An existing SQLite connection, if available.
-
-    Yields:
-        str: Name of each module stored in the database.
-    """
-    def retrieve(conn: sqlite3.Connection) -> Generator[str, None, None]:
-        """
-        Retrieve stored module names from the database.
-        Args:
-            conn (sqlite3.Connection): The SQLite connection to use.
-        Yields:
-            str: Name of each module stored in the database.
-        """
-
-        try:
-            cursor = conn.cursor()
-
-            # Check if table exists
-            cursor.execute("""
-                SELECT name FROM sqlite_master
-                WHERE type='table' AND name='houdini_modules'
-            """)
-
-            if not cursor.fetchone():
-                return
-
-            # Query module names
-            cursor.execute("SELECT name FROM houdini_modules where status = 'OK'")
-
-            for row in cursor.fetchall():
-                yield row[0]
-        except sqlite3.Error as e:
-            print(f"Error retrieving stored modules: {e}", file=sys.stderr)
-    match db_path, connection:
-        case None, None:
-            raise ValueError("Either db_path or conn must be provided.")
-        case _, sqlite3.Connection():
-            yield from retrieve(connection)
-        case Path(), None:
-            if not db_path.exists():
-                return
-            with sqlite3.connect(db_path) as connection:
-                yield from retrieve(connection)
-
-
+        conn.execute('''
+        VACUUM;
+        ''')

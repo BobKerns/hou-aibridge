@@ -2,6 +2,12 @@
 Common utilities for zabob houdini tools.
 '''
 
+from zabob.common.analysis_types import (
+    EntryType, HoudiniStaticData, ModuleData, AnalysisDBItem, AnalysisDBWriter
+)
+from zabob.common.analysis_db import (
+    analysis_db, get_stored_modules, analysis_db_writer,
+)
 from zabob.common.common_paths import (
     ZABOB_COMMON_DIR,
     ZABOB_ZCOMMON_DIR,
@@ -29,7 +35,10 @@ from zabob.common.common_utils import (
     DEBUG, INFO, QUIET, SILENT, VERBOSE,
     environment, prevent_atexit, prevent_exit,
     none_or, values, not_none, not_none1, not_none2,
-    if_true, if_false,
+    if_true, if_false, get_name,
+    do_all, do_until, do_while, find_first, find_first_not,
+    trace, trace_,
+
 )
 from zabob.common.find_houdini import (
     find_houdini_installations,
@@ -38,9 +47,8 @@ from zabob.common.find_houdini import (
 )
 from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
-    EntryType, HoudiniStaticData, ModuleData,
-    get_static_module_data, save_static_data_to_db,
-    modules_in_path, import_or_warn, get_stored_modules,
+    _load_modules, save_static_data_to_db,
+    modules_in_path, import_or_warn,
 )
 from zabob.common.detect_env import (
     detect_environment,
@@ -50,6 +58,14 @@ from zabob.common.detect_env import (
 )
 
 __all__ = (
+    "EntryType",
+    "HoudiniStaticData",
+    "ModuleData",
+    "analysis_db",
+    "get_stored_modules",
+    "AnalysisDBItem",
+    "AnalysisDBWriter",
+    "analysis_db_writer",
     "ZABOB_COMMON_DIR",
     "ZABOB_ZCOMMON_DIR",
     "ZABOB_HOUDINI_DIR",
@@ -87,6 +103,14 @@ __all__ = (
     "not_none2",
     "if_true",
     "if_false",
+    "get_name",
+    "do_all",
+    "do_until",
+    "do_while",
+    "find_first",
+    "find_first_not",
+    "trace",
+    "trace_",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",
@@ -95,9 +119,8 @@ __all__ = (
     "ModuleData",
     "HoudiniStaticData",
     "import_or_warn",
-    "get_stored_modules",
     "modules_in_path",
-    "get_static_module_data",
+    "_load_modules",
     "save_static_data_to_db",
     "detect_environment",
     "is_development",

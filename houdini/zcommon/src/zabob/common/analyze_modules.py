@@ -80,76 +80,14 @@ from collections import deque
 
 import sqlite3
 
-from zabob.common import InfiniteMock
-from zabob.common.analysis_db import analysis_db, get_stored_modules
+from zabob.common.infinite_mock import InfiniteMock
+from zabob.common.analysis_db import analysis_db, analysis_db_writer, get_stored_modules
+from zabob.common.analysis_types import EntryType, HoudiniStaticData, ModuleData
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    environment, get_name, prevent_atexit, prevent_exit, none_or, values
+    do_all, environment, get_name, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
-
-
-class EntryType(StrEnum):
-    """
-    Enum for entry types in the Houdini static data.
-    """
-    MODULE = 'module'
-    CLASS = 'class'
-    FUNCTION = 'function'
-    METHOD = 'method'
-    ENUM = 'enum'
-    CONSTANT = 'constant'
-    OBJECT = 'object'
-    ATTRIBUTE = 'attribute'
-    ENUM_TYPE = 'EnumType'
-
-
-@dataclass
-class HoudiniStaticData:
-    """
-    A class to represent static data extracted from Houdini 20.5.
-
-    Attributes:
-        name (str): The name of the Houdini item (module, class, function, etc.).
-        type (str): The type of the Houdini item (e.g., 'module', 'class', 'function', 'constant', etc.).
-        datatype (str): The data type of the Houdini item (e.g., 'int', 'str', 'hou.EnumValue', etc.).
-        docstring (str|None): The docstring of the Houdini item, or None if not available.
-        parent_name (str|None): The name of the parent Houdini item, if applicable.
-        parent_type (str|None): The type of the parent Houdini item, if applicable.
-    """
-    name: str
-    type: EntryType
-    datatype: builtins.type
-    docstring: str|None = None
-    parent_name: str|None = None
-    parent_type: str|None = None
-
-@dataclass
-class ModuleData:
-    """
-    A class to represent module data extracted from Houdini 20.5.
-
-    Attributes:
-        name (str): The name of the module.
-        file (Path): The file path of the module.
-    """
-    name: str
-    directory: Path|None = None
-    file: Path|None=None
-    count: int|None= None
-    status: Literal['OK', 'IGNORE']|Exception|None = None
-    reason: str|None = None
-    def __post_init__(self):
-        """
-        Post-initialization to set the directory based on the file path.
-        If the file is not None, set the directory to its parent path.
-        """
-        if self.file is not None:
-            self.directory = self.file.parent
-        if isinstance(self.status, Exception):
-            if self.reason is None:
-                self.reason = str(self.status)
-
 
 def modules_in_path(path: Sequence[str|Path],
                     ignore: Mapping[str, str]|None=None,
@@ -356,7 +294,6 @@ def get_static_module_data(include: Iterable[ModuleType|ModuleData],
         hou.viewportVisualizers = InfiniteMock(hou, 'hou.viewportVisualizers')
     sys.modules['hdefereval'] = InfiniteMock(hou, 'hou.hdefereval') # type: ignore[assignment]
     with suppress(Exception):
-        # Try to import the hou module from zabob.common, if it exists.
         import hutils.PySide # type: ignore[import]
         sys.modules['hutil.PySide.Qt'] = hutils.PySide = InfiniteMock(hou, 'hutils.PySide.Qt') # type: ignore[assignment]
         sys.modules['hutil.PySide.QTGui'] = hutil.PySide.QtGui = InfiniteMock(hou, 'hutils.PySide.QtGui') # type: ignore[assignment]
@@ -630,95 +567,21 @@ def save_static_data_to_db(db_path: Path|None=None,
     with analysis_db(db_path=db_path,
                      connection=connection,
                      write=True) as conn:
-        cursor = conn.cursor()
-        with timer('Storing') as progress:
-            # Insert or update static data
-            item_count = 0
-            cur_module: ModuleData|None = None
-            for datum in get_static_module_data(include=include,
-                                                ignore=ignore,
-                                                done=get_stored_modules(connection=conn)):
-                match datum:
-                    case ModuleData():
-                        if cur_module is not None:
-                            # Commit the previous module data
-                            cursor.execute('''
-                                UPDATE houdini_modules
-                                SET count = ?, status = ?, reason = ?
-                                WHERE name = ?
-                            ''', (
-                                item_count,
-                                'OK',
-                                None,
-                                cur_module.name))
-
-                        conn.commit()
-                        status = datum.status
-                        if isinstance(status, Exception):
-                            t = type(status)
-                            if hasattr(t, '__name__'):
-                                status = t.__name__
-                            else:
-                                status = str(t)
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_modules (name, directory, file, count, status, reason)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (
-                                datum.name,
-                                none_or(datum.directory, str),
-                                none_or(datum.file, str),
-                                datum.count,
-                                status,
-                                datum.reason))
-                        item_count = 0
-                        if datum.status is not None:
-                            progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
-                            continue
-                        progress(f'Processing module {datum.name}...')
-                        cur_module = datum
-                        conn.commit
-                    case HoudiniStaticData():
-                        item_count += 1
-                        if item_count % 100 == 0:
-                            conn.commit()
-
-                        if datum.parent_name is not None:
-                            #print(f'Processing {datum.type} {datum.name} with parent {datum.parent_name}...')
-                            #if str(name) == 'BlendShape' or name == 'hou' or datum.type == EntryType.OBJECT:
-                            #    breakpoint()
-                            cursor.execute('''
-                                INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring,
-                                                                            parent_name, parent_type)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            ''', (
-                                datum.name,
-                                get_name(datum.type),
-                                get_name(datum.datatype),
-                                datum.docstring,
-                                datum.parent_name, get_name(datum.parent_type)))
-                        else:
-                            #print(f'Processing {datum.type} {datum.name} without parent...')
-                            cursor.execute('PRAGMA foreign_keys = OFF;')
-                            conn.commit()
-                            # Change line number
-                            cursor.execute('''
-                                INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring, parent_name, parent_type)
-                                VALUES (?, ?, ?, ?, NULL, NULL)
-                            ''', (datum.name,
-                                  get_name(datum.type),
-                                  get_name(datum.datatype),
-                                  datum.docstring))
-                            cursor.execute('PRAGMA foreign_keys = ON;')
-                            conn.commit()
+        with analysis_db_writer(connection=conn) as writer:
+            with timer('Storing') as progress:
+                # Insert or update static data
+                item_count = 0
+                cur_module: ModuleData|None = None
+                for datum in get_static_module_data(include=include,
+                                                    ignore=ignore,
+                                                    done=get_stored_modules(connection=conn)):
+                    do_all(writer(datum))
 
         # Commit last module.
         conn.commit()
 
         # Vacuum the database to optimize it. Most of the time this is not needed,
         # but if reloading the tables during development, it shows the actual space needed.
-        cursor.execute('''
+        conn.execute('''
         VACUUM;
         ''')
-
-
-

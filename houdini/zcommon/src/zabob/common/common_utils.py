@@ -358,8 +358,8 @@ def do_until(i: Iterable[T],
 
     If no item meets the condition, return the default value (default=None).
 
-    `do_until` and `first_if` are the same function, but `do_until` is more
-    is explicit about running a generator if one is supplied as the Iterable.
+    `do_until` and `find_first` are the same function, but `do_until`
+    emphasizes its use to perform actions via a generator.
 
     Args:
         i (Iterable[T]): The iterable to iterate over.
@@ -382,7 +382,7 @@ def do_until(i: Iterable[T],
                     if condition(item)),
                 default)
 
-first_if = do_until
+find_first = do_until
 
 def do_while(i: Iterable[T],
              condition: Callable[[T], bool]|None=None,
@@ -392,8 +392,9 @@ def do_while(i: Iterable[T],
     Iterate over the items in the iterable until the condition is met.
     If no item meets the condition, return the default value (default=None).
 
-    `do_while` and `first_if_not` are the same function, but `do_until` is more
-    is explicit about running a generator if one is supplied as the Iterable.
+    `do_while` and `find_first_not` are the same function, but `do_until`
+    emphasizes its use to perform actions via a generator.
+
     Args:
         i (Iterable[T]): The iterable to iterate over.
         condition (Callable[[T], bool]|None): The condition to check for each item.
@@ -414,7 +415,7 @@ def do_while(i: Iterable[T],
                     if not condition(item)),
                 default)
 
-first_if_not = do_while
+find_first_not = do_while
 
 def last(i: Iterable[T],
           condition: Callable[[T], bool],

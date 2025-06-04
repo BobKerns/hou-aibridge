@@ -29,7 +29,7 @@ from zabob.common.common_utils import (
     DEBUG, INFO, QUIET, SILENT, VERBOSE,
     environment, prevent_atexit, prevent_exit,
     none_or, values, not_none, not_none1, not_none2,
-    if_true, if_false,
+    if_true, if_false, get_name,
 )
 from zabob.common.find_houdini import (
     find_houdini_installations,
@@ -87,6 +87,7 @@ __all__ = (
     "not_none2",
     "if_true",
     "if_false",
+    "get_name",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",

@@ -2,13 +2,15 @@
 Common Utilities.
 '''
 
-from collections.abc import Callable, Generator
+from collections import defaultdict
+from collections.abc import Callable, Generator, MutableMapping
 import os
 from contextlib import contextmanager, suppress
-from enum import StrEnum
+from enum import Enum, StrEnum
 import sys
-from typing import Literal, TypeVar
+from typing import Hashable, Literal, TypeVar, Any
 import atexit
+from weakref import WeakKeyDictionary
 
 from semver import Version
 
@@ -257,3 +259,76 @@ def if_false(condition: bool, value: T) -> Generator[T, None, None]:
     """
     if not condition:
         yield value
+
+_name_counter: MutableMapping[str, int] = defaultdict[str, int](lambda: 0)
+_names: MutableMapping[Any, str] = WeakKeyDictionary[Any, str]()
+def get_name(d: Any) -> str:
+    '''
+    Get the name of the given object. If it does not have a name,
+    one will be assigned.
+
+    If the object has a `name` or `__name__` attribute, it will
+    be used as the name.
+
+    If the object has a method called `name`, `getName`,
+    or `get_name`, it will be called to try to get the name.
+
+    Args:
+        d (Any): The object to get the name of.
+    Returns:
+        str|None: The name of the object, or `None` if it has no name.
+    '''
+    match d:
+        case Enum():
+            return str(d.name)
+        case str() | int() | float() | complex() | bool():
+            return str(d)
+        case None:
+            return "None"
+        case _ if hasattr(d, '__name__'):
+            return str(d.__name__)
+        case _ if hasattr(d, 'name') and isinstance(d.name, str):
+            # If the object has a name attribute that is a string, return it.
+            return str(d.name)
+        case _ if hasattr(d, 'name') and callable(d.name):
+            try:
+                return str(d.name())
+            except Exception:
+                pass
+        case _ if hasattr(d, 'get_name') and callable(d.get_name):
+            try:
+                return str(d.get_name())
+            except Exception:
+                pass
+        case _ if hasattr(d, 'getName') and callable(d.getName):
+            try:
+                return str(d.get_name())
+            except Exception:
+                pass
+        case _ if hasattr(d, 'name'):
+            return str(d.name)
+        case d if isinstance(d, Hashable):
+            n = _names.get(d, None)
+            if n is not None:
+                return n
+            pass
+        case _:
+            pass
+    # If we reach here, we don't have a name, so generate one.
+    typename = get_name(type(d))
+    _name_counter[typename] += 1
+    c = _name_counter[typename]
+    n = f"{typename}_{c}"
+    try:
+        # If the object has a __name__ attribute, set it to the generated name.
+        # This is useful for debugging and logging.
+        setattr(d, '__name__', n)
+        return n
+    except AttributeError:
+        if isinstance(d, Hashable):
+           # If the object is hashable, store the name in a weak dictionary.
+           _names[d] = n
+           return n
+        else:
+           # If we can't save the name, generate one based on the id.
+           return f"{typename}_{id(d):x}"

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import sqlite3
 from pathlib import Path
 from collections.abc import Generator
+import sys
 
 @contextmanager
 def analysis_db(db_path: Path|None=None,
@@ -118,3 +119,54 @@ def analysis_db(db_path: Path|None=None,
             with sqlite3.connect(db_path) as conn:
                 init_db(conn)
                 yield conn
+
+
+def get_stored_modules(db_path: Path|None=None,
+                       connection: sqlite3.Connection|None=None,
+                       successful: bool = True,
+                       failed: bool = False,
+                       ) -> Generator[str, None, None]:
+    """
+    Get names of modules already stored in the database.
+
+    Args:
+        db_path (Path): Path to the SQLite database file.
+        conn (sqlite3.Connection|None): An existing SQLite connection, if available.
+        successful (bool): If True, include modules successfully loaded.
+        failed (bool): If True, include modules not successfully loaded.
+
+    Yields:
+        str: Name of each module stored in the database.
+    """
+    with analysis_db(db_path=db_path, connection=connection) as conn:
+        """
+        Retrieve stored module names from the database.
+        Args:
+            conn (sqlite3.Connection): The SQLite connection to use.
+        Yields:
+            str: Name of each module stored in the database.
+        """
+
+        try:
+            cursor = conn.cursor()
+
+            # Check if table exists
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='houdini_modules'
+            """)
+
+            if not cursor.fetchone():
+                return
+
+            # Query module names
+            if successful:
+                cursor.execute("SELECT name FROM houdini_modules where status = 'OK'")
+                for row in cursor.fetchall():
+                    yield row[0]
+            if failed:
+                cursor.execute("SELECT name FROM houdini_modules where status <> 'OK'")
+                for row in cursor.fetchall():
+                    yield row[0]
+        except sqlite3.Error as e:
+            print(f"Error retrieving stored modules: {e}", file=sys.stderr)

@@ -62,7 +62,7 @@ user installs additional packages or modules after the initial analysis.
 
 
 import builtins
-from collections.abc import Container, Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum, StrEnum
@@ -81,10 +81,10 @@ from collections import deque
 import sqlite3
 
 from zabob.common import InfiniteMock
-from zabob.common.analysis_db import analysis_db
+from zabob.common.analysis_db import analysis_db, get_stored_modules
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    environment, get_name, not_none1, prevent_atexit, prevent_exit, none_or, values
+    environment, get_name, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
 
@@ -720,54 +720,5 @@ def save_static_data_to_db(db_path: Path|None=None,
         VACUUM;
         ''')
 
-def get_stored_modules(db_path: Path|None=None,
-                       connection: sqlite3.Connection|None=None,
-                       successful: bool = True,
-                       failed: bool = False,
-                       ) -> Generator[str, None, None]:
-    """
-    Get names of modules already stored in the database.
-
-    Args:
-        db_path (Path): Path to the SQLite database file.
-        conn (sqlite3.Connection|None): An existing SQLite connection, if available.
-        successful (bool): If True, include modules successfully loaded.
-        failed (bool): If True, include modules not successfully loaded.
-
-    Yields:
-        str: Name of each module stored in the database.
-    """
-    with analysis_db(db_path=db_path, connection=connection) as conn:
-        """
-        Retrieve stored module names from the database.
-        Args:
-            conn (sqlite3.Connection): The SQLite connection to use.
-        Yields:
-            str: Name of each module stored in the database.
-        """
-
-        try:
-            cursor = conn.cursor()
-
-            # Check if table exists
-            cursor.execute("""
-                SELECT name FROM sqlite_master
-                WHERE type='table' AND name='houdini_modules'
-            """)
-
-            if not cursor.fetchone():
-                return
-
-            # Query module names
-            if successful:
-                cursor.execute("SELECT name FROM houdini_modules where status = 'OK'")
-                for row in cursor.fetchall():
-                    yield row[0]
-            if failed:
-                cursor.execute("SELECT name FROM houdini_modules where status <> 'OK'")
-                for row in cursor.fetchall():
-                    yield row[0]
-        except sqlite3.Error as e:
-            print(f"Error retrieving stored modules: {e}", file=sys.stderr)
 
 

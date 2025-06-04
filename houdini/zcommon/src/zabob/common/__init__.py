@@ -2,6 +2,9 @@
 Common utilities for zabob houdini tools.
 '''
 
+from zabob.common.analysis_db import (
+    analysis_db, get_stored_modules,
+)
 from zabob.common.common_paths import (
     ZABOB_COMMON_DIR,
     ZABOB_ZCOMMON_DIR,
@@ -43,7 +46,7 @@ from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
     EntryType, HoudiniStaticData, ModuleData,
     get_static_module_data, save_static_data_to_db,
-    modules_in_path, import_or_warn, get_stored_modules,
+    modules_in_path, import_or_warn,
 )
 from zabob.common.detect_env import (
     detect_environment,

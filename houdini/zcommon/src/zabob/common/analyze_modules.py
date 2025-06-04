@@ -81,9 +81,10 @@ from collections import deque
 import sqlite3
 
 from zabob.common import InfiniteMock
+from zabob.common.analysis_db import analysis_db
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    environment, not_none1, prevent_atexit, prevent_exit, none_or, values
+    environment, get_name, not_none1, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
 
@@ -228,6 +229,8 @@ def modules_in_path(path: Sequence[str|Path],
 def candidates_in_dir(path: Path) -> Generator[tuple[str, Path], None, None]:
     """
     Generate candidate module names from a directory path.
+
+    `Path` -> `str` (module name).
     Args:
         path (Path): The directory path to search for modules.
     Yields:
@@ -624,44 +627,10 @@ def save_static_data_to_db(db_path: Path|None=None,
         ignore (Mapping[str, str]|None): A mapping of module names to ignore, with reasons.
     """
     ignore = ignore or {}
-    def save(conn: sqlite3.Connection):
-        """
-        Save the static data to the database.
-        Args:
-            conn (sqlite3.Connection): The SQLite connection to use.
-        """
+    with analysis_db(db_path=db_path,
+                     connection=connection,
+                     write=True) as conn:
         cursor = conn.cursor()
-        print('Initializing tables...')
-        cursor.execute('PRAGMA foreign_keys = ON;')
-        # Create tables if they doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS houdini_module_data (
-                name TEXT NOT NULL,
-                type TEXT NOT NULL,
-                datatype TEXT NOT NULL,
-                docstring TEXT,
-                parent_name TEXT DEFAULT NULL,
-                parent_type TEXT DEFAULT NULL,
-                PRIMARY KEY (name, type) ON CONFLICT REPLACE,
-                FOREIGN KEY (parent_name, parent_type) REFERENCES houdini_module_data(name, type)
-            ) STRICT
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS houdini_modules (
-                name TEXT NOT NULL PRIMARY KEY,
-                directory TEXT DEFAULT NULL,
-                file TEXT DEFAULT NULL,
-                count INTEGER DEFAULT NULL,
-                status TEXT DEFAULT NULL,
-                reason TEXT DEFAULT NULL
-            ) STRICT
-        ''')
-
-        # Write-Aahead Logging (WAL) mode permits concurrent reads and writes,
-        # which is useful for long-running operations like this.
-        # It also allows the database to be accessed by multiple processes, so
-        # long as they are on the same machine.
-        cursor.execute("PRAGMA journal_mode=WAL;")
         with timer('Storing') as progress:
             # Insert or update static data
             item_count = 0
@@ -669,114 +638,92 @@ def save_static_data_to_db(db_path: Path|None=None,
             for datum in get_static_module_data(include=include,
                                                 ignore=ignore,
                                                 done=get_stored_modules(connection=conn)):
-                if isinstance(datum, ModuleData):
-                    if cur_module is not None:
-                        # Commit the previous module data
-                        cursor.execute('''
-                            UPDATE houdini_modules
-                            SET count = ?, status = ?, reason = ?
-                            WHERE name = ?
-                        ''', (
-                            item_count,
-                            'OK',
-                            None,
-                            cur_module.name))
+                match datum:
+                    case ModuleData():
+                        if cur_module is not None:
+                            # Commit the previous module data
+                            cursor.execute('''
+                                UPDATE houdini_modules
+                                SET count = ?, status = ?, reason = ?
+                                WHERE name = ?
+                            ''', (
+                                item_count,
+                                'OK',
+                                None,
+                                cur_module.name))
 
-                    conn.commit()
-                    status = datum.status
-                    if isinstance(status, Exception):
-                        t = type(status)
-                        if hasattr(t, '__name__'):
-                            status = t.__name__
-                        else:
-                            status = str(t)
-                    cursor.execute('''
-                        INSERT OR REPLACE INTO houdini_modules (name, directory, file, count, status, reason)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (
-                            datum.name,
-                            none_or(datum.directory, str),
-                            none_or(datum.file, str),
-                            datum.count,
-                            status,
-                            datum.reason))
-                    item_count = 0
-                    if datum.status is not None:
-                        progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
-                        continue
-                    progress(f'Processing module {datum.name}...')
-                    cur_module = datum
-                    conn.commit
-                else:
-                    item_count += 1
-                    if item_count % 100 == 0:
                         conn.commit()
-                    def name(d: Any) -> str:
-                        if isinstance(d, Enum):
-                            return str(d)
-                        if isinstance(d, str):
-                            return str(d)
-                        n = getattr(d, 'name', None)
-                        if callable(n):
-                            try:
-                               n = n()
-                            except Exception:
-                                n = None
-                        if n is not None:
-                            return str(n)
-                        return (
-                            getattr(d, '__name__', None)
-                            or str(d)
-                        )
-
-                    if datum.parent_name is not None:
-                        #print(f'Processing {datum.type} {datum.name} with parent {datum.parent_name}...')
-                        #if str(name) == 'BlendShape' or name == 'hou' or datum.type == EntryType.OBJECT:
-                        #    breakpoint()
+                        status = datum.status
+                        if isinstance(status, Exception):
+                            t = type(status)
+                            if hasattr(t, '__name__'):
+                                status = t.__name__
+                            else:
+                                status = str(t)
                         cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring,
-                                                                        parent_name, parent_type)
+                            INSERT OR REPLACE INTO houdini_modules (name, directory, file, count, status, reason)
                             VALUES (?, ?, ?, ?, ?, ?)
                         ''', (
-                            datum.name, name(datum.type), name(datum.datatype), datum.docstring,
-                            datum.parent_name, name(datum.parent_type)))
-                    else:
-                        #print(f'Processing {datum.type} {datum.name} without parent...')
-                        cursor.execute('PRAGMA foreign_keys = OFF;')
-                        conn.commit()
-                        # Change line number
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring, parent_name, parent_type)
-                            VALUES (?, ?, ?, ?, NULL, NULL)
-                        ''', (datum.name, name(datum.type), name(datum.datatype), datum.docstring))
-                        cursor.execute('PRAGMA foreign_keys = ON;')
-                        conn.commit()
+                                datum.name,
+                                none_or(datum.directory, str),
+                                none_or(datum.file, str),
+                                datum.count,
+                                status,
+                                datum.reason))
+                        item_count = 0
+                        if datum.status is not None:
+                            progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
+                            continue
+                        progress(f'Processing module {datum.name}...')
+                        cur_module = datum
+                        conn.commit
+                    case HoudiniStaticData():
+                        item_count += 1
+                        if item_count % 100 == 0:
+                            conn.commit()
+
+                        if datum.parent_name is not None:
+                            #print(f'Processing {datum.type} {datum.name} with parent {datum.parent_name}...')
+                            #if str(name) == 'BlendShape' or name == 'hou' or datum.type == EntryType.OBJECT:
+                            #    breakpoint()
+                            cursor.execute('''
+                                INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring,
+                                                                            parent_name, parent_type)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            ''', (
+                                datum.name,
+                                get_name(datum.type),
+                                get_name(datum.datatype),
+                                datum.docstring,
+                                datum.parent_name, get_name(datum.parent_type)))
+                        else:
+                            #print(f'Processing {datum.type} {datum.name} without parent...')
+                            cursor.execute('PRAGMA foreign_keys = OFF;')
+                            conn.commit()
+                            # Change line number
+                            cursor.execute('''
+                                INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring, parent_name, parent_type)
+                                VALUES (?, ?, ?, ?, NULL, NULL)
+                            ''', (datum.name,
+                                  get_name(datum.type),
+                                  get_name(datum.datatype),
+                                  datum.docstring))
+                            cursor.execute('PRAGMA foreign_keys = ON;')
+                            conn.commit()
 
         # Commit last module.
         conn.commit()
 
         # Vacuum the database to optimize it. Most of the time this is not needed,
         # but if reloading the tables during development, it shows the actual space needed.
-        with timer('Vacuuming database'):
-            cursor.execute('''
-            VACUUM;
-            ''')
-
-    match db_path, connection:
-        case None, None:
-            raise ValueError("Either db_path or connection must be provided.")
-        case Path(), None:
-            print(f'Saving static data to {db_path}...')
-            if not db_path.exists():
-                db_path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(db_path, isolation_level='EXCLUSIVE') as conn:
-                save(conn)
-            print(f'static module data saved to {db_path}.')
-        case _, sqlite3.Connection():
-            save(connection)
+        cursor.execute('''
+        VACUUM;
+        ''')
 
 def get_stored_modules(db_path: Path|None=None,
                        connection: sqlite3.Connection|None=None,
+                       successful: bool = True,
+                       failed: bool = False,
                        ) -> Generator[str, None, None]:
     """
     Get names of modules already stored in the database.
@@ -784,11 +731,13 @@ def get_stored_modules(db_path: Path|None=None,
     Args:
         db_path (Path): Path to the SQLite database file.
         conn (sqlite3.Connection|None): An existing SQLite connection, if available.
+        successful (bool): If True, include modules successfully loaded.
+        failed (bool): If True, include modules not successfully loaded.
 
     Yields:
         str: Name of each module stored in the database.
     """
-    def retrieve(conn: sqlite3.Connection) -> Generator[str, None, None]:
+    with analysis_db(db_path=db_path, connection=connection) as conn:
         """
         Retrieve stored module names from the database.
         Args:
@@ -810,21 +759,15 @@ def get_stored_modules(db_path: Path|None=None,
                 return
 
             # Query module names
-            cursor.execute("SELECT name FROM houdini_modules where status = 'OK'")
-
-            for row in cursor.fetchall():
-                yield row[0]
+            if successful:
+                cursor.execute("SELECT name FROM houdini_modules where status = 'OK'")
+                for row in cursor.fetchall():
+                    yield row[0]
+            if failed:
+                cursor.execute("SELECT name FROM houdini_modules where status <> 'OK'")
+                for row in cursor.fetchall():
+                    yield row[0]
         except sqlite3.Error as e:
             print(f"Error retrieving stored modules: {e}", file=sys.stderr)
-    match db_path, connection:
-        case None, None:
-            raise ValueError("Either db_path or conn must be provided.")
-        case _, sqlite3.Connection():
-            yield from retrieve(connection)
-        case Path(), None:
-            if not db_path.exists():
-                return
-            with sqlite3.connect(db_path) as connection:
-                yield from retrieve(connection)
 
 

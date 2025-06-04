@@ -3,12 +3,13 @@ Common Utilities.
 '''
 
 from collections import defaultdict
-from collections.abc import Callable, Generator, MutableMapping
+from collections.abc import Callable, Generator, Iterable, MutableMapping
+from operator import itemgetter
 import os
 from contextlib import contextmanager, suppress
 from enum import Enum, StrEnum
 import sys
-from typing import Hashable, Literal, TypeVar, Any
+from typing import IO, Hashable, Literal, TypeVar, Any
 import atexit
 from weakref import WeakKeyDictionary
 
@@ -332,3 +333,155 @@ def get_name(d: Any) -> str:
         else:
            # If we can't save the name, generate one based on the id.
            return f"{typename}_{id(d):x}"
+
+def do_all(i: Iterable):
+    """
+    Iterate over the items in the iterable (usually a `Generator`)
+    and do nothing with them.
+
+    This is useful for iterating over an iterable when you don't care about the
+    items, but you want to ensure that the iterable is fully consumed.
+
+    Args:
+        i (Iterable): The iterable to iterate over.
+    """
+    for _ in i:
+        pass
+    # This is a no-op, but it ensures that the iterable is fully consumed.
+
+def do_until(i: Iterable[T],
+             condition: Callable[[T], bool]|None=None,
+             default: R=None,
+             ) -> T|R:
+    """
+    Iterate over the items in the iterable until the condition is met.
+
+    If no item meets the condition, return the default value (default=None).
+
+    `do_until` and `first_if` are the same function, but `do_until` is more
+    is explicit about running a generator if one is supplied as the Iterable.
+
+    Args:
+        i (Iterable[T]): The iterable to iterate over.
+        condition (Callable[[T], bool]|None): The condition to check for each item.
+            If None, all non-None items are considered to meet the condition.
+        default (R): The default value to return if no item meets the condition.
+
+    Returns:
+        T: The first item that meets the condition,
+        or R (the default value) if no item meets the condition.
+    """
+    if condition is None:
+        return next((item
+                     for item in i
+                     if item is not None),
+                    default)
+    else:
+        return next((item
+                    for item in i
+                    if condition(item)),
+                default)
+
+first_if = do_until
+
+def do_while(i: Iterable[T],
+             condition: Callable[[T], bool]|None=None,
+             default: R=None,
+             ) -> T|R:
+    """
+    Iterate over the items in the iterable until the condition is met.
+    If no item meets the condition, return the default value (default=None).
+
+    `do_while` and `first_if_not` are the same function, but `do_until` is more
+    is explicit about running a generator if one is supplied as the Iterable.
+    Args:
+        i (Iterable[T]): The iterable to iterate over.
+        condition (Callable[[T], bool]|None): The condition to check for each item.
+            If None, all non-None items are considered to meet the condition.
+        default (R): The default value to return if all items meet the condition.
+    Returns:
+        T: The first item that does not the condition,
+        or R (the default value) if all items meet the condition.
+    """
+    if condition is None:
+        return next((item
+                     for item in i
+                     if item is None),
+                    default)
+    else:
+        return next((item
+                    for item in i
+                    if not condition(item)),
+                default)
+
+first_if_not = do_while
+
+def last(i: Iterable[T],
+          condition: Callable[[T], bool],
+          default: R=None,
+          ) -> T|R:
+    """
+    Get the last item in the iterable that meets the condition.
+
+    If no item meets the condition, return the default value (default=None).
+
+    Unlike many implementations, this tests the entire iterable, ensuring
+    that any generator is fully consumed before returning a value.
+    """
+    val: T = last # # type: ignore
+    for item in i:
+        if condition(item):
+            val = item
+    return val if val is not last else default
+
+def trace(v: T,
+          label: str|None=None,
+          file:IO[str]=sys.stderr,
+          condition: Callable[[T], bool]|None=None,
+          ) -> T:
+    '''
+    Like print, but returns the value.
+    This is useful for debugging, as it allows you to see the value
+    while still returning it for further processing.
+
+    Args:
+        v (T): The value to trace.
+        label (str|None): An optional label to print before the value.
+        file (IO[str]): The file to print the trace to (default: sys.stderr).
+        condition (Callable[[T], bool]|None): An optional condition to check
+            before printing the value. If None, the value is always printed.
+    Returns:
+        T: The value that was traced.
+    '''
+    if condition is not None and condition(v):
+        if label is not None:
+            print(f"{label}: {v}", file=file)
+        else:
+            print(v, file=file)
+    return v
+
+
+def trace_(i: Iterable[T],
+           label: str|None=None,
+           file:IO[str] = sys.stderr,
+           condition: Callable[[T], bool]|None=None,
+           ) -> Iterable[T]:
+    """
+    Iterate over the items in the iterable and trace each item.
+    This is useful for debugging, as it allows you to see the items
+    while still returning them for further processing.
+
+    Args:
+        i (Iterable[T]): The iterable to iterate over.
+        label (str|None): An optional label to print before each item.
+        file (IO[str]): The file to print the trace to (default: sys.stderr).
+        condition (Callable[[T], bool]|None): An optional condition to check
+            before printing each item. If None, all items are printed.
+    Yields:
+        T: Each item in the iterable after tracing it.
+
+    Returns:
+        T: the returned items:
+        or R (the default value) if no item meets the condition.
+    """
+    return (trace(item, label, file) for item in i)

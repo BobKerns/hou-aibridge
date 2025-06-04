@@ -30,6 +30,9 @@ from zabob.common.common_utils import (
     environment, prevent_atexit, prevent_exit,
     none_or, values, not_none, not_none1, not_none2,
     if_true, if_false, get_name,
+    do_all, do_until, do_while, first_if, first_if_not,
+    trace, trace_,
+
 )
 from zabob.common.find_houdini import (
     find_houdini_installations,
@@ -88,6 +91,13 @@ __all__ = (
     "if_true",
     "if_false",
     "get_name",
+    "do_all",
+    "do_until",
+    "do_while",
+    "first_if",
+    "first_if_not",
+    "trace",
+    "trace_",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",

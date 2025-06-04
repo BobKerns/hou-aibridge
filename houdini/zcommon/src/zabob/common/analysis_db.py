@@ -204,7 +204,7 @@ def analysis_db_writer(db_path: Path|None=None,
                         progress(f'Processing module {datum.name}...')
                         yield datum
                         cur_module = datum
-                        conn.commit
+                        conn.commit()
                     case HoudiniStaticData():
                         item_count += 1
                         if item_count % 100 == 0:

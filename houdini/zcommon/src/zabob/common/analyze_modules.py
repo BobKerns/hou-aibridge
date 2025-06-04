@@ -241,9 +241,7 @@ def candidates_in_dir(path: Path) -> Generator[tuple[str, Path], None, None]:
     for item in path.iterdir():
         if item.is_file() and item.suffix == '.py':
             yield (item.stem, item)
-        if item.name == 'site-packages':
-            continue
-        if item.name == 'test':
+        if item.name in ('test', 'site-packages', 'site-packages-forced'):
             continue
         elif item.is_dir() and (item / '__init__.py').exists():
             yield from (

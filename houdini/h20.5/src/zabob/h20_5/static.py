@@ -56,7 +56,7 @@ def load_data(db: Path=default_db):
     save_static_data_to_db(db_path=db,
                            include=modules_in_path(sys.path,
                                                    ignore=IGNORE_MODULES,
-                                                   done=get_stored_modules(db)),
+                                                   done=set(get_stored_modules(db))),
                            ignore=IGNORE_MODULES,
                            )
     print(f"Static data saved to {db}")

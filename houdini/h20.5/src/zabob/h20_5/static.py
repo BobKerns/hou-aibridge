@@ -4,16 +4,14 @@ Routines to extract static data from Houdini 20.5.
 
 from collections.abc import Mapping
 from pathlib import Path
-import sys
 from types import MappingProxyType
-from webbrowser import get
 
 import click
 
 import hou
 
 from zabob.common import (
-    ZABOB_OUT_DIR, analysis_db, do_all,
+    ZABOB_OUT_DIR, analysis_db, analysis_db_writer, do_all, get_stored_modules,
 )
 from zabob.common.analyze_node_types import do_analysis
 
@@ -54,8 +52,18 @@ def load_data(db: Path=default_db):
         db (Path): The path to the SQLite database file.
     """
     db.parent.mkdir(parents=True, exist_ok=True)
-    with analysis_db(db_path=db) as conn:
-        do_all(do_analysis(connection=conn))
+    with analysis_db(db_path=db,
+                     write=True,
+                     ) as conn:
+        with analysis_db_writer(connection=conn, label="Write") as writer:
+            # Get the list of modules already stored in the database so we can skip them.
+            done = set(get_stored_modules(connection=conn))
+            do_all((item
+                    for item in map(writer,
+                                    do_analysis(connection=conn,
+                                                done=done,
+                                                ignore=IGNORE_MODULES))),
+                   label="Analyze Houdini 20.5 static data",)
     print(f"Static data saved to {db}")
 
 

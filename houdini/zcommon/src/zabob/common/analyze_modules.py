@@ -645,12 +645,10 @@ def save_static_data_to_db(db_path: Path|None=None,
         with analysis_db_writer(connection=conn) as writer:
             with timer('Storing') as progress:
                 # Insert or update static data
-                item_count = 0
-                cur_module: ModuleData|None = None
-                for datum in _load_modules(include=include,
-                                                    ignore=ignore,
-                                                    done=get_stored_modules(connection=conn)):
-                    do_all(writer(datum))
+                for datum in analyze_modules(include=include,
+                                            ignore=ignore,
+                                            done=get_stored_modules(connection=conn)):
+                    writer(datum)
 
         # Commit last module.
         conn.commit()

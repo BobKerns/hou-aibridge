@@ -12,7 +12,9 @@ import sys
 from typing import IO
 
 from zabob.common.analysis_types import AnalysisDBItem, AnalysisDBWriter, HoudiniStaticData, ModuleData
-from zabob.common.common_utils import T, get_name, none_or
+from zabob.common.common_utils import (
+    T, Condition, get_name, none_or, trace as _trace,
+)
 from zabob.common.timer import timer
 
 
@@ -171,7 +173,7 @@ def analysis_db_writer(db_path: Path|None=None,
             cursor = conn.cursor()
             item_count = 0
             cur_module = None
-            def writer(datum: T, /) -> Generator[T|AnalysisDBItem, None, None]:
+            def writer(datum: T, /) -> T|AnalysisDBItem:
                 nonlocal item_count, cur_module
                 _trace(datum, condition=trace, label=f'{label}.writer', file=file)
                 match datum:
@@ -209,12 +211,11 @@ def analysis_db_writer(db_path: Path|None=None,
                         item_count = 0
                         if datum.status is not None:
                             progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
-                            yield datum
-                            return
+                            return datum
                         progress(f'Processing module {datum.name}...')
-                        yield datum
                         cur_module = datum
                         conn.commit()
+                        return datum
                     case HoudiniStaticData():
                         item_count += 1
                         if item_count % 100 == 0:
@@ -248,7 +249,7 @@ def analysis_db_writer(db_path: Path|None=None,
                                     datum.docstring))
                             cursor.execute('PRAGMA foreign_keys = ON;')
                             conn.commit()
-                        yield datum
+                        return datum
             yield writer
 
 

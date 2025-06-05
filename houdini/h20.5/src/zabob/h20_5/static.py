@@ -23,11 +23,13 @@ IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
     "PIL.PyAccess": "Creates files.",
     "hutil.pbkdf2": "Creates files.",
     "antigravity": "Runs external program (osascript on macOS).",
+    "pip.__pip-runner__": "A Script",
+    "idlelib.idle": "Runs IDLE and hangs.",
     **{k: "Crashes hython 20.5"
        for k in (
                 'dashbox.ui', 'dashbox.textedit', 'dashbox.common', 'dashbox',
                 'generateHDAToolsForOTL', 'test.autotest', 'test.tf_inherit_check',
-                'test._test_embed_structseq', 'idlelib.idle', 'ocio.editor',
+                'test._test_embed_structseq', 'ocio.editor',
                 'hrecipes.models', 'hrecipes.manager', 'pdgd.datalayerserver',
                 'assettools', 'searchbox',
                 'searchbox.panetabs', 'searchbox.paths', 'searchbox.ui',

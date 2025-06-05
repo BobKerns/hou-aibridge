@@ -38,6 +38,7 @@ from zabob.common.common_utils import (
     if_true, if_false, get_name,
     do_all, do_until, do_while, find_first, find_first_not,
     trace, trace_,
+    do_yield, call_yield, do_yielder, call_yielder,
 
 )
 from zabob.common.find_houdini import (
@@ -111,6 +112,10 @@ __all__ = (
     "find_first_not",
     "trace",
     "trace_",
+    "do_yield",
+    "call_yield",
+    "do_yielder",
+    "call_yielder",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",

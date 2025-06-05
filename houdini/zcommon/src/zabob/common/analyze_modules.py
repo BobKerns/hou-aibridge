@@ -12,10 +12,10 @@ is always yielded after its components.
 
 The next layer attempts to import these modules. If the import fails, it yields
 a `ModuleData` object with the name of the module, the file and directory it was found in,
-a status of the Exception that was raised, and a reason being the message of the Exception.
+a status of the `Exception` that was raised, and a reason being the message of the `Exception`.
 
 If the import is rejected, it yields a `ModuleData` object with the name of the module,
-the file it was found in, a status of 'IGNORE', and a reason being the value from the
+the file it was found in, a status of `'IGNORE'`, and a reason being the value from the
 `ignore` mapping.
 
 If module name has already been processed, it is skipped; nothing is yielded for it.
@@ -25,8 +25,8 @@ the file and directory (or None if not available), and a status of None This ind
 the module was successfully imported its analysis will follow. A status of 'OK' is set
 in the database only after all items in the module have been processed, as failure can
 occur at any point during the analysis. Failures during analysis will result in another
-`ModuleData` object being yielded with the status set to the Exception that was raised,
-and a reason being the message of the Exception. This allows the database to record the
+`ModuleData` object being yielded with the status set to the `Exception` that was raised,
+and a reason being the message of the `Exception`. This allows the database to record the
 failure without losing the module's name and file information, and retaining the partial
 results of the analysis.
 

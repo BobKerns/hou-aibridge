@@ -13,9 +13,9 @@ import click
 import hou
 
 from zabob.common import (
-    ZABOB_OUT_DIR,
-    save_static_data_to_db, modules_in_path, get_stored_modules,
+    ZABOB_OUT_DIR, analysis_db, do_all,
 )
+from zabob.common.analyze_node_types import do_analysis
 
 
 IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
@@ -24,6 +24,7 @@ IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
     "pycparser._build_tables": "A script that writes files.",
     "PIL.PyAccess": "Creates files.",
     "hutil.pbkdf2": "Creates files.",
+    "antigravity": "Runs external program (osascript on macOS).",
     **{k: "Crashes hython 20.5"
        for k in (
                 'dashbox.ui', 'dashbox.textedit', 'dashbox.common', 'dashbox',
@@ -53,12 +54,8 @@ def load_data(db: Path=default_db):
         db (Path): The path to the SQLite database file.
     """
     db.parent.mkdir(parents=True, exist_ok=True)
-    save_static_data_to_db(db_path=db,
-                           include=modules_in_path(sys.path,
-                                                   ignore=IGNORE_MODULES,
-                                                   done=set(get_stored_modules(db))),
-                           ignore=IGNORE_MODULES,
-                           )
+    with analysis_db(db_path=db) as conn:
+        do_all(do_analysis(connection=conn))
     print(f"Static data saved to {db}")
 
 

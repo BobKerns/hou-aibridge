@@ -9,6 +9,7 @@ import sqlite3
 from pathlib import Path
 from collections.abc import Generator
 import sys
+from typing import IO
 
 from zabob.common.analysis_types import AnalysisDBItem, AnalysisDBWriter, HoudiniStaticData, ModuleData
 from zabob.common.common_utils import T, get_name, none_or
@@ -131,11 +132,15 @@ def analysis_db(db_path: Path|None=None,
 @contextmanager
 def analysis_db_writer(db_path: Path|None=None,
                        connection: sqlite3.Connection|None=None,
+                       trace: Condition=False,
+                       label: str|None=None,
+                       file: IO[str]=sys.stderr,
                        ) -> Generator[AnalysisDBWriter, None, None]:
     """
     Context manager for writing to the analysis database.
     If an existing connection is provided, it will use that connection,
     and the caller is responsible for closing it.
+
     If a database path is provided, it will create and initialize the
     database at that path if it does not exist.
     If neither is provided, it raises a `ValueError`.
@@ -143,6 +148,10 @@ def analysis_db_writer(db_path: Path|None=None,
     Args:
         db_path (Path): The path to the SQLite database file.
         connection (sqlite3.Connection): An existing SQLite connection to use.
+        trace (Condition): If `True`, `None`, or a `Callable`,
+            trace the items being written.
+        label (str|None): A label for the trace output.
+
     Yields:
         AnalysisDBWriter: A callable that writes items to the analysis database.
     """
@@ -164,6 +173,7 @@ def analysis_db_writer(db_path: Path|None=None,
             cur_module = None
             def writer(datum: T, /) -> Generator[T|AnalysisDBItem, None, None]:
                 nonlocal item_count, cur_module
+                _trace(datum, condition=trace, label=f'{label}.writer', file=file)
                 match datum:
                     case ModuleData():
                         if cur_module is not None:

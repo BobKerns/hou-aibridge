@@ -1,6 +1,6 @@
 {
-  "name": "hou-aibridge",
-  "displayName": "hou_aibridge",
+  "name": "zabob-chat",
+  "displayName": "Zabob",
   "description": "Bridge between Houdini and AI",
   "version": "0.0.1",
   "engines": {
@@ -17,13 +17,13 @@
   "contributes": {
     "commands": [
       {
-        "command": "hou-aibridge.helloWorld",
+        "command": "zabob.helloWorld",
         "title": "Hello World"
       }
     ],
     "chatParticipants": [
       {
-        "id": "hou-aibridge.zabob",
+        "id": "zabob.agent",
         "name": "zabob",
         "fullName": "Zabob",
         "description": "Bridge between Houdini and Copilot",

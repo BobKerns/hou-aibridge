@@ -37,8 +37,8 @@ It should use the 'mcp' library rather than reimplementing it on top of FastAPI,
 
 '''
 
-RESPONSES_DIR = Path(Path(__file__).parent / "responses")
-PROMPTS_DIR = Path(Path(__file__).parent / "prompts")
+RESPONSES_DIR = Path(__file__).parent / "responses"
+PROMPTS_DIR = Path(__file__).parent / "prompts"
 INSTRUCTIONS_PATH = SyncPath(__file__).parent / "instructions.md"
 with open(INSTRUCTIONS_PATH, "r", encoding="utf-8") as f:
     INSTRUCTIONS = f.read()
@@ -83,6 +83,7 @@ def awaitable_value(value: T) -> Awaitable[T]:
 @mcp.tool("query_response")
 async def query_response(query: str):
     """Handle a query and return a canned response."""
+    return {"response": f'{RESPONSES_DIR}.json'}
     if not query:
         return {"error": "No query provided."}
     return {"response": await RESPONSES.get(query, awaitable_value("No response found."))}

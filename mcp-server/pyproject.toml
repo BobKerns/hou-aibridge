@@ -57,6 +57,7 @@ zabob = { path = "../zabob-modules", editable = true }
 dev = [
     #"click>=8.0.0,<8.2.0",
     "psutil>=7.0.0",
+    "pytest>=8.4.0",
     "requests>=2.32.3",
     "semver>=3.0.4",
     "tomlkit>=0.13.2",

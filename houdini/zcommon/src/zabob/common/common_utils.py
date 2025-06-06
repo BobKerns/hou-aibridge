@@ -251,7 +251,7 @@ def if_true(condition: bool, value: T) -> Generator[T, None, None]:
         value (T): The value to return if the condition is `True`.
 
     Yields:
-        T|None: The value if the condition is `True`, otherwise `None`.
+        T: The value if the condition is `True`.
     """
     if condition:
         yield value
@@ -264,7 +264,7 @@ def if_false(condition: bool, value: T) -> Generator[T, None, None]:
         value (T): The value to return if the condition is `False`.
 
     Yields:
-        T|None: The value if the condition is `False`, otherwise `None`.
+        T: The value if the condition is `False`.
     """
     if not condition:
         yield value
@@ -285,7 +285,7 @@ def get_name(d: Any) -> str:
     Args:
         d (Any): The object to get the name of.
     Returns:
-        str|None: The name of the object, or `None` if it has no name.
+        str: The name of the object.
     '''
     match d:
         case Enum():

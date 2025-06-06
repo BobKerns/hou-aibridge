@@ -8,13 +8,15 @@
             "name": "Python: Current File (zcommon)",
             "type": "debugpy",
             "request": "launch",
+            "justMyCode": false,
             "program": "${file}",
             "console": "integratedTerminal",
+
             "python": "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/bin/hython",
             "env": {
                 "PYTHONPATH": "${workspaceFolder:zcommon}/src${pathSeparator}${env:PYTHONPATH}"
             },
-            "args": ["${command:pickArgs}"],
+            "args": ["${command:pickArgs}"]
         }
     ]
 }

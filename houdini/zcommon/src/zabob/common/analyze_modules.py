@@ -21,8 +21,8 @@ the file it was found in, a status of `'IGNORE'`, and a reason being the value f
 If module name has already been processed, it is skipped; nothing is yielded for it.
 
 If the import succeeds, it yields a `ModuleData` object with the name of the module,
-the file and directory (or None if not available), and a status of None This indicts that
-the module was successfully imported its analysis will follow. A status of 'OK' is set
+the file and directory (or `None` if not available), and a status of `None` This indicts that
+the module was successfully imported its analysis will follow. A status of `'OK'` is set
 in the database only after all items in the module have been processed, as failure can
 occur at any point during the analysis. Failures during analysis will result in another
 `ModuleData` object being yielded with the status set to the `Exception` that was raised,
@@ -40,7 +40,8 @@ preserved.
 
 The database handler receives this alternation of `ModuleData` and `HoudiniStaticData`.
 The information in the `ModuleData` is added to the `houdini_modules` table. If it is
-a successful import, the count of items in the the module is set to zero.
+a successful import, the status is set to `'OK'` and the count of items in the the module
+is saved. The counter is then reset to zero, as the next module will be processed.
 
 The `HoudiniStaticData` objects are then added to the `houdini_module_data` table.
 
@@ -64,8 +65,7 @@ user installs additional packages or modules after the initial analysis.
 import builtins
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import suppress
-from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import Enum
 from importlib import import_module
 from inspect import (
     getdoc, getmembers, isclass, isdatadescriptor, isfunction,
@@ -74,7 +74,7 @@ from inspect import (
 from pathlib import Path
 import sys
 from types import ModuleType
-from typing import Any, Literal
+from typing import Any
 import warnings
 from collections import deque
 
@@ -587,11 +587,6 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
     Yields:
         HoudiniStaticData: An instance of HoudiniStaticData for each item found in the hou module.
         ModuleData: An instance of ModuleData for each module found in the hou module.
-    The data includes:
-
-
-    Returns:
-        dict: A dictionary containing the static data.
     """
     hou = _init_hou()
     seen = set(done)

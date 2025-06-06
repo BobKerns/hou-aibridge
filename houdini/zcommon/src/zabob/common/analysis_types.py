@@ -1,5 +1,10 @@
 '''
 Types in the analysis pipeline, especially those to be stored in the database.
+
+This module needs to be loadable in non-Houdini environments,
+
+Where possible, it uses the original objects, but Houdini-specific types
+are converted to more generic types (generally `str`)
 '''
 
 from abc import abstractmethod
@@ -7,8 +12,8 @@ from pathlib import Path
 from enum import StrEnum
 from dataclasses import dataclass
 import builtins
-from typing import Literal, Protocol, TypeVar
-from collections.abc import Generator
+from typing import Any, Literal, Protocol, TypeVar
+
 
 T = TypeVar('T')
 
@@ -35,8 +40,8 @@ class HoudiniStaticData:
     Attributes:
         name (str): The name of the Houdini item (module, class, function, etc.).
         type (str): The type of the Houdini item (e.g., 'module', 'class', 'function', 'constant', etc.).
-        datatype (str): The data type of the Houdini item (e.g., 'int', 'str', 'hou.EnumValue', etc.).
-        docstring (str|None): The docstring of the Houdini item, or None if not available.
+        datatype (str): The data type of the Houdini item (e.g., `int`, `str`, `hou.EnumValue`, etc.).
+        docstring (str|None): The docstring of the Houdini item, or `None` if not available.
         parent_name (str|None): The name of the parent Houdini item, if applicable.
         parent_type (str|None): The type of the parent Houdini item, if applicable.
     """

@@ -172,7 +172,7 @@ R = TypeVar('R')
 def none_or(value: T|None, fn: Callable[[T], R]) -> R|None:
     """
     Call a function with the given value if it is not `None`,
-    otherwise return No`ne.
+    otherwise return `None`.
 
     Args:
         value (T|None): The value to pass to the function.
@@ -529,7 +529,8 @@ def do_while(i: Iterable[T],
         case None:
             return next((_trace(item, condition=trace, label=label, file=file)
                          for item in i
-                         if item is None))
+                         if item is None),
+                        default)
         case _ if callable(condition):
             # If the condition is a callable, we want to find the first item
             # that does not meet the condition.

@@ -208,7 +208,6 @@ objecttoolutils
 objtranslator
 ocio
 osascript
-oudini
 panetabs
 parsepeakuserlog
 particletoolutils

@@ -228,6 +228,31 @@ def not_none2(value1: T|None, value2: T|None) -> Generator[T, None, None]:
         yield value2
 
 
+def value(arg: T) -> Generator[T, None, None]:
+    """
+    Generator that yields the given argument.
+    A substitute for a tuple that can be more clear about intent.
+
+    Useful in generators to yield an intermediate value.
+
+    Example:
+        >>> def trouble():
+        >>> ...     return [
+        >>>     (f'{ref}-bug', f'{ref}-fix}')
+        >>>     for id in range(10)
+        >>>     for repo in ('repo1', 'repo2')
+        >>>     for ref in value(f'{repo}-{id}')
+        >>> ]
+
+    Args:
+        arg (T|None): The value to yield.
+
+    Yields:
+        T: The value from the argument.
+    """
+    yield arg
+
+
 def values(*args: T) -> Generator[T, None, None]:
     """
     Generator that yields all the values from the given arguments.

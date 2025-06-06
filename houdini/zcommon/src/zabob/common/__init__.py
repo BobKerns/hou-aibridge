@@ -35,10 +35,10 @@ from zabob.common.common_utils import (
     _version, Level, LEVELS,
     DEBUG, INFO, QUIET, SILENT, VERBOSE,
     environment, prevent_atexit, prevent_exit,
-    none_or, values, not_none, not_none1, not_none2,
+    none_or, not_none, not_none1, not_none2,
     if_true, if_false, get_name,
     do_all, do_until, do_while, find_first, find_first_not,
-    trace, trace_,
+    trace, trace_, value, values,
     do_yield, call_yield, do_yielder, call_yielder,
 
 )
@@ -101,6 +101,7 @@ __all__ = (
     "prevent_atexit",
     "prevent_exit",
     "none_or",
+    "value",
     "values",
     "not_none",
     "not_none1",

@@ -33,7 +33,14 @@ class EntryType(StrEnum):
 
 
 @dataclass
-class HoudiniStaticData:
+class AnalysisDBItem:
+    """
+    Base class for items to be written to the analysis database.
+    """
+    pass
+
+@dataclass
+class HoudiniStaticData(AnalysisDBItem):
     """
     A class to represent static data extracted from Houdini 20.5.
 
@@ -53,7 +60,7 @@ class HoudiniStaticData:
     parent_type: str|None = None
 
 @dataclass
-class ModuleData:
+class ModuleData(AnalysisDBItem):
     """
     A class to represent module data extracted from Houdini 20.5.
 
@@ -79,20 +86,12 @@ class ModuleData:
                 self.reason = str(self.status)
 
 
-@dataclass
-class AnalysisDBItem:
-    """
-    Base class for items to be written to the analysis database.
-    """
-    pass
-
-
 class AnalysisDBWriter(Protocol):
     """
     Protocol for writing items to the analysis database.
     """
     @abstractmethod
-    def __call__(self, item: 'T', /) -> Generator['T|AnalysisDBItem', None, None]:
+    def __call__(self, item: 'T', /) -> 'T|AnalysisDBItem':
         """
         Write an item to the analysis database.
 
@@ -100,3 +99,53 @@ class AnalysisDBWriter(Protocol):
             item (AnalysisDBItem): The item to write to the database.
         """
         ...
+
+
+@dataclass
+class NodeCategoryInfo(AnalysisDBItem):
+    """
+    Data class to hold information about a Houdini node category.
+    """
+    name: str
+    label: str
+    hasSubnetworkType: bool
+
+
+@dataclass
+class NodeTypeInfo(AnalysisDBItem):
+    """
+    Data class to hold information about a Houdini node type.
+    """
+    name: str
+    category: str
+    childCategory: str|None
+    description: str
+    helpUrl: str
+    minNumInputs: int
+    maxNumInputs: int
+    maxNumOutputs: int
+    isGenerator: bool
+    isManager: bool
+    isDeprecated: bool
+    deprecation_reason: str|None
+    deprecation_new_type: str|None
+    deprecation_version: str|None
+
+
+
+@dataclass
+class ParmTemplateInfo(AnalysisDBItem):
+    """
+    Data class to hold information about a Houdini parameter template.
+    """
+    type_name: str
+    type_category: str
+    name: str
+    type: builtins.type
+    template_type: str
+    defaultValue: Any
+    label: str
+    help: str
+    script: str
+    script_language: str
+    tags: dict[str, str]

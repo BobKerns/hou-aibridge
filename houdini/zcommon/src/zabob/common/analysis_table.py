@@ -2,7 +2,7 @@
 Specify analysis tables via dataclasses
 '''
 
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import fields, is_dataclass
 from typing import get_origin, get_args, Union
 
 

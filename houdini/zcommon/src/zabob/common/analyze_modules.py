@@ -64,7 +64,7 @@ user installs additional packages or modules after the initial analysis.
 
 import builtins
 from collections.abc import Generator, Iterable, Mapping, Sequence
-from contextlib import suppress
+from contextlib import suppress, chdir
 from enum import Enum
 from importlib import import_module
 from inspect import (
@@ -77,6 +77,7 @@ from types import ModuleType
 from typing import Any
 import warnings
 from collections import deque
+from tempfile import TemporaryDirectory
 
 import sqlite3
 
@@ -620,17 +621,21 @@ def analyze_modules(include: Iterable[ModuleType|ModuleData],
     A set of modules which have ever been queued for processing. We only need them queued once.
     '''
 
-
-    for module in include:
-        if not isinstance(module, ModuleType):
-            # If it's already a ModuleData, yield it directly.
-            yield module
-        else:
-            yield from _load_module(module,
-                                    seen=set(),
-                                    done=set(done),
-                                    ignore=ignore or {},
-                                    queue=queue,
-                                    queued=queued,
-                                    )
+    with TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        tmpdir.chmod(0o500)
+        # We need a read-only working directory to catch modules which try to write to the filesystem.
+        with chdir(tmpdir):
+            for module in include:
+                if not isinstance(module, ModuleType):
+                    # If it's already a ModuleData, yield it directly.
+                    yield module
+                else:
+                    yield from _load_module(module,
+                                            seen=set(),
+                                            done=set(done),
+                                            ignore=ignore or {},
+                                            queue=queue,
+                                            queued=queued,
+                                            )
 

@@ -43,7 +43,7 @@ INSTRUCTIONS_PATH = SyncPath(__file__).parent / "instructions.md"
 with open(INSTRUCTIONS_PATH, "r", encoding="utf-8") as f:
     INSTRUCTIONS = f.read()
 
-mcp = FastMCP("hou-aibridge", instructions=INSTRUCTIONS)
+mcp = FastMCP("zabob", instructions=INSTRUCTIONS)
 
 
 JsonAtomic: TypeAlias = str | int | float | bool | None

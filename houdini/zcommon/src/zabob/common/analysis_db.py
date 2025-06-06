@@ -94,8 +94,8 @@ def analysis_db(db_path: Path|None=None,
                     childCategory TEXT DEFAULT NULL,
                     description TEXT NOT NULL,
                     helpUrl TEXT NOT NULL,
-                    minNumberInputs INTEGER NOT NULL,
-                    maxNumOfInputs INTEGER NOT NULL,
+                    minNumInputs INTEGER NOT NULL,
+                    maxNumInputs INTEGER NOT NULL,
                     maxNumOutputs INTEGER NOT NULL,
                     isGenerator INTEGER NOT NULL,
                     isManager INTEGER NOT NULL,
@@ -283,7 +283,7 @@ def analysis_db_writer(db_path: Path|None=None,
                         print(f'Processing node type {datum.name} in category {datum.category}...')
                         cursor.execute('''
                             INSERT OR REPLACE INTO houdini_node_types (name, category, childCategory, description,
-                                helpUrl, minNumberInputs, maxNumOfInputs, maxNumOutputs, isGenerator, isManager,
+                                helpUrl, minNumInputs, maxNumInputs, maxNumOutputs, isGenerator, isManager,
                                 isDeprecated, deprecation_reason, deprecation_new_type, deprecation_version)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (datum.name,

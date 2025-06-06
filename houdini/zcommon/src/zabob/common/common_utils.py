@@ -244,14 +244,14 @@ def values(*args: T) -> Generator[T, None, None]:
 
 def if_true(condition: bool, value: T) -> Generator[T, None, None]:
     """
-    Yield the value if the condition is `True`, otherwise return No`ne.
+    Yield the value if the condition is `True`, otherwise return `None`.
 
     Args:
         condition (bool): The condition to check.
         value (T): The value to return if the condition is `True`.
 
     Yields:
-        T|None: The value if the condition is True, otherwise `None`.
+        T|None: The value if the condition is `True`, otherwise `None`.
     """
     if condition:
         yield value

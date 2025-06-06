@@ -49,8 +49,7 @@ from zabob.common.find_houdini import (
 )
 from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
-    analyze_modules, save_static_data_to_db,
-    modules_in_path, import_or_warn,
+    analyze_modules, modules_in_path, import_or_warn,
 )
 from zabob.common.detect_env import (
     detect_environment,
@@ -130,7 +129,6 @@ __all__ = (
     "import_or_warn",
     "modules_in_path",
     "analyze_modules",
-    "save_static_data_to_db",
     "detect_environment",
     "is_development",
     "is_packaged",

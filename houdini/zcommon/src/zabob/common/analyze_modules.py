@@ -634,39 +634,3 @@ def analyze_modules(include: Iterable[ModuleType|ModuleData],
                                     queued=queued,
                                     )
 
-
-def save_static_data_to_db(db_path: Path|None=None,
-                           connection: sqlite3.Connection|None=None,
-                           include: Iterable[ModuleType|ModuleData] = (),
-                           ignore: Mapping[str, str]|None =None
-                        ):
-    """
-    Save the static data to a SQLite database. Either a DB path or an existing connection must be provided.
-    This function initializes the database tables if they do not exist, and then
-
-    Args:
-        db_path (Path|None): The path to the SQLite database file.
-        connection (sqlite3.Connection|None): An existing SQLite connection, if available.
-        include (Iterable[ModuleType|ModuleData]): An iterable of modules to include in the static data.
-        ignore (Mapping[str, str]|None): A mapping of module names to ignore, with reasons.
-    """
-    ignore = ignore or {}
-    with analysis_db(db_path=db_path,
-                     connection=connection,
-                     write=True) as conn:
-        with analysis_db_writer(connection=conn) as writer:
-            with timer('Storing') as progress:
-                # Insert or update static data
-                for datum in analyze_modules(include=include,
-                                            ignore=ignore,
-                                            done=get_stored_modules(connection=conn)):
-                    writer(datum)
-
-        # Commit last module.
-        conn.commit()
-
-        # Vacuum the database to optimize it. Most of the time this is not needed,
-        # but if reloading the tables during development, it shows the actual space needed.
-        conn.execute('''
-        VACUUM;
-        ''')

@@ -1,11 +1,46 @@
-'''
-Specify analysis tables via dataclasses
-'''
 
 from dataclasses import dataclass, fields, is_dataclass, MISSING
 from typing import get_type_hints, get_origin, get_args, Union, List, Tuple, Type, Any
 import inspect
 import enum
+
+def map_type(field_type) -> tuple[str, bool]:
+    """Map Python type to SQLite type and nullable flag."""
+    origin = get_origin(field_type)
+
+    # Check if it's Optional (Union with None)
+    if origin is Union:
+        args = get_args(field_type)
+        if type(None) in args:
+            # It's Optional, get the non-None type
+            actual_type = next(t for t in args if t is not type(None))
+            sql_type, _ = map_type(actual_type)
+            return sql_type, True
+
+    # Map basic types
+    if field_type in (int, bool):
+        return "INTEGER", False
+    elif field_type is float:
+        return "REAL", False
+    elif field_type is str:
+        return "TEXT", False
+    else:
+        # Default to TEXT for unknown types
+        return "TEXT", False
+
+
+def field_to_column_def(field) -> str:
+    """Convert a dataclass field to a SQLite column definition."""
+    sql_type, nullable = map_type(field.type)
+    col_def = f"{field.name} {sql_type}"
+
+    if nullable:
+        col_def += " DEFAULT NULL"
+    else:
+        col_def += " NOT NULL"
+
+    return col_def
+
 
 def dataclass_to_sqlite_ddl(
     cls: type,
@@ -36,43 +71,8 @@ def dataclass_to_sqlite_ddl(
     if primary_key is None:
         primary_key = (dataclass_fields[0].name,)
 
-    # Type mapping
-    def map_type(field_type) -> tuple[str, bool]:
-        """Map Python type to SQLite type and nullable flag."""
-        origin = get_origin(field_type)
-
-        # Check if it's Optional (Union with None)
-        if origin is Union:
-            args = get_args(field_type)
-            if type(None) in args:
-                # It's Optional, get the non-None type
-                actual_type = next(t for t in args if t is not type(None))
-                sql_type, _ = map_type(actual_type)
-                return sql_type, True
-
-        # Map basic types
-        if field_type in (int, bool):
-            return "INTEGER", False
-        elif field_type is float:
-            return "REAL", False
-        elif field_type is str:
-            return "TEXT", False
-        else:
-            # Default to TEXT for unknown types
-            return "TEXT", False
-
-    # Build column definitions
-    columns = []
-    for field in dataclass_fields:
-        sql_type, nullable = map_type(field.type)
-        col_def = f"{field.name} {sql_type}"
-
-        if nullable:
-            col_def += " DEFAULT NULL"
-        else:
-            col_def += " NOT NULL"
-
-        columns.append(col_def)
+    # Build column definitions using list comprehension
+    columns = [field_to_column_def(field) for field in dataclass_fields]
 
     # Build CREATE TABLE statement
     ddl = f"CREATE TABLE {table_name} (\n"

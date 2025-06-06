@@ -419,6 +419,7 @@ def _mk_datum(item: Any, type: EntryType, parent: HoudiniStaticData|None=None, n
 def _load_class(cls, parent: HoudiniStaticData,
                 seen: set[str],
                 queue: deque[tuple[HoudiniStaticData, ModuleType]],
+                queued: set[ModuleType],
                 name: str|None=None,
                 ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
     """
@@ -469,12 +470,15 @@ def _load_class(cls, parent: HoudiniStaticData,
                 continue
 
         if ismodule(member) and not isinstance(member, InfiniteMock):
-            queue.append((class_data, member))
+            if member not in seen and member not in queued:
+               queue.append((class_data, member))
+               queued.add(member)
         elif isclass(member):
             yield from _load_class(member,
                                     parent=class_data,
                                     seen=seen,
                                     queue=queue,
+                                    queued=queued,
                                     name=f'{name}.{member_name}')
         elif isinstance(member, property):
             yield _mk_datum(member, EntryType.ATTRIBUTE,
@@ -487,11 +491,13 @@ def _load_class(cls, parent: HoudiniStaticData,
 
 
 def _load_module(module,
-                seen: set[str],
+                seen: set[Any],
                 done: set[str],
                 ignore: Mapping[str, str],
                 queue: deque[tuple[HoudiniStaticData, ModuleType]],
+                queued: set[ModuleType],
                 parent: HoudiniStaticData|None=None,
+                top: bool = True,
                 ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
     """
     Load a module and its members, yielding HoudiniStaticData instances for each item.
@@ -530,12 +536,15 @@ def _load_module(module,
         if member_name.startswith('_'):
             continue
         if ismodule(member) and not isinstance(member, InfiniteMock):
-            queue.append((module_data, member))
+            if not member in seen and member not in queued:
+                queue.append((module_data, member))
+                queued.add(member)
         elif isclass(member):
             yield from _load_class(member,
                                     parent=module_data,
                                     seen=seen,
-                                    queue=queue,)
+                                    queue=queue,
+                                    queued=queued,)
         elif isfunction(member):
             yield _mk_datum(member, EntryType.FUNCTION,
                             parent=module_data,
@@ -557,25 +566,29 @@ def _load_module(module,
             yield _mk_datum(member, EntryType.OBJECT,
                             parent=module_data,
                             name=member_name)
+    if top:
+        while len(queue) > 0:
+            # Process the queue until it's empty.
+            # This ensures that modules are processed in the order they were found,
+            # and that module/items alternation is preserved.
+            parent_data, module = queue.popleft()
+            print(f'dequeuing {module.__name__} from {parent_data.name if parent_data else "root"},  queue={len(queue)}')
+            # Process the next module in the queue.
+            yield from _load_module(module,
+                                seen=seen,
+                                done=done,
+                                ignore=ignore,
+                                queue=queue,
+                                queued=queued,
+                                parent=parent_data,
+                                top=False,
+                                )
 
-    while len(queue) > 0:
-        # Process the queue until it's empty.
-        # This ensures that modules are processed in the order they were found,
-        # and that module/items alternation is preserved.
-        parent_data, module = queue.popleft()
-        # Process the next module in the queue.
-        yield from _load_module(module,
-                            seen=seen,
-                            done=done,
-                            ignore=ignore,
-                            queue=queue,
-                            parent=parent_data)
 
-
-def _load_modules(include: Iterable[ModuleType|ModuleData],
-                           ignore: Mapping[str, str],
-                           done: Iterable[str]
-        ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
+def analyze_modules(include: Iterable[ModuleType|ModuleData],
+                    ignore: Mapping[str, str]|None = None,
+                    done: Iterable[str]= (),
+                    ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
     """
     Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
     etc. exposed by the hou module.
@@ -588,8 +601,6 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
         HoudiniStaticData: An instance of HoudiniStaticData for each item found in the hou module.
         ModuleData: An instance of ModuleData for each module found in the hou module.
     """
-    hou = _init_hou()
-    seen = set(done)
 
     queue: deque[tuple[HoudiniStaticData, ModuleType]] = deque()
     '''
@@ -604,6 +615,10 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
 
     This isn't strictly necessary.
     '''
+    queued = set()
+    '''
+    A set of modules which have ever been queued for processing. We only need them queued once.
+    '''
 
 
     for module in include:
@@ -612,10 +627,12 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
             yield module
         else:
             yield from _load_module(module,
-                                    seen=set(seen),
+                                    seen=set(),
                                     done=set(done),
-                                    ignore=ignore,
-                                    queue=queue,)
+                                    ignore=ignore or {},
+                                    queue=queue,
+                                    queued=queued,
+                                    )
 
 
 def save_static_data_to_db(db_path: Path|None=None,

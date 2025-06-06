@@ -207,7 +207,7 @@ nvmrc
 objecttoolutils
 objtranslator
 ocio
-oudini
+osascript
 panetabs
 parsepeakuserlog
 particletoolutils

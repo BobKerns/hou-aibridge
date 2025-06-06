@@ -3,7 +3,8 @@ Common utilities for zabob houdini tools.
 '''
 
 from zabob.common.analysis_types import (
-    EntryType, HoudiniStaticData, ModuleData, AnalysisDBItem, AnalysisDBWriter
+    EntryType, HoudiniStaticData, ModuleData, AnalysisDBItem, AnalysisDBWriter,
+    NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo,
 )
 from zabob.common.analysis_db import (
     analysis_db, get_stored_modules, analysis_db_writer,
@@ -38,6 +39,7 @@ from zabob.common.common_utils import (
     if_true, if_false, get_name,
     do_all, do_until, do_while, find_first, find_first_not,
     trace, trace_,
+    do_yield, call_yield, do_yielder, call_yielder,
 
 )
 from zabob.common.find_houdini import (
@@ -47,7 +49,7 @@ from zabob.common.find_houdini import (
 )
 from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
-    _load_modules, save_static_data_to_db,
+    analyze_modules, save_static_data_to_db,
     modules_in_path, import_or_warn,
 )
 from zabob.common.detect_env import (
@@ -65,6 +67,9 @@ __all__ = (
     "get_stored_modules",
     "AnalysisDBItem",
     "AnalysisDBWriter",
+    "NodeCategoryInfo",
+    "NodeTypeInfo",
+    "ParmTemplateInfo",
     "analysis_db_writer",
     "ZABOB_COMMON_DIR",
     "ZABOB_ZCOMMON_DIR",
@@ -111,6 +116,10 @@ __all__ = (
     "find_first_not",
     "trace",
     "trace_",
+    "do_yield",
+    "call_yield",
+    "do_yielder",
+    "call_yielder",
     "find_houdini_installations",
     "get_houdini",
     "HoudiniInstall",
@@ -120,7 +129,7 @@ __all__ = (
     "HoudiniStaticData",
     "import_or_warn",
     "modules_in_path",
-    "_load_modules",
+    "analyze_modules",
     "save_static_data_to_db",
     "detect_environment",
     "is_development",

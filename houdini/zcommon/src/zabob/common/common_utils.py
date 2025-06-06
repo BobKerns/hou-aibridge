@@ -4,12 +4,12 @@ Common Utilities.
 
 from collections import defaultdict
 from collections.abc import Callable, Generator, Iterable, MutableMapping
-from operator import itemgetter
+from functools import wraps
 import os
 from contextlib import contextmanager, suppress
 from enum import Enum, StrEnum
 import sys
-from typing import IO, Hashable, Literal, TypeVar, Any
+from typing import IO, Hashable, Literal, ParamSpec, TypeAlias, TypeVar, TypeVarTuple, Any
 import atexit
 from weakref import WeakKeyDictionary
 
@@ -134,19 +134,25 @@ def prevent_exit():
 
 @contextmanager
 def prevent_atexit():
-    """Temporarily prevent modules from registering atexit handlers."""
+    """
+    Temporarily prevent modules from registering atexit handlers.
+    """
     original_register = atexit.register
     original_unregister = atexit.unregister
     captured_handlers = []
 
     def fake_register(func, *args, **kwargs):
-        """Capture atexit handlers instead of registering them."""
+        """
+        Capture atexit handlers instead of registering them.
+        """
         print(f"Prevented atexit registration: {func.__module__}.{func.__name__}")
         captured_handlers.append((func, args, kwargs))
         return func
 
     def fake_unregister(func):
-        """Do nothing when unregistering."""
+        """
+        Do nothing when unregistering.
+        """
         pass
 
     # Replace the atexit functions
@@ -165,7 +171,8 @@ T = TypeVar('T')
 R = TypeVar('R')
 def none_or(value: T|None, fn: Callable[[T], R]) -> R|None:
     """
-    Call a function with the given value if it is not None, otherwise return None.
+    Call a function with the given value if it is not `None`,
+    otherwise return `None`.
 
     Args:
         value (T|None): The value to pass to the function.
@@ -181,11 +188,11 @@ def none_or(value: T|None, fn: Callable[[T], R]) -> R|None:
 
 def not_none(*values: T|None) -> Generator[T, None, None]:
     '''
-    Generator that yields the values if they are not None.
+    Generator that yields the values if they are not `None`.
     Args:
         *values (T|None): The values to yield.
     Yields:
-        T: All non-None values from the arguments.
+        T: All non-`None` values from the arguments.
     '''
     for v in values:
         if v is not None:
@@ -194,11 +201,12 @@ def not_none(*values: T|None) -> Generator[T, None, None]:
 
 def not_none1(value: T|None) -> Generator[T, None, None]:
     '''
-    Generator that yields the single value if it is not None.
+    Generator that yields the single value if it is not `None`.
+
     Args:
         value (T|None): The value to yield.
     Yields:
-        T: The value if it is not None.
+        T: The value if it is not `None`.
     '''
     if value is not None:
         yield value
@@ -206,12 +214,13 @@ def not_none1(value: T|None) -> Generator[T, None, None]:
 
 def not_none2(value1: T|None, value2: T|None) -> Generator[T, None, None]:
     '''
-    Generator that yields the single value if it is not None.
+    Generator that yields the individual values if it they are not `None`.
+
     Args:
         value1 (T|None): The first value to yield.
         value2 (T|None): The second value to yield.
     Yields:
-        T: The first or second value if it is not None.
+        T: The first or second value if it is not `None`.
     '''
     if value1 is not None:
         yield value1
@@ -228,35 +237,34 @@ def values(*args: T) -> Generator[T, None, None]:
         *args (T|None): The values to yield.
 
     Yields:
-        T: All non-None values from the arguments.
+        T: All non-`None` values from the arguments.
     """
     for value in args:
         yield value
 
 def if_true(condition: bool, value: T) -> Generator[T, None, None]:
     """
-    Yield the value if the condition is True, otherwise return None.
+    Yield the value if the condition is `True`, otherwise return `None`.
 
     Args:
         condition (bool): The condition to check.
-        value (T): The value to return if the condition is True.
+        value (T): The value to return if the condition is `True`.
 
     Yields:
-        T|None: The value if the condition is True, otherwise None.
+        T|None: The value if the condition is `True`, otherwise `None`.
     """
     if condition:
         yield value
 
+
 def if_false(condition: bool, value: T) -> Generator[T, None, None]:
     """
-    Yield the value if the condition is False, otherwise return None.
-
-    Args:
+    Yield the value if the condition is `False`, yield nothing.
         condition (bool): The condition to check.
-        value (T): The value to return if the condition is False.
+        value (T): The value to return if the condition is `False`.
 
     Yields:
-        T|None: The value if the condition is False, otherwise None.
+        T|None: The value if the condition is `False`, otherwise `None`.
     """
     if not condition:
         yield value
@@ -334,114 +342,24 @@ def get_name(d: Any) -> str:
            # If we can't save the name, generate one based on the id.
            return f"{typename}_{id(d):x}"
 
-def do_all(i: Iterable):
-    """
-    Iterate over the items in the iterable (usually a `Generator`)
-    and do nothing with them.
+Condition: TypeAlias = Callable[[T], bool]|bool|None
+'''
+A condition function that takes an item of type `T` and returns a boolean.
+Or `True`, indicating all items meet the condition.
+Or `False`, indicating no items meet the condition.
+Or `None`, indicating all non-`None` items meet the condition, or if negated,
+all `None` items meet the condition.
 
-    This is useful for iterating over an iterable when you don't care about the
-    items, but you want to ensure that the iterable is fully consumed.
+'''
 
-    Args:
-        i (Iterable): The iterable to iterate over.
-    """
-    for _ in i:
-        pass
-    # This is a no-op, but it ensures that the iterable is fully consumed.
-
-def do_until(i: Iterable[T],
-             condition: Callable[[T], bool]|None=None,
-             default: R=None,
-             ) -> T|R:
-    """
-    Iterate over the items in the iterable until the condition is met.
-
-    If no item meets the condition, return the default value (default=None).
-
-    `do_until` and `find_first` are the same function, but `do_until`
-    emphasizes its use to perform actions via a generator.
-
-    Args:
-        i (Iterable[T]): The iterable to iterate over.
-        condition (Callable[[T], bool]|None): The condition to check for each item.
-            If None, all non-None items are considered to meet the condition.
-        default (R): The default value to return if no item meets the condition.
-
-    Returns:
-        T: The first item that meets the condition,
-        or R (the default value) if no item meets the condition.
-    """
-    if condition is None:
-        return next((item
-                     for item in i
-                     if item is not None),
-                    default)
-    else:
-        return next((item
-                    for item in i
-                    if condition(item)),
-                default)
-
-find_first = do_until
-
-def do_while(i: Iterable[T],
-             condition: Callable[[T], bool]|None=None,
-             default: R=None,
-             ) -> T|R:
-    """
-    Iterate over the items in the iterable until the condition is met.
-    If no item meets the condition, return the default value (default=None).
-
-    `do_while` and `find_first_not` are the same function, but `do_until`
-    emphasizes its use to perform actions via a generator.
-
-    Args:
-        i (Iterable[T]): The iterable to iterate over.
-        condition (Callable[[T], bool]|None): The condition to check for each item.
-            If None, all non-None items are considered to meet the condition.
-        default (R): The default value to return if all items meet the condition.
-    Returns:
-        T: The first item that does not the condition,
-        or R (the default value) if all items meet the condition.
-    """
-    if condition is None:
-        return next((item
-                     for item in i
-                     if item is None),
-                    default)
-    else:
-        return next((item
-                    for item in i
-                    if not condition(item)),
-                default)
-
-find_first_not = do_while
-
-def last(i: Iterable[T],
-          condition: Callable[[T], bool],
-          default: R=None,
-          ) -> T|R:
-    """
-    Get the last item in the iterable that meets the condition.
-
-    If no item meets the condition, return the default value (default=None).
-
-    Unlike many implementations, this tests the entire iterable, ensuring
-    that any generator is fully consumed before returning a value.
-    """
-    val: T = last # # type: ignore
-    for item in i:
-        if condition(item):
-            val = item
-    return val if val is not last else default
 
 def trace(v: T,
           label: str|None=None,
           file:IO[str]=sys.stderr,
-          condition: Callable[[T], bool]|None=None,
+          condition: Condition=False,
           ) -> T:
     '''
-    Like print, but returns the value.
+    Like `print`, but returns the value.
     This is useful for debugging, as it allows you to see the value
     while still returning it for further processing.
 
@@ -450,22 +368,31 @@ def trace(v: T,
         label (str|None): An optional label to print before the value.
         file (IO[str]): The file to print the trace to (default: sys.stderr).
         condition (Callable[[T], bool]|None): An optional condition to check
-            before printing the value. If None, the value is always printed.
+            before printing the value.
+            If `True`, all values are printed.
+            If `False`, no values are printed.
+            If `None`, all non-None values are printed.
     Returns:
         T: The value that was traced.
     '''
-    if condition is not None and condition(v):
+    if (
+        (condition is True)
+        or (condition is None and v is not None)
+        or (callable(condition) and condition(v))
+        ):
         if label is not None:
             print(f"{label}: {v}", file=file)
         else:
             print(v, file=file)
     return v
 
+_trace = trace
+
 
 def trace_(i: Iterable[T],
            label: str|None=None,
            file:IO[str] = sys.stderr,
-           condition: Callable[[T], bool]|None=None,
+           condition: Condition=False,
            ) -> Iterable[T]:
     """
     Iterate over the items in the iterable and trace each item.
@@ -475,9 +402,9 @@ def trace_(i: Iterable[T],
     Args:
         i (Iterable[T]): The iterable to iterate over.
         label (str|None): An optional label to print before each item.
-        file (IO[str]): The file to print the trace to (default: sys.stderr).
+        file (IO[str]): The file to print the trace to (default: `sys.stderr`).
         condition (Callable[[T], bool]|None): An optional condition to check
-            before printing each item. If None, all items are printed.
+            before printing each item. If `None`, all items are printed.
     Yields:
         T: Each item in the iterable after tracing it.
 
@@ -485,4 +412,268 @@ def trace_(i: Iterable[T],
         T: the returned items:
         or R (the default value) if no item meets the condition.
     """
-    return (trace(item, label, file) for item in i)
+    yield from (trace(item, label, file, condition) for item in i)
+
+
+def do_all(i: Iterable,
+           trace: Condition=False,
+           label: str|None=None,
+           file: IO[str] = sys.stderr,
+          ) -> None:
+    """
+    Iterate over the items in the `Iterable` (usually a `Generator`)
+    and do nothing with them.
+
+    This is useful for iterating over an `Iterable` when you don't care about the
+    items, but you want to ensure that the `Iterable` is fully consumed.
+
+    Args:
+        i (Iterable): The `Iterable` to iterate over.
+        trace (Callable[[T], bool]|bool|None): An optional `Condition` to check
+            before tracing each item.
+            If `None`, all items are traced.
+            If `True`, all items are traced.
+            If `False`, no items are traced.
+        label (str|None): An optional label to print with the trace.
+        file (IO[str]): The file to print the trace to (default: `sys.stderr`).
+    """
+    for item in i:
+        _trace(item, condition=trace, label=label, file=file)
+    # This is a no-op, but it ensures that the iterable is fully consumed.
+
+
+def do_until(i: Iterable[T],
+             condition: Condition=None,
+             default: R=None,
+             trace: Condition=False,
+             label: str|None=None,
+             file: IO[str] = sys.stderr,
+             ) -> T|R:
+    """
+    Iterate over the items in the `Iterable` until the condition is met.
+
+    If no item meets the condition, return the default value (default=`None`).
+
+    `do_until` and `find_first` are the same function, but `do_until`
+    emphasizes its use to perform actions via a generator.
+
+    Args:
+        i (Iterable[T]): The `Iterable` to iterate over.
+        condition (Callable[[T], bool]|bool|None): The `Condition` to check for each item.
+            If `None`, all non-None items are considered to meet the condition.
+            If `True`, all items are considered to meet the condition.
+            If `False`, no items are considered to meet the condition.
+        default (R): The default value to return if no item meets the condition.
+
+    Returns:
+        T: The first item that meets the condition,
+        or R (the default value) if no item meets the condition.
+    """
+    match condition:
+        case True:
+            # If the condition is True, we want to return the first item.
+            return next(iter(trace_(i, condition=trace, label=label, file=file)),
+                        default)
+
+        case False:
+            do_all(i, trace=trace)
+            return default
+        case None:
+            return next((_trace(item, condition=trace, label=label, file=file)
+                        for item in i
+                        if item is not None),
+                    default)
+        case _ if callable(condition):
+            return next((_trace(item, condition=trace, label=label, file=file)
+                         for item in i
+                         if condition(item)),
+                     default)
+        case _:
+            raise TypeError(
+                f"Condition must be a callable, bool, or None, not {type(condition)}"
+            )
+
+find_first = do_until
+
+def do_while(i: Iterable[T],
+             condition: Condition=None,
+             default: R=None,
+             trace: Condition=False,
+             label: str|None=None,
+             file: IO[str] = sys.stderr,
+             ) -> T|R:
+    """
+    Iterate over the items in the `Iterable` until the condition is not met.
+    If all items meet the condition, return the default value (default=`None`).
+
+    `do_while` and `find_first_not` are the same function, but `do_until`
+    emphasizes its use to perform actions via a generator.
+
+    Args:
+        i (Iterable[T]): The `Iterable` to iterate over.
+        condition (Callable[[T], bool]|bool|None): The `Condition` to check for each item.
+            If `None`, all None items are considered to meet the condition.
+            If `True`, all items are considered to meet the condition.
+            If `False`, no items are considered to meet the condition.
+        default (R): The default value to return if all items meet the condition.
+    Returns:
+        T: The first item that does not the condition,
+        or R (the default value) if all items meet the condition.
+    """
+    match condition:
+        case True:
+            do_all(i, trace=trace, label=label, file=file)
+            return default
+        case False:
+            return default
+        case None:
+            return next((_trace(item, condition=trace, label=label, file=file)
+                         for item in i
+                         if item is None),
+                        default)
+        case _ if callable(condition):
+            # If the condition is a callable, we want to find the first item
+            # that does not meet the condition.
+            return next((_trace(item, condition=trace, label=label, file=file)
+                        for item in i
+                        if not condition(item)),
+                    default)
+        case _:
+            raise TypeError(
+                f"Condition must be a callable, bool, or None, not {type(condition)}"
+            )
+
+find_first_not = do_while
+
+
+Ps = TypeVarTuple('Ps')
+Pspec = ParamSpec('Pspec')
+
+def do_yield(fn: Callable[[T, *Ps], None],
+             val: T,
+             *args: *Ps,
+             **kwargs: dict[str, Any] # Can't type this in 3.11 even with a Protocol
+             ) -> Generator[T, None, None]:
+    """
+    Call a function with the given value and yield the value.
+
+    See also:
+        `do_yielder` for a version returns a function that takes a value and yields it after calling the fn.
+        `call_yield` for a version that calls the fn and yields the result.
+        `call_yielder` for a version returns a function that calls the fn and yields the result.
+
+    Args:
+        fn (Callable[[T], R]): The function to call with the value.
+        val (T): The value to pass to the function.
+        *args (Ps): Additional positional arguments to pass to the function.
+        **kwargs: Additional keyword arguments to pass to the function.
+
+    Yields:
+        T: The value that was passed to the function.
+    """
+    fn(val, *args, **kwargs)
+    yield val
+
+def do_yielder(fn: Callable[[T, *Ps], None],
+               *args: *Ps,
+               **kwargs: dict[str, Any] # Can't type this in 3.11 even with a Protocol
+               ) -> Callable[[T], Generator[T, None, None]]:
+    """
+    Returns a function that takes the given value and yield the value.
+
+    See also:
+        `do_yield` for a version that takes a value and yields it after calling the fn.
+        `call_yield` for a version that calls the fn and yields the result.
+        `call_yielder` for a version returns a function that calls the fn and yields the result.
+
+    Args:
+        fn (Callable[[T], R]): The function to call with the value.
+        val (T): The value to pass to the function.
+        *args (Ps): Additional positional arguments to pass to the function.
+        **kwargs: Additional keyword arguments to pass to the function.
+
+    Yields:
+        T: The value that was passed to the function.
+    """
+    @wraps(fn)
+    def _do_yield(val: T) -> Generator[T, None, None]:
+        fn(val, *args, **kwargs)
+        yield val
+    return _do_yield
+
+
+def call_yield(fn: Callable[Pspec, R],
+               *args: Pspec.args,
+               **kwargs: Pspec.kwargs,
+               ) -> Generator[R, None, None]:
+    """
+    Call a function with the given arguments and yield the result.
+
+    See also:
+        `do_yield` for a version that takes a value and yields it after calling the fn.
+        `do_yielder` for a version returns a function that takes a value and yields it after calling the fn.
+        `call_yielder` for a version returns a function that calls the fn and yields the result.
+
+    Args:
+        fn (Callable[P, R]): The function to call.
+        *args (P.args): The arguments to pass to the function.
+        **kwargs (P.kwargs): The keyword arguments to pass to the function.
+
+    Yields:
+        R: The result of the function call.
+    """
+    yield fn(*args, **kwargs)
+
+
+def call_yielder(fn: Callable[[T, *Ps], R],
+                *args: *Ps,
+                **kwargs: dict[str, Any], # Can't type this in 3..11 even with a Protocol
+                ) -> Callable[[T], Generator[R, None, None]]:
+    """
+    Call a function with the given arguments and yield the result.
+
+    See also:
+        `do_yield` for a version that takes a value and yields it after calling the fn.
+        `do_yielder` for a version returns a function that takes a value and yields it after calling the fn.
+        `call_yield` for a version that calls the fn and yields the result.
+
+    Args:
+        fn (Callable[P, R]): The function to call.
+        *args (P.args): The arguments to pass to the function.
+        **kwargs (P.kwargs): The keyword arguments to pass to the function.
+
+    Yields:
+        R: The result of the function call.
+    """
+    @wraps(fn)
+    def _call_yield(val: T) -> Generator[R, None, None]:
+        """
+        Call the function with the given arguments and yield the result.
+        """
+        yield fn(val, *args, **kwargs)
+    return _call_yield
+
+def last(i: Iterable[T],
+          condition: Condition=None,
+          default: R=None,
+          trace: Condition=False,
+          label: str|None=None,
+          file: IO[str] = sys.stderr,
+          ) -> T|R:
+    """
+    Get the last item in the `Iterable` that meets the `Condition`.
+
+    If no item meets the `Condition`, return the default value (default=`None`).
+
+    Unlike many implementations, this tests the entire iterable, ensuring
+    that any generator is fully consumed before returning a value.
+    """
+    val: T = last # # type: ignore
+    for item in i:
+        if (
+            (condition is True)
+            or (condition is None and item is not None)
+            or (callable(condition) and condition(item))
+        ):
+            val = _trace(item, condition=trace, label=label, file=file)
+    return val if val is not last else default

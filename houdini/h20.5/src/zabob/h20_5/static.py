@@ -4,18 +4,16 @@ Routines to extract static data from Houdini 20.5.
 
 from collections.abc import Mapping
 from pathlib import Path
-import sys
 from types import MappingProxyType
-from webbrowser import get
 
 import click
 
 import hou
 
 from zabob.common import (
-    ZABOB_OUT_DIR,
-    save_static_data_to_db, modules_in_path, get_stored_modules,
+    ZABOB_OUT_DIR, analysis_db, analysis_db_writer, do_all, get_stored_modules,
 )
+from zabob.common.analyze_node_types import do_analysis
 
 
 IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
@@ -24,11 +22,14 @@ IGNORE_MODULES: Mapping[str, str] = MappingProxyType({
     "pycparser._build_tables": "A script that writes files.",
     "PIL.PyAccess": "Creates files.",
     "hutil.pbkdf2": "Creates files.",
+    "antigravity": "Runs external program (osascript on macOS).",
+    "pip.__pip-runner__": "A Script",
+    "idlelib.idle": "Runs IDLE and hangs.",
     **{k: "Crashes hython 20.5"
        for k in (
                 'dashbox.ui', 'dashbox.textedit', 'dashbox.common', 'dashbox',
                 'generateHDAToolsForOTL', 'test.autotest', 'test.tf_inherit_check',
-                'test._test_embed_structseq', 'idlelib.idle', 'ocio.editor',
+                'test._test_embed_structseq', 'ocio.editor',
                 'hrecipes.models', 'hrecipes.manager', 'pdgd.datalayerserver',
                 'assettools', 'searchbox',
                 'searchbox.panetabs', 'searchbox.paths', 'searchbox.ui',
@@ -53,12 +54,18 @@ def load_data(db: Path=default_db):
         db (Path): The path to the SQLite database file.
     """
     db.parent.mkdir(parents=True, exist_ok=True)
-    save_static_data_to_db(db_path=db,
-                           include=modules_in_path(sys.path,
-                                                   ignore=IGNORE_MODULES,
-                                                   done=get_stored_modules(db)),
-                           ignore=IGNORE_MODULES,
-                           )
+    with analysis_db(db_path=db,
+                     write=True,
+                     ) as conn:
+        with analysis_db_writer(connection=conn, label="Write") as writer:
+            # Get the list of modules already stored in the database so we can skip them.
+            done = set(get_stored_modules(connection=conn))
+            do_all((item
+                    for item in map(writer,
+                                    do_analysis(connection=conn,
+                                                done=done,
+                                                ignore=IGNORE_MODULES))),
+                   label="Analyze Houdini 20.5 static data",)
     print(f"Static data saved to {db}")
 
 

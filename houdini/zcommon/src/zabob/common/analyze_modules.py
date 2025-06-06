@@ -12,21 +12,21 @@ is always yielded after its components.
 
 The next layer attempts to import these modules. If the import fails, it yields
 a `ModuleData` object with the name of the module, the file and directory it was found in,
-a status of the Exception that was raised, and a reason being the message of the Exception.
+a status of the `Exception` that was raised, and a reason being the message of the `Exception`.
 
 If the import is rejected, it yields a `ModuleData` object with the name of the module,
-the file it was found in, a status of 'IGNORE', and a reason being the value from the
+the file it was found in, a status of `'IGNORE'`, and a reason being the value from the
 `ignore` mapping.
 
 If module name has already been processed, it is skipped; nothing is yielded for it.
 
 If the import succeeds, it yields a `ModuleData` object with the name of the module,
-the file and directory (or None if not available), and a status of None This indicts that
-the module was successfully imported its analysis will follow. A status of 'OK' is set
+the file and directory (or `None` if not available), and a status of `None` This indicts that
+the module was successfully imported its analysis will follow. A status of `'OK'` is set
 in the database only after all items in the module have been processed, as failure can
 occur at any point during the analysis. Failures during analysis will result in another
-`ModuleData` object being yielded with the status set to the Exception that was raised,
-and a reason being the message of the Exception. This allows the database to record the
+`ModuleData` object being yielded with the status set to the `Exception` that was raised,
+and a reason being the message of the `Exception`. This allows the database to record the
 failure without losing the module's name and file information, and retaining the partial
 results of the analysis.
 
@@ -40,7 +40,8 @@ preserved.
 
 The database handler receives this alternation of `ModuleData` and `HoudiniStaticData`.
 The information in the `ModuleData` is added to the `houdini_modules` table. If it is
-a successful import, the count of items in the the module is set to zero.
+a successful import, the status is set to `'OK'` and the count of items in the the module
+is saved. The counter is then reset to zero, as the next module will be processed.
 
 The `HoudiniStaticData` objects are then added to the `houdini_module_data` table.
 
@@ -64,8 +65,7 @@ user installs additional packages or modules after the initial analysis.
 import builtins
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import suppress
-from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import Enum
 from importlib import import_module
 from inspect import (
     getdoc, getmembers, isclass, isdatadescriptor, isfunction,
@@ -74,7 +74,7 @@ from inspect import (
 from pathlib import Path
 import sys
 from types import ModuleType
-from typing import Any, Literal
+from typing import Any
 import warnings
 from collections import deque
 
@@ -419,6 +419,7 @@ def _mk_datum(item: Any, type: EntryType, parent: HoudiniStaticData|None=None, n
 def _load_class(cls, parent: HoudiniStaticData,
                 seen: set[str],
                 queue: deque[tuple[HoudiniStaticData, ModuleType]],
+                queued: set[ModuleType],
                 name: str|None=None,
                 ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
     """
@@ -469,12 +470,15 @@ def _load_class(cls, parent: HoudiniStaticData,
                 continue
 
         if ismodule(member) and not isinstance(member, InfiniteMock):
-            queue.append((class_data, member))
+            if member not in seen and member not in queued:
+               queue.append((class_data, member))
+               queued.add(member)
         elif isclass(member):
             yield from _load_class(member,
                                     parent=class_data,
                                     seen=seen,
                                     queue=queue,
+                                    queued=queued,
                                     name=f'{name}.{member_name}')
         elif isinstance(member, property):
             yield _mk_datum(member, EntryType.ATTRIBUTE,
@@ -487,11 +491,13 @@ def _load_class(cls, parent: HoudiniStaticData,
 
 
 def _load_module(module,
-                seen: set[str],
+                seen: set[Any],
                 done: set[str],
                 ignore: Mapping[str, str],
                 queue: deque[tuple[HoudiniStaticData, ModuleType]],
+                queued: set[ModuleType],
                 parent: HoudiniStaticData|None=None,
+                top: bool = True,
                 ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
     """
     Load a module and its members, yielding HoudiniStaticData instances for each item.
@@ -530,12 +536,15 @@ def _load_module(module,
         if member_name.startswith('_'):
             continue
         if ismodule(member) and not isinstance(member, InfiniteMock):
-            queue.append((module_data, member))
+            if not member in seen and member not in queued:
+                queue.append((module_data, member))
+                queued.add(member)
         elif isclass(member):
             yield from _load_class(member,
                                     parent=module_data,
                                     seen=seen,
-                                    queue=queue,)
+                                    queue=queue,
+                                    queued=queued,)
         elif isfunction(member):
             yield _mk_datum(member, EntryType.FUNCTION,
                             parent=module_data,
@@ -557,25 +566,29 @@ def _load_module(module,
             yield _mk_datum(member, EntryType.OBJECT,
                             parent=module_data,
                             name=member_name)
+    if top:
+        while len(queue) > 0:
+            # Process the queue until it's empty.
+            # This ensures that modules are processed in the order they were found,
+            # and that module/items alternation is preserved.
+            parent_data, module = queue.popleft()
+            print(f'dequeuing {module.__name__} from {parent_data.name if parent_data else "root"},  queue={len(queue)}')
+            # Process the next module in the queue.
+            yield from _load_module(module,
+                                seen=seen,
+                                done=done,
+                                ignore=ignore,
+                                queue=queue,
+                                queued=queued,
+                                parent=parent_data,
+                                top=False,
+                                )
 
-    while len(queue) > 0:
-        # Process the queue until it's empty.
-        # This ensures that modules are processed in the order they were found,
-        # and that module/items alternation is preserved.
-        parent_data, module = queue.popleft()
-        # Process the next module in the queue.
-        yield from _load_module(module,
-                            seen=seen,
-                            done=done,
-                            ignore=ignore,
-                            queue=queue,
-                            parent=parent_data)
 
-
-def _load_modules(include: Iterable[ModuleType|ModuleData],
-                           ignore: Mapping[str, str],
-                           done: Iterable[str]
-        ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
+def analyze_modules(include: Iterable[ModuleType|ModuleData],
+                    ignore: Mapping[str, str]|None = None,
+                    done: Iterable[str]= (),
+                    ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
     """
     Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
     etc. exposed by the hou module.
@@ -587,14 +600,7 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
     Yields:
         HoudiniStaticData: An instance of HoudiniStaticData for each item found in the hou module.
         ModuleData: An instance of ModuleData for each module found in the hou module.
-    The data includes:
-
-
-    Returns:
-        dict: A dictionary containing the static data.
     """
-    hou = _init_hou()
-    seen = set(done)
 
     queue: deque[tuple[HoudiniStaticData, ModuleType]] = deque()
     '''
@@ -609,6 +615,10 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
 
     This isn't strictly necessary.
     '''
+    queued = set()
+    '''
+    A set of modules which have ever been queued for processing. We only need them queued once.
+    '''
 
 
     for module in include:
@@ -617,10 +627,12 @@ def _load_modules(include: Iterable[ModuleType|ModuleData],
             yield module
         else:
             yield from _load_module(module,
-                                    seen=set(seen),
+                                    seen=set(),
                                     done=set(done),
-                                    ignore=ignore,
-                                    queue=queue,)
+                                    ignore=ignore or {},
+                                    queue=queue,
+                                    queued=queued,
+                                    )
 
 
 def save_static_data_to_db(db_path: Path|None=None,
@@ -645,12 +657,10 @@ def save_static_data_to_db(db_path: Path|None=None,
         with analysis_db_writer(connection=conn) as writer:
             with timer('Storing') as progress:
                 # Insert or update static data
-                item_count = 0
-                cur_module: ModuleData|None = None
-                for datum in _load_modules(include=include,
-                                                    ignore=ignore,
-                                                    done=get_stored_modules(connection=conn)):
-                    do_all(writer(datum))
+                for datum in analyze_modules(include=include,
+                                            ignore=ignore,
+                                            done=get_stored_modules(connection=conn)):
+                    writer(datum)
 
         # Commit last module.
         conn.commit()

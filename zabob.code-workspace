@@ -67,7 +67,7 @@
             "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock,pnpm-workspace.yaml,esbuild.js,eslint.config.mjs,tsconfig.json,.npmrc,.vscode-test.mjs,.envrc",
             "*.ts": "${capture}.js,${capture}.min.s,${capture}.js.map",
             "pyproject.toml": ".houdini-version,.python-version,uv.lock,.envrc",
-            "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore,pyrightconfig.json",
+            "zabob.code-workspace": ".gitignore,.envrc,.gitattributes,.vscodeignore,pyrightconfig.json,pytest.ini",
             "README.md": "RELEASE.md,SECURITY.md,LICENSE.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,CHANGELOG.md,vsc-extension-quickstart.md,DEVELOPMENT.md,SUBPROJECTS.md,.markdownlint.*,.*.md,PYPROJECT-TOML.md"
         },
         "explorer.excludeGitIgnore": true,

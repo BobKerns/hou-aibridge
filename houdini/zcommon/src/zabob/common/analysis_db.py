@@ -9,9 +9,15 @@ import sqlite3
 from pathlib import Path
 from collections.abc import Generator
 import sys
+from typing import IO
 
-from zabob.common.analysis_types import AnalysisDBItem, AnalysisDBWriter, HoudiniStaticData, ModuleData
-from zabob.common.common_utils import T, get_name, none_or
+from zabob.common.analysis_types import (
+    AnalysisDBItem, AnalysisDBWriter, HoudiniStaticData, ModuleData,
+    NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo,
+)
+from zabob.common.common_utils import (
+    T, Condition, get_name, none_or, trace as _trace,
+)
 from zabob.common.timer import timer
 
 
@@ -76,28 +82,47 @@ def analysis_db(db_path: Path|None=None,
             ''')
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS houdini_categories (
-                    name TEXT NOT NULL PRIMARY KEY
+                    name TEXT NOT NULL PRIMARY KEY,
+                    label TEXT NOT NULL,
+                    hasSubnetworkType INTEGER NOT NULL
                 ) STRICT
             ''')
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS houdini_node_types (
                     name TEXT NOT NULL,
                     category TEXT NOT NULL,
-                    docstring TEXT DEFAULT NULL,
+                    childCategory TEXT DEFAULT NULL,
+                    description TEXT NOT NULL,
+                    helpUrl TEXT NOT NULL,
+                    minNumInputs INTEGER NOT NULL,
+                    maxNumInputs INTEGER NOT NULL,
+                    maxNumOutputs INTEGER NOT NULL,
+                    isGenerator INTEGER NOT NULL,
+                    isManager INTEGER NOT NULL,
+                    isDeprecated INTEGER NOT NULL,
+                    deprecation_reason TEXT DEFAULT NULL,
+                    deprecation_new_type TEXT DEFAULT NULL,
+                    deprecation_version TEXT DEFAULT NULL,
+                    -- The name and category together form a unique identifier for the node type.
                     PRIMARY KEY (name, category) ON CONFLICT REPLACE,
                     FOREIGN KEY (category) REFERENCES houdini_categories(name)
                 ) STRICT
             ''')
             conn.execute('''
-                CREATE TABLE IF NOT EXISTS houdini_node_type_params (
+                CREATE TABLE IF NOT EXISTS houdini_parm_templates (
                     node_type_name TEXT NOT NULL,
                     node_type_category TEXT NOT NULL,
-                    param_name TEXT NOT NULL,
-                    param_type TEXT NOT NULL,
-                    param_label TEXT DEFAULT NULL,
-                    param_default TEXT DEFAULT NULL,
-                    param_docstring TEXT DEFAULT NULL,
-                    PRIMARY KEY (node_type_name, node_type_category, param_name) ON CONFLICT REPLACE,
+                    name TEXT NOT NULL,
+                    class TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    defaultValue TEXT DEFAULT NULL,
+                    label TEXT NOT NULL,
+                    help TEXT NOT NULL,
+                    script TEXT NOT NULL,
+                    script_language TEXT NOT NULL,
+                    tags TEXT NOT NULL,
+
+                    PRIMARY KEY (node_type_name, node_type_category, name) ON CONFLICT REPLACE,
                     FOREIGN KEY (node_type_name, node_type_category)
                         REFERENCES houdini_node_types(name, category)
                 ) STRICT
@@ -131,11 +156,15 @@ def analysis_db(db_path: Path|None=None,
 @contextmanager
 def analysis_db_writer(db_path: Path|None=None,
                        connection: sqlite3.Connection|None=None,
+                       trace: Condition=False,
+                       label: str|None=None,
+                       file: IO[str]=sys.stderr,
                        ) -> Generator[AnalysisDBWriter, None, None]:
     """
     Context manager for writing to the analysis database.
     If an existing connection is provided, it will use that connection,
     and the caller is responsible for closing it.
+
     If a database path is provided, it will create and initialize the
     database at that path if it does not exist.
     If neither is provided, it raises a `ValueError`.
@@ -143,6 +172,10 @@ def analysis_db_writer(db_path: Path|None=None,
     Args:
         db_path (Path): The path to the SQLite database file.
         connection (sqlite3.Connection): An existing SQLite connection to use.
+        trace (Condition): If `True`, `None`, or a `Callable`,
+            trace the items being written.
+        label (str|None): A label for the trace output.
+
     Yields:
         AnalysisDBWriter: A callable that writes items to the analysis database.
     """
@@ -162,8 +195,9 @@ def analysis_db_writer(db_path: Path|None=None,
             cursor = conn.cursor()
             item_count = 0
             cur_module = None
-            def writer(datum: T, /) -> Generator[T|AnalysisDBItem, None, None]:
+            def writer(datum: T, /) -> T|AnalysisDBItem:
                 nonlocal item_count, cur_module
+                _trace(datum, condition=trace, label=f'{label}.writer', file=file)
                 match datum:
                     case ModuleData():
                         if cur_module is not None:
@@ -199,12 +233,11 @@ def analysis_db_writer(db_path: Path|None=None,
                         item_count = 0
                         if datum.status is not None:
                             progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
-                            yield datum
-                            return
+                            return datum
                         progress(f'Processing module {datum.name}...')
-                        yield datum
                         cur_module = datum
                         conn.commit()
+                        return datum
                     case HoudiniStaticData():
                         item_count += 1
                         if item_count % 100 == 0:
@@ -238,7 +271,60 @@ def analysis_db_writer(db_path: Path|None=None,
                                     datum.docstring))
                             cursor.execute('PRAGMA foreign_keys = ON;')
                             conn.commit()
-                        yield datum
+                        return datum
+                    case NodeCategoryInfo():
+                        print(f'Processing category {datum.name}...')
+                        cursor.execute('''
+                            INSERT OR REPLACE INTO houdini_categories (name, label, hasSubnetworkType)
+                            VALUES (?, ?, ?)
+                        ''', (datum.name,datum.label, datum.hasSubnetworkType))
+                        return datum
+                    case NodeTypeInfo():
+                        print(f'Processing node type {datum.name} in category {datum.category}...')
+                        cursor.execute('''
+                            INSERT OR REPLACE INTO houdini_node_types (name, category, childCategory, description,
+                                helpUrl, minNumInputs, maxNumInputs, maxNumOutputs, isGenerator, isManager,
+                                isDeprecated, deprecation_reason, deprecation_new_type, deprecation_version)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (datum.name,
+                              datum.category,
+                              datum.childCategory,
+                              datum.description,
+                              datum.helpUrl,
+                              datum.minNumInputs,
+                              datum.maxNumInputs,
+                              datum.maxNumOutputs,
+                              datum.isGenerator,
+                              datum.isManager,
+                              datum.isDeprecated,
+                              datum.deprecation_reason,
+                              datum.deprecation_new_type,
+                              datum.deprecation_version))
+                        return datum
+                    case ParmTemplateInfo():
+                        cursor.execute('''
+                            INSERT OR REPLACE INTO houdini_parm_templates (
+                                node_type_name, node_type_category, name, type, class, defaultValue, label, help,
+                                script, script_language, tags
+                                )
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (
+                            datum.type_name,
+                            datum.type_category,
+                            datum.name,
+                            get_name(datum.type),
+                            get_name(datum.template_type),
+                            repr(datum.defaultValue) if datum.defaultValue is not None else None,
+                            datum.label,
+                            datum.help,
+                            datum.script,
+                            get_name(datum.script_language),
+                            repr(datum.tags)
+                            ))
+                        return datum
+                    case _:
+                        return datum
+
             yield writer
 
 

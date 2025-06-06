@@ -21,6 +21,11 @@
         "#*": true,
         "*#": true,
         ".venv/**/test*/**": true
-    }
+    },
+    "python.testing.pytestArgs": [
+        "houdini"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 
 }

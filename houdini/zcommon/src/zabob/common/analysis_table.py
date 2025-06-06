@@ -1,8 +1,10 @@
+'''
+Specify analysis tables via dataclasses
+'''
 
-from dataclasses import dataclass, fields, is_dataclass, MISSING
-from typing import get_type_hints, get_origin, get_args, Union, List, Tuple, Type, Any
-import inspect
-import enum
+from dataclasses import dataclass, fields, is_dataclass
+from typing import get_origin, get_args, Union
+
 
 def map_type(field_type) -> tuple[str, bool]:
     """Map Python type to SQLite type and nullable flag."""

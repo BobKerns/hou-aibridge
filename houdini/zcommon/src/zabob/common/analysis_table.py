@@ -7,109 +7,86 @@ from typing import get_type_hints, get_origin, get_args, Union, List, Tuple, Typ
 import inspect
 import enum
 
-def dataclass_to_sqlite_table(
-    cls: Type,
-    table_name: str = None,
-    primary_key: List[str] = None,
-    foreign_keys: List[Tuple[List[str], str, List[str]]] = None,
-    strict: bool = True
+def dataclass_to_sqlite_ddl(
+    cls: type,
+    primary_key: tuple[str, ...] | None = None,
+    foreign_keys: dict[str, tuple[str, str]] | None = None
 ) -> str:
     """
-    Generate SQLite DDL statement from a dataclass.
+    Convert a dataclass to a SQLite CREATE TABLE DDL statement.
 
     Args:
-        cls: The dataclass to convert to a table
-        table_name: Custom table name (default: class name)
-        primary_key: List of field names to use as primary key (default: first field)
-        foreign_keys: List of foreign key constraints as tuples (local_columns, foreign_table, foreign_columns)
-        strict: Whether to add STRICT to the table definition
+        cls: The dataclass type
+        primary_key: Tuple of field names to use as primary key. If None, uses first field.
+        foreign_keys: Dict mapping field names to (table, column) tuples for foreign key constraints
 
     Returns:
-        SQLite DDL CREATE TABLE statement as a string
+        SQLite CREATE TABLE statement
     """
-    # Check if cls is a dataclass
     if not is_dataclass(cls):
-        raise TypeError(f"{cls.__name__} is not a dataclass")
+        raise ValueError(f"{cls} is not a dataclass")
 
-    # Get table name
-    if table_name is None:
-        table_name = cls.__name__
+    table_name = cls.__name__.lower()
+    dataclass_fields = fields(cls)
 
-    # Get field definitions
-    field_defs = []
-    type_hints = get_type_hints(cls)
+    if not dataclass_fields:
+        raise ValueError(f"{cls} has no fields")
 
-    # Process fields
-    for field in fields(cls):
-        field_name = field.name
-        field_type = type_hints[field_name]
+    # Default primary key is first field
+    if primary_key is None:
+        primary_key = (dataclass_fields[0].name,)
 
-        # Check if type is Optional/Union with None
-        is_optional = False
+    # Type mapping
+    def map_type(field_type) -> tuple[str, bool]:
+        """Map Python type to SQLite type and nullable flag."""
         origin = get_origin(field_type)
 
-        # Handle Union with None (Optional[X])
+        # Check if it's Optional (Union with None)
         if origin is Union:
             args = get_args(field_type)
             if type(None) in args:
-                is_optional = True
-                # Find the non-None type
-                non_none_types = [arg for arg in args if arg is not type(None)]
-                if len(non_none_types) == 1:
-                    field_type = non_none_types[0]
-                else:
-                    # Multiple non-None types - default to TEXT
-                    field_type = str
+                # It's Optional, get the non-None type
+                actual_type = next(t for t in args if t is not type(None))
+                sql_type, _ = map_type(actual_type)
+                return sql_type, True
 
-        # Map Python type to SQLite type
-        try:
-            if field_type is int or field_type is bool or (inspect.isclass(field_type) and issubclass(field_type, enum.IntEnum)):
-                sqlite_type = "INTEGER"
-            elif field_type is float:
-                sqlite_type = "REAL"
-            else:
-                sqlite_type = "TEXT"
-        except TypeError:
-            # If type comparison fails (e.g., with generics), default to TEXT
-            sqlite_type = "TEXT"
-
-        # Build field definition
-        field_def = f"    {field_name} {sqlite_type}"
-
-        # Add NULL constraint
-        if not is_optional:
-            field_def += " NOT NULL"
+        # Map basic types
+        if field_type in (int, bool):
+            return "INTEGER", False
+        elif field_type is float:
+            return "REAL", False
+        elif field_type is str:
+            return "TEXT", False
         else:
-            field_def += " DEFAULT NULL"
+            # Default to TEXT for unknown types
+            return "TEXT", False
 
-        field_defs.append(field_def)
+    # Build column definitions
+    columns = []
+    for field in dataclass_fields:
+        sql_type, nullable = map_type(field.type)
+        col_def = f"{field.name} {sql_type}"
 
-    # Handle primary key
-    if not primary_key:
-        # Default to first field
-        primary_key = [fields(cls)[0].name]
+        if nullable:
+            col_def += " DEFAULT NULL"
+        else:
+            col_def += " NOT NULL"
+
+        columns.append(col_def)
+
+    # Build CREATE TABLE statement
+    ddl = f"CREATE TABLE {table_name} (\n"
+    ddl += ",\n".join(f"    {col}" for col in columns)
 
     # Add primary key constraint
-    pk_constraint = f"    PRIMARY KEY ({', '.join(primary_key)}) ON CONFLICT REPLACE"
+    if primary_key:
+        ddl += f",\n    PRIMARY KEY ({', '.join(primary_key)}) ON CONFLICT REPLACE"
 
-    # Handle foreign keys
-    fk_constraints = []
+    # Add foreign key constraints
     if foreign_keys:
-        for local_cols, foreign_table, foreign_cols in foreign_keys:
-            fk_constraint = f"    FOREIGN KEY ({', '.join(local_cols)}) REFERENCES {foreign_table}({', '.join(foreign_cols)})"
-            fk_constraints.append(fk_constraint)
+        for field_name, (ref_table, ref_column) in foreign_keys.items():
+            ddl += f",\n    FOREIGN KEY ({field_name}) REFERENCES {ref_table}({ref_column})"
 
-    # Combine all constraints
-    all_constraints = [pk_constraint] + (fk_constraints if fk_constraints else [])
+    ddl += "\n);"
 
-    # Build the final SQL
-    sql = f"CREATE TABLE IF NOT EXISTS {table_name} (\n"
-    sql += ",\n".join(field_defs)
-    if all_constraints:
-        sql += ",\n" + ",\n".join(all_constraints)
-    sql += "\n)"
-    if strict:
-        sql += " STRICT"
-
-    return sql
-
+    return ddl

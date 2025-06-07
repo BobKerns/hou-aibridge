@@ -70,11 +70,14 @@ class AnalysisTableDescriptor(Generic[D]):
         """Get the foreign key constraints of the analysis table."""
         return self.__foreign_keys
 
-    def __init__(self, dataclass: type[D], primary_key: tuple[str, ...] = ()
-                 , foreign_keys: tuple[ForeignKeyConstraint, ...] = ()):
+    def __init__(self,
+                 dataclass: type[D], /, *,
+                 table_name: str = "",
+                 primary_key: tuple[str, ...] = (),
+                 foreign_keys: tuple[ForeignKeyConstraint, ...] = ()):
         if not is_dataclass(dataclass):
             raise ValueError(f"{dataclass} is not a dataclass")
-        self.__table_name = dataclass.__name__.lower()
+        self.__table_name = table_name or dataclass.__name__.lower()
         self.__dataclass = dataclass
         if not primary_key:
             # Default to the first field as primary key if none specified

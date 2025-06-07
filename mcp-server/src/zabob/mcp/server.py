@@ -25,6 +25,8 @@ from pathlib import Path as SyncPath
 
 from mcp.server.fastmcp import FastMCP
 
+from zabob.core import JsonData
+
 '''
 A prototype MCP server for the AIBridge project.
 
@@ -44,12 +46,6 @@ with open(INSTRUCTIONS_PATH, "r", encoding="utf-8") as f:
     INSTRUCTIONS = f.read()
 
 mcp = FastMCP("zabob", instructions=INSTRUCTIONS)
-
-
-JsonAtomic: TypeAlias = str | int | float | bool | None
-JsonArray: TypeAlias = list['JsonAtomic | JsonArray | JsonObject']
-JsonObject: TypeAlias = dict[str, 'JsonData']
-JsonData: TypeAlias = JsonArray | JsonObject | str | int | float | bool | None
 
 RESPONSES: dict[str, Awaitable[JsonData|str]] =  {}
 PROMPTS: dict[str, Awaitable[JsonData|str]] =  {}

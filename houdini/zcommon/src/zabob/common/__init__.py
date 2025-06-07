@@ -2,6 +2,10 @@
 Common utilities for zabob houdini tools.
 '''
 
+from zabob.common.common_types import (
+    JsonAtomicNonNull, JsonAtomic, JsonArray, JsonObject,
+    JsonDataNonNull, JsonData,
+)
 from zabob.common.analysis_types import (
     EntryType, HoudiniStaticData, ModuleData, AnalysisDBItem, AnalysisDBWriter,
     NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo,
@@ -59,6 +63,12 @@ from zabob.common.detect_env import (
 )
 
 __all__ = (
+    "JsonAtomicNonNull",
+    "JsonAtomic",
+    "JsonArray",
+    "JsonObject",
+    "JsonDataNonNull",
+    "JsonData",
     "EntryType",
     "HoudiniStaticData",
     "ModuleData",

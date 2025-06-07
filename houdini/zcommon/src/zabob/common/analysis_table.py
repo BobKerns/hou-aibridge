@@ -8,8 +8,8 @@ from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any
 from types import UnionType, GenericAlias
 from pathlib import Path
 
-from zabob.common import AnalysisDBItem, get_name
-from zabob.common.common_utils import value, none_or
+from zabob.common.analysis_types import AnalysisDBItem
+from zabob.common.common_utils import value, none_or, get_name
 
 D = TypeVar('D', bound=AnalysisDBItem)
 

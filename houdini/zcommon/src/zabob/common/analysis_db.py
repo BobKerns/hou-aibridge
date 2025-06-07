@@ -2,9 +2,7 @@
 Definition and access for the analysis database.
 '''
 
-from abc import abstractmethod
 from contextlib import contextmanager
-from dataclasses import dataclass
 import sqlite3
 from pathlib import Path
 from collections.abc import Generator
@@ -19,6 +17,59 @@ from zabob.common.common_utils import (
     T, Condition, get_name, none_or, trace as _trace,
 )
 from zabob.common.timer import timer
+from zabob.common.analysis_table import AnalysisTableDescriptor
+
+tables: dict[type, AnalysisTableDescriptor] = {
+    table.dataclass: table
+    for table in (
+        AnalysisTableDescriptor[ModuleData](
+            ModuleData,
+            table_name='houdini_modules',
+            primary_key=('name',),
+        ),
+        AnalysisTableDescriptor[HoudiniStaticData](
+            HoudiniStaticData,
+            table_name='houdini_module_data',
+            primary_key=('name', 'type'),
+            foreign_keys=(
+                (
+                    ('parent_name', 'parent_type'),
+                    'houdini_module_data',
+                    ('name', 'type'),
+                ),
+            ),
+        ),
+        AnalysisTableDescriptor[NodeCategoryInfo](
+            NodeCategoryInfo,
+            table_name='houdini_categories',
+            primary_key=('name',),
+        ),
+        AnalysisTableDescriptor[NodeTypeInfo](
+            NodeTypeInfo,
+            table_name='houdini_node_types',
+            primary_key=('name', 'category'),
+            foreign_keys=(
+                (
+                    ('category',),
+                    'houdini_categories',
+                    ('name',),
+                ),
+            ),
+        ),
+        AnalysisTableDescriptor[ParmTemplateInfo](
+            ParmTemplateInfo,
+            table_name='houdini_parm_templates',
+            primary_key=('node_type_name', 'node_type_category', 'name'),
+            foreign_keys=(
+                (
+                    ('node_type_name', 'node_type_category'),
+                    'houdini_node_types',
+                    ('name', 'category'),
+                ),
+            )
+        ),
+    )
+}
 
 
 @contextmanager
@@ -56,77 +107,8 @@ def analysis_db(db_path: Path|None=None,
         """
         if write:
             print('Initializing tables...')
-            conn.execute('PRAGMA foreign_keys = ON;')
-            # Create tables if they doesn't exist
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS houdini_module_data (
-                    name TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    datatype TEXT NOT NULL,
-                    docstring TEXT,
-                    parent_name TEXT DEFAULT NULL,
-                    parent_type TEXT DEFAULT NULL,
-                    PRIMARY KEY (name, type) ON CONFLICT REPLACE,
-                    FOREIGN KEY (parent_name, parent_type) REFERENCES houdini_module_data(name, type)
-                ) STRICT
-            ''')
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS houdini_modules (
-                    name TEXT NOT NULL PRIMARY KEY,
-                    directory TEXT DEFAULT NULL,
-                    file TEXT DEFAULT NULL,
-                    count INTEGER DEFAULT NULL,
-                    status TEXT DEFAULT NULL,
-                    reason TEXT DEFAULT NULL
-                ) STRICT
-            ''')
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS houdini_categories (
-                    name TEXT NOT NULL PRIMARY KEY,
-                    label TEXT NOT NULL,
-                    hasSubnetworkType INTEGER NOT NULL
-                ) STRICT
-            ''')
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS houdini_node_types (
-                    name TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    childCategory TEXT DEFAULT NULL,
-                    description TEXT NOT NULL,
-                    helpUrl TEXT NOT NULL,
-                    minNumInputs INTEGER NOT NULL,
-                    maxNumInputs INTEGER NOT NULL,
-                    maxNumOutputs INTEGER NOT NULL,
-                    isGenerator INTEGER NOT NULL,
-                    isManager INTEGER NOT NULL,
-                    isDeprecated INTEGER NOT NULL,
-                    deprecation_reason TEXT DEFAULT NULL,
-                    deprecation_new_type TEXT DEFAULT NULL,
-                    deprecation_version TEXT DEFAULT NULL,
-                    -- The name and category together form a unique identifier for the node type.
-                    PRIMARY KEY (name, category) ON CONFLICT REPLACE,
-                    FOREIGN KEY (category) REFERENCES houdini_categories(name)
-                ) STRICT
-            ''')
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS houdini_parm_templates (
-                    node_type_name TEXT NOT NULL,
-                    node_type_category TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    class TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    defaultValue TEXT DEFAULT NULL,
-                    label TEXT NOT NULL,
-                    help TEXT NOT NULL,
-                    script TEXT NOT NULL,
-                    script_language TEXT NOT NULL,
-                    tags TEXT NOT NULL,
-
-                    PRIMARY KEY (node_type_name, node_type_category, name) ON CONFLICT REPLACE,
-                    FOREIGN KEY (node_type_name, node_type_category)
-                        REFERENCES houdini_node_types(name, category)
-                ) STRICT
-            ''')
+            for table in tables.values():
+                conn.execute(table.ddl)
             # Write-Aahead Logging (WAL) mode permits concurrent reads and writes,
             # which is useful for long-running operations like this.
             # It also allows the database to be accessed by multiple processes, so
@@ -198,6 +180,10 @@ def analysis_db_writer(db_path: Path|None=None,
             def writer(datum: T, /) -> T|AnalysisDBItem:
                 nonlocal item_count, cur_module
                 _trace(datum, condition=trace, label=f'{label}.writer', file=file)
+                table = tables.get(type(datum))
+                if table is None:
+                    return datum
+
                 match datum:
                     case ModuleData():
                         if cur_module is not None:
@@ -220,16 +206,7 @@ def analysis_db_writer(db_path: Path|None=None,
                                 status = t.__name__
                             else:
                                 status = str(t)
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_modules (name, directory, file, count, status, reason)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (
-                                datum.name,
-                                none_or(datum.directory, str),
-                                none_or(datum.file, str),
-                                datum.count,
-                                status,
-                                datum.reason))
+                        table.insert(cursor, datum)
                         item_count = 0
                         if datum.status is not None:
                             progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
@@ -247,16 +224,7 @@ def analysis_db_writer(db_path: Path|None=None,
                             #print(f'Processing {datum.type} {datum.name} with parent {datum.parent_name}...')
                             #if str(name) == 'BlendShape' or name == 'hou' or datum.type == EntryType.OBJECT:
                             #    breakpoint()
-                            cursor.execute('''
-                                INSERT OR REPLACE INTO houdini_module_data (name, type, datatype, docstring,
-                                                                            parent_name, parent_type)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            ''', (
-                                datum.name,
-                                get_name(datum.type),
-                                get_name(datum.datatype),
-                                datum.docstring,
-                                datum.parent_name, get_name(datum.parent_type)))
+                            table.insert(cursor, datum)
                         else:
                             #print(f'Processing {datum.type} {datum.name} without parent...')
                             cursor.execute('PRAGMA foreign_keys = OFF;')
@@ -272,57 +240,8 @@ def analysis_db_writer(db_path: Path|None=None,
                             cursor.execute('PRAGMA foreign_keys = ON;')
                             conn.commit()
                         return datum
-                    case NodeCategoryInfo():
-                        print(f'Processing category {datum.name}...')
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_categories (name, label, hasSubnetworkType)
-                            VALUES (?, ?, ?)
-                        ''', (datum.name,datum.label, datum.hasSubnetworkType))
-                        return datum
-                    case NodeTypeInfo():
-                        print(f'Processing node type {datum.name} in category {datum.category}...')
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_node_types (name, category, childCategory, description,
-                                helpUrl, minNumInputs, maxNumInputs, maxNumOutputs, isGenerator, isManager,
-                                isDeprecated, deprecation_reason, deprecation_new_type, deprecation_version)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (datum.name,
-                              datum.category,
-                              datum.childCategory,
-                              datum.description,
-                              datum.helpUrl,
-                              datum.minNumInputs,
-                              datum.maxNumInputs,
-                              datum.maxNumOutputs,
-                              datum.isGenerator,
-                              datum.isManager,
-                              datum.isDeprecated,
-                              datum.deprecation_reason,
-                              datum.deprecation_new_type,
-                              datum.deprecation_version))
-                        return datum
-                    case ParmTemplateInfo():
-                        cursor.execute('''
-                            INSERT OR REPLACE INTO houdini_parm_templates (
-                                node_type_name, node_type_category, name, type, class, defaultValue, label, help,
-                                script, script_language, tags
-                                )
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (
-                            datum.type_name,
-                            datum.type_category,
-                            datum.name,
-                            get_name(datum.type),
-                            get_name(datum.template_type),
-                            repr(datum.defaultValue) if datum.defaultValue is not None else None,
-                            datum.label,
-                            datum.help,
-                            datum.script,
-                            get_name(datum.script_language),
-                            repr(datum.tags)
-                            ))
-                        return datum
                     case _:
+                        table.insert(cursor, datum)
                         return datum
 
             yield writer

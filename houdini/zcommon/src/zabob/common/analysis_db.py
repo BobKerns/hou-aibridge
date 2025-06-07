@@ -114,6 +114,7 @@ def analysis_db(db_path: Path|None=None,
             # It also allows the database to be accessed by multiple processes, so
             # long as they are on the same machine.
             conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA mmap_size=268435456;")  # 256 MB
     match db_path, connection:
         case None, None:
             raise ValueError("Either db_path or connection must be provided")

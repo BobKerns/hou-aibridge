@@ -55,6 +55,13 @@ class Level(StrEnum):
         """
         return LEVELS.index(self) >= LEVELS.index(Level.level)
 
+    def __bool__(self) -> bool:
+        """
+        Check if the logging level is enabled.
+        This allows the level to be used in boolean contexts.
+        """
+        return self.enabled
+
     def __call__(self, message: str) -> None:
         """
         Output a message at the specified logging level.

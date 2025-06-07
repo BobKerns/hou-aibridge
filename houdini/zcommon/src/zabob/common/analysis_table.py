@@ -3,11 +3,12 @@ Specify analysis tables via dataclasses
 '''
 
 from dataclasses import Field, fields, is_dataclass
-from typing import Generic, get_origin, get_args, TypeAlias, TypeVar
+from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any
 from types import UnionType, GenericAlias
+from pathlib import Path
 
 from zabob.common import AnalysisDBItem
-from zabob.common.common_utils import value
+from zabob.common.common_utils import value, none_or
 
 D = TypeVar('D', bound=AnalysisDBItem)
 
@@ -151,4 +152,102 @@ class AnalysisTableDescriptor(Generic[D]):
                 )),
             ") STRICT;"
         ))
+
+    def _coerce_value(self, field_name: str, val: Any) -> Any:
+        """
+        Coerce a value to the correct type for SQLite based on the field type.
+
+        Args:
+            field_name: The name of the field
+            val: The value to coerce
+
+        Returns:
+            The coerced value ready for SQLite
+        """
+        if val is None:
+            return None
+
+        # Find the field's type
+        field = next((f for f in fields(self.dataclass) if f.name == field_name), None)
+        if not field:
+            raise ValueError(f"Field {field_name} not found in {self.dataclass.__name__}")
+
+        field_type = field.type
+        origin = get_origin(field_type)
+
+        # Handle Union/Optional types
+        if origin is UnionType:
+            args = get_args(field_type)
+            if type(None) in args:
+                # Get the non-None type
+                actual_type = next(t for t in args if t is not type(None))
+                return none_or(val, lambda v: self._convert_single_type(actual_type, v))
+
+        return self._convert_single_type(field_type, val)
+
+    def _convert_single_type(self, type_hint: Any, val: Any) -> Any:
+        """Convert a single value based on its type."""
+        # Primitive types that need no conversion
+        if type_hint in (str, int, float, bool):
+            return val
+
+        # Path types
+        if isinstance(val, Path) or (hasattr(type_hint, "__origin__") and get_origin(type_hint) is Path):
+            return str(val)
+
+        # Types with name attribute or method
+        if hasattr(val, "name") and callable(getattr(val, "name")):
+            return val.name()
+        elif hasattr(val, "name"):
+            return val.name
+        elif hasattr(val, "__name__"):
+            return val.__name__
+
+        # Default: convert to string
+        return str(val)
+
+    @property
+    def insert_stmt(self) -> str:
+        """
+        Create a SQL INSERT statement template for the dataclass.
+
+        Returns:
+            A parameterized SQL INSERT statement
+        """
+        dataclass_fields = fields(self.dataclass)
+        field_names = [field.name for field in dataclass_fields]
+
+        placeholders = ", ".join(["?" for _ in field_names])
+        columns = ", ".join(field_names)
+
+        return f"INSERT INTO {self.table_name} ({columns}) VALUES ({placeholders})"
+
+    def insert_values(self, instance: D) -> list[Any]:
+        """
+        Get the coerced values from a dataclass instance for SQL insertion.
+
+        Args:
+            instance: An instance of the dataclass
+
+        Returns:
+            A list of coerced values ready for SQL insertion
+        """
+        if not isinstance(instance, self.dataclass):
+            raise ValueError(f"Expected instance of {self.dataclass.__name__}, got {type(instance).__name__}")
+
+        return [
+            self._coerce_value(field.name, getattr(instance, field.name))
+            for field in fields(self.dataclass)
+        ]
+
+    def insert(self, cursor, instance: D) -> None:
+        """
+        Insert a dataclass instance into the SQLite database.
+
+        Args:
+            cursor: A SQLite cursor for executing the query
+            instance: An instance of the dataclass to insert
+        """
+        values = self.insert_values(instance)
+        cursor.execute(self.insert_stmt, values)
 

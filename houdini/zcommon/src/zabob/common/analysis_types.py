@@ -138,8 +138,8 @@ class ParmTemplateInfo(AnalysisDBItem):
     """
     Data class to hold information about a Houdini parameter template.
     """
-    type_name: str
-    type_category: str
+    node_type_name: str
+    node_type_category: str
     name: str
     type: builtins.type
     template_type: str

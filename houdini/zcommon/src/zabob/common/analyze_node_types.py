@@ -103,8 +103,8 @@ def _parm_template_info(node_type: hou.NodeType, parm: hou.ParmTemplate):
         """
         return parm.defaultValue() if hasattr(parm, 'defaultValue') else None # type: ignore
     yield ParmTemplateInfo(
-        type_name=node_type.name(),
-        type_category=node_type.category().name(),
+        node_type_name=node_type.name(),
+        node_type_category=node_type.category().name(),
         name=parm.name(),
         type=type(parm),
         template_type=parm.type(),

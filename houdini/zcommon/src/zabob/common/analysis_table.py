@@ -2,12 +2,18 @@
 Specify analysis tables via dataclasses
 '''
 
+from collections.abc import Collection, Container, Sequence, Mapping
 from dataclasses import Field, fields, is_dataclass
 from functools import cache
-from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any
+from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any, Union
 from types import UnionType, GenericAlias
 from pathlib import Path
+import json
 
+from zabob.common.common_types import (
+    JsonData, JsonAtomic, JsonAtomicNonNull, JsonArray, JsonObject,
+    JsonDataNonNull
+)
 from zabob.common.analysis_types import AnalysisDBItem
 from zabob.common.common_utils import value, none_or, get_name
 
@@ -169,15 +175,14 @@ class AnalysisTableDescriptor(Generic[D]):
         Returns:
             The coerced value ready for SQLite
         """
-        if val is None:
-            return None
-
         # Find the field's type
         field = next((f for f in fields(self.dataclass) if f.name == field_name), None)
         if not field:
             raise ValueError(f"Field {field_name} not found in {self.dataclass.__name__}")
 
         field_type = field.type
+        # Handle 3.12+ type statements.
+        field_type = getattr(field_type, '__value__', field_type)
         origin = get_origin(field_type)
 
         # Handle Union/Optional types
@@ -185,22 +190,46 @@ class AnalysisTableDescriptor(Generic[D]):
             args = get_args(field_type)
             if type(None) in args:
                 # Get the non-None type
-                actual_type = next(t for t in args if t is not type(None))
+                if field_type in (JsonData, JsonAtomic, JsonArray, JsonObject, Any|None):
+                    return
+                else:
+                    # Remove None from the Union. If only one remains, the Union will be simplified.
+                    # to the single type.
+                    actual_type = Union[*(t for t in args if t is not type(None))]
+                if val is None:
+                    return None
                 return none_or(val, lambda v: self._convert_single_type(actual_type, v))
-
+            elif field_type in (JsonDataNonNull, JsonAtomicNonNull, Any):
+                field_type = JsonDataNonNull
+        if origin in (list, tuple, dict, set, Sequence, Mapping, Container, Collection):
+            return self._convert_single_type(JsonData, val)
         return self._convert_single_type(field_type, val)
 
     def _convert_single_type(self, type_hint: Any, val: Any) -> Any:
         """Convert a single value based on its type."""
         # Primitive types that need no conversion
-        if type_hint in (str, int, float, bool):
+        if type_hint in (int, float, bool):
             return val
 
+        if type_hint is str:
+            if isinstance(val, str):
+                return val
+            return get_name(val)
+        if type_hint == JsonData:
+            if val is None:
+                return None
+            return json.dumps(val)
+        if type_hint == JsonDataNonNull:
+            if val is None:
+                raise ValueError("JsonDataNonNull cannot be None")
+            return json.dumps(val)
         # Path types
         if (isinstance(val, Path)
             or ((hasattr(type_hint, "__origin__")
                  and get_origin(type_hint) is Path))):
             return str(val)
+
+        # Other types we are treating as named objects.
         return get_name(val)
 
     @property
@@ -212,15 +241,17 @@ class AnalysisTableDescriptor(Generic[D]):
         Returns:
             A parameterized SQL INSERT statement
         """
-        dataclass_fields = fields(self.dataclass)
-        field_names = [field.name for field in dataclass_fields]
 
-        placeholders = ", ".join(["?" for _ in field_names])
-        columns = ", ".join(field_names)
+        field_names = [
+            field.name
+            for field in fields(self.dataclass)
+        ]
+        columns = ', '.join(field_names)
+        placeholders = ", ".join("?" for _ in field_names)
 
         return f"INSERT INTO {self.table_name} ({columns}) VALUES ({placeholders})"
 
-    def insert_values(self, instance: D) -> list[Any]:
+    def db_values(self, instance: D) -> list[Any]:
         """
         Get the coerced values from a dataclass instance for SQL insertion.
 
@@ -246,6 +277,6 @@ class AnalysisTableDescriptor(Generic[D]):
             cursor: A SQLite cursor for executing the query
             instance: An instance of the dataclass to insert
         """
-        values = self.insert_values(instance)
+        values = self.db_values(instance)
         cursor.execute(self.insert_stmt, values)
 

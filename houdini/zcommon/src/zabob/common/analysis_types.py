@@ -14,6 +14,8 @@ from dataclasses import dataclass
 import builtins
 from typing import Any, Literal, Protocol, TypeVar
 
+from zabob.common.common_types import JsonData
+
 
 T = TypeVar('T')
 
@@ -143,7 +145,7 @@ class ParmTemplateInfo(AnalysisDBItem):
     name: str
     type: builtins.type
     template_type: str
-    defaultValue: Any
+    defaultValue: JsonData
     label: str
     help: str
     script: str

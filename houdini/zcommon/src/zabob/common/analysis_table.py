@@ -8,7 +8,7 @@ from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any
 from types import UnionType, GenericAlias
 from pathlib import Path
 
-from zabob.common import AnalysisDBItem
+from zabob.common import AnalysisDBItem, get_name
 from zabob.common.common_utils import value, none_or
 
 D = TypeVar('D', bound=AnalysisDBItem)
@@ -197,19 +197,11 @@ class AnalysisTableDescriptor(Generic[D]):
             return val
 
         # Path types
-        if isinstance(val, Path) or (hasattr(type_hint, "__origin__") and get_origin(type_hint) is Path):
+        if (isinstance(val, Path)
+            or ((hasattr(type_hint, "__origin__")
+                 and get_origin(type_hint) is Path))):
             return str(val)
-
-        # Types with name attribute or method
-        if hasattr(val, "name") and callable(getattr(val, "name")):
-            return val.name()
-        elif hasattr(val, "name"):
-            return val.name
-        elif hasattr(val, "__name__"):
-            return val.__name__
-
-        # Default: convert to string
-        return str(val)
+        return get_name(val)
 
     @property
     @cache

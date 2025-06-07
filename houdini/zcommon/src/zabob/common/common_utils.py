@@ -319,6 +319,9 @@ def get_name(d: Any) -> str:
             return str(d)
         case None:
             return "None"
+        case Exception():
+            # If the object is an Exception, return its class name.
+            return d.__class__.__name__
         case _ if hasattr(d, '__name__'):
             return str(d.__name__)
         case _ if hasattr(d, 'name') and isinstance(d.name, str):
@@ -359,13 +362,16 @@ def get_name(d: Any) -> str:
         setattr(d, '__name__', n)
         return n
     except AttributeError:
-        if isinstance(d, Hashable):
-           # If the object is hashable, store the name in a weak dictionary.
-           _names[d] = n
-           return n
-        else:
-           # If we can't save the name, generate one based on the id.
-           return f"{typename}_{id(d):x}"
+        match d:
+            case Hashable():
+                # If the object is hashable, store the name in a weak dictionary.
+                try:
+                    _names[d] = n
+                    return n
+                except TypeError:
+                    pass
+        # If we can't save the name, generate one based on the id.
+        return f"{typename}_{id(d):x}"
 
 Condition: TypeAlias = Callable[[T], bool]|bool|None
 '''

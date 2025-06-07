@@ -14,7 +14,7 @@ from zabob.common.analysis_types import (
     NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo,
 )
 from zabob.common.common_utils import (
-    T, Condition, get_name, none_or, trace as _trace,
+    T, VERBOSE, Condition, get_name, none_or, trace as _trace,
 )
 from zabob.common.timer import timer
 from zabob.common.analysis_table import AnalysisTableDescriptor
@@ -210,9 +210,11 @@ def analysis_db_writer(db_path: Path|None=None,
                         table.insert(cursor, datum)
                         item_count = 0
                         if datum.status is not None:
-                            progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
+                            if VERBOSE:
+                                progress(f'Skipping module {datum.name} due to status: {datum.status}: {datum.reason}')
                             return datum
-                        progress(f'Processing module {datum.name}...')
+                        if VERBOSE:
+                            progress(f'Processing module {datum.name}...')
                         cur_module = datum
                         conn.commit()
                         return datum

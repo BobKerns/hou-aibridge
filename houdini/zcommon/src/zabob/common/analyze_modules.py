@@ -86,7 +86,7 @@ from zabob.common.analysis_db import analysis_db, analysis_db_writer, get_stored
 from zabob.common.analysis_types import EntryType, HoudiniStaticData, ModuleData
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    do_all, environment, get_name, prevent_atexit, prevent_exit, none_or, values
+    VERBOSE, do_all, environment, get_name, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
 
@@ -250,7 +250,7 @@ def import_or_warn(module_name: str|ModuleData, file: Path|None=None) -> Generat
         with environment(HOUDINI_ENABLE_HOM_EXTENSIONS='1'):
             with prevent_exit():
                 with prevent_atexit():
-                    print(f"Importing {module_name}...")
+                    VERBOSE(f"Importing {module_name}...")
                     with warnings.catch_warnings():
                         warnings.filterwarnings('ignore',
                                                 message='pyside_type_init:_resolve_value',
@@ -573,7 +573,6 @@ def _load_module(module,
             # This ensures that modules are processed in the order they were found,
             # and that module/items alternation is preserved.
             parent_data, module = queue.popleft()
-            print(f'dequeuing {module.__name__} from {parent_data.name if parent_data else "root"},  queue={len(queue)}')
             # Process the next module in the queue.
             yield from _load_module(module,
                                 seen=seen,

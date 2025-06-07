@@ -370,7 +370,7 @@ def get_name(d: Any) -> str:
         return n
     except AttributeError:
         match d:
-            case Hashable():
+            case _ if isinstance(d, Hashable):
                 # If the object is hashable, store the name in a weak dictionary.
                 try:
                     _names[d] = n

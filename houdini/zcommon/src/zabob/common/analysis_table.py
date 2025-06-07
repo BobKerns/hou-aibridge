@@ -2,10 +2,10 @@
 Specify analysis tables via dataclasses
 '''
 
-from collections.abc import Collection, Container, Sequence, Mapping
+from collections.abc import Callable, Collection, Container, Sequence, Mapping
 from dataclasses import Field, fields, is_dataclass
 from functools import cache
-from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any, Union
+from typing import Generic, NamedTuple, get_origin, get_args, TypeAlias, TypeVar, Any, Union
 from types import UnionType, GenericAlias
 from pathlib import Path
 import json
@@ -20,12 +20,21 @@ from zabob.common.common_utils import value, none_or, get_name
 D = TypeVar('D', bound=AnalysisDBItem)
 
 ForeignKeyConstraint: TypeAlias = tuple[tuple[str, ...], str, tuple[str, ...]]
-
 '''
 Foreign key constraint definition for analysis tables.
 It is a tuple of the form:
     (local_names, ref_table, ref_columns)
 '''
+
+TypeExpression: TypeAlias = str|type|UnionType|GenericAlias
+
+class AnalysisFieldSpec(NamedTuple):
+    name: str
+    py_type: TypeExpression
+    db_type: str
+    is_json: bool
+    nullable: bool
+    coerce: Callable[[Any], Any]
 
 class AnalysisTableDescriptor(Generic[D]):
     """
@@ -77,6 +86,23 @@ class AnalysisTableDescriptor(Generic[D]):
         """Get the foreign key constraints of the analysis table."""
         return self.__foreign_keys
 
+    __fields: tuple[AnalysisFieldSpec, ...]
+    @property
+    @cache
+    def fields(self) -> tuple[AnalysisFieldSpec, ...]:
+        """Get the field specifications of the analysis table."""
+        return tuple(self._field_info(field)
+                     for field in fields(self.dataclass))
+
+    @property
+    @cache
+    def field_map(self) -> dict[str, AnalysisFieldSpec]:
+        """
+        Get a mapping of field names to their specifications.
+        This is used to quickly access field information by name.
+        """
+        return {field.name: field for field in self.fields}
+
     def __init__(self,
                  dataclass: type[D], /, *,
                  table_name: str = "",
@@ -92,7 +118,9 @@ class AnalysisTableDescriptor(Generic[D]):
         self.__primary_key = primary_key
         self.__foreign_keys = foreign_keys
 
-    def _map_type(self, field_type: type|UnionType|GenericAlias|str) -> tuple[str, bool]:
+    def _map_type(self,
+                  field_type: TypeExpression,
+                  ) -> tuple[str, TypeExpression, bool]:
         """Map Python type to SQLite type and nullable flag."""
         origin = get_origin(field_type)
 
@@ -101,25 +129,85 @@ class AnalysisTableDescriptor(Generic[D]):
             args = get_args(field_type)
             if type(None) in args:
                 # It's Optional, get the non-None type
-                actual_type = next(t for t in args if t is not type(None))
-                sql_type, _ =self. _map_type(actual_type)
-                return sql_type, True
-
+                actual_type = Union[*(t for t in args if t is not type(None))]
+                sql_type, actual_type, _ =self. _map_type(actual_type)
+                return sql_type, actual_type, True
+        actual_type = (
+            origin
+            or getattr(field_type, '__value__', None)  # Handle GenericAlias
+            or field_type
+        )
         # Map basic types
         if field_type in (int, bool):
-            return "INTEGER", False
+            return "INTEGER", field_type, False
         elif field_type is float:
-            return "REAL", False
+            return "REAL", field_type, False
         elif field_type is str:
-            return "TEXT", False
+            return "TEXT", field_type, False
+        elif field_type in (JsonAtomic, JsonAtomicNonNull, JsonData, JsonDataNonNull,
+                            JsonArray, JsonObject, dict, list):
+            # jsonb is not supported in older sqlite versions (including the one shipped
+            # with MacOS), so we use TEXT for JSON data.) jsonb needs 3.45+.
+            #return "BLOB", JsonData, True
+            return "TEXT", JsonData, True
         else:
             # Default to TEXT for unknown types
-            return "TEXT", False
+            return "TEXT", field_type, False
 
+    def _field_info(self, field: Field) -> AnalysisFieldSpec:
+        """
+        Get the field information for a dataclass field.
+
+        Args:
+            field: The dataclass field
+
+        Returns:
+            An AnalysisFieldSpec with the field name, SQLite type, nullable flag,
+            and a conversion function
+        """
+        sql_type, actual_type, nullable = self._map_type(field.type)
+        return AnalysisFieldSpec(
+            name=field.name,
+            db_type=sql_type,
+            py_type=actual_type,
+            is_json=actual_type in (JsonData, JsonDataNonNull, JsonAtomic, JsonAtomicNonNull, JsonArray, JsonObject,
+                                    dict, list),
+            nullable=nullable,
+            coerce=self._converter(actual_type, nullable)
+        )
+
+    def _converter(self, actual_type: TypeExpression, nullable: bool) -> Callable[[Any], Any]:
+        """
+        Get a conversion function for a single type.
+        This is used to convert values to the correct type for SQLite.
+        """
+        if nullable:
+            # If the type is nullable, we need to handle None values
+            if actual_type is type(None):
+                return lambda x: None
+            converter = self._converter(actual_type, False)
+            def nullable_converter(val: Any) -> Any:
+                if val is None:
+                    return None
+                return converter(val)
+            return nullable_converter
+        # Primitive types that need no conversion
+        if actual_type in (int, float, bool):
+            return actual_type
+
+        if actual_type is str:
+            return get_name
+        if actual_type in (JsonData, JsonDataNonNull):
+            return json.dumps
+        # Path types
+        if actual_type in (Path, Path|None):
+            return str
+        # Other types we are treating as named objects.
+        return get_name
 
     def _field_to_column_def(self, field: Field) -> str:
         """Convert a dataclass field to a SQLite column definition."""
-        sql_type, nullable = self._map_type(field.type)
+        sql_type, _, nullable = self._map_type(field.type)
         col_def = f"{field.name} {sql_type}"
 
         if nullable:
@@ -141,9 +229,6 @@ class AnalysisTableDescriptor(Generic[D]):
             SQLite CREATE TABLE statement
         """
         dataclass_fields = fields(class_or_instance=self.dataclass)
-
-        if not dataclass_fields:
-            raise ValueError(f"{self.dataclass} has no fields")
 
         # Build CREATE TABLE statement
         return "\n".join((
@@ -175,62 +260,10 @@ class AnalysisTableDescriptor(Generic[D]):
         Returns:
             The coerced value ready for SQLite
         """
-        # Find the field's type
-        field = next((f for f in fields(self.dataclass) if f.name == field_name), None)
-        if not field:
+        field_info = self.field_map.get(field_name)
+        if field_info is None:
             raise ValueError(f"Field {field_name} not found in {self.dataclass.__name__}")
-
-        field_type = field.type
-        # Handle 3.12+ type statements.
-        field_type = getattr(field_type, '__value__', field_type)
-        origin = get_origin(field_type)
-
-        # Handle Union/Optional types
-        if origin is UnionType:
-            args = get_args(field_type)
-            if type(None) in args:
-                # Get the non-None type
-                if field_type in (JsonData, JsonAtomic, JsonArray, JsonObject, Any|None):
-                    return
-                else:
-                    # Remove None from the Union. If only one remains, the Union will be simplified.
-                    # to the single type.
-                    actual_type = Union[*(t for t in args if t is not type(None))]
-                if val is None:
-                    return None
-                return none_or(val, lambda v: self._convert_single_type(actual_type, v))
-            elif field_type in (JsonDataNonNull, JsonAtomicNonNull, Any):
-                field_type = JsonDataNonNull
-        if origin in (list, tuple, dict, set, Sequence, Mapping, Container, Collection):
-            return self._convert_single_type(JsonData, val)
-        return self._convert_single_type(field_type, val)
-
-    def _convert_single_type(self, type_hint: Any, val: Any) -> Any:
-        """Convert a single value based on its type."""
-        # Primitive types that need no conversion
-        if type_hint in (int, float, bool):
-            return val
-
-        if type_hint is str:
-            if isinstance(val, str):
-                return val
-            return get_name(val)
-        if type_hint == JsonData:
-            if val is None:
-                return None
-            return json.dumps(val)
-        if type_hint == JsonDataNonNull:
-            if val is None:
-                raise ValueError("JsonDataNonNull cannot be None")
-            return json.dumps(val)
-        # Path types
-        if (isinstance(val, Path)
-            or ((hasattr(type_hint, "__origin__")
-                 and get_origin(type_hint) is Path))):
-            return str(val)
-
-        # Other types we are treating as named objects.
-        return get_name(val)
+        return field_info.coerce(val)
 
     @property
     @cache
@@ -246,8 +279,9 @@ class AnalysisTableDescriptor(Generic[D]):
             field.name
             for field in fields(self.dataclass)
         ]
-        columns = ', '.join(field_names)
-        placeholders = ", ".join("?" for _ in field_names)
+        columns = ', '.join(field.name for field in self.fields)
+        placeholders = ", ".join("json(?)" if field.is_json else '?'
+                                                for field in self.fields)
 
         return f"INSERT INTO {self.table_name} ({columns}) VALUES ({placeholders})"
 

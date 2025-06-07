@@ -3,6 +3,7 @@ Specify analysis tables via dataclasses
 '''
 
 from dataclasses import Field, fields, is_dataclass
+from functools import cache
 from typing import Generic, get_origin, get_args, TypeAlias, TypeVar, Any
 from types import UnionType, GenericAlias
 from pathlib import Path
@@ -123,6 +124,7 @@ class AnalysisTableDescriptor(Generic[D]):
         return col_def
 
     @property
+    @cache
     def ddl(
         self,
     ) -> str:
@@ -139,7 +141,7 @@ class AnalysisTableDescriptor(Generic[D]):
 
         # Build CREATE TABLE statement
         return "\n".join((
-            f"CREATE TABLE {self.table_name} (",
+            f"CREATE TABLE IF NOT EXISTS {self.table_name} (",
             ",\n".join((
                     *(
                         f"    {col}"
@@ -210,6 +212,7 @@ class AnalysisTableDescriptor(Generic[D]):
         return str(val)
 
     @property
+    @cache
     def insert_stmt(self) -> str:
         """
         Create a SQL INSERT statement template for the dataclass.

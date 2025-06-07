@@ -10,6 +10,8 @@
 #     "httpx",
 #     "mcp",
 #     "pedantic",
+#     "psutil",
+#     "semver",
 #     "sqlite-vec",
 #     "uvicorn",
 # ]
@@ -19,11 +21,26 @@ from collections.abc import AsyncGenerator, AsyncIterable, Awaitable
 import json
 from typing import Any, TypeAlias, TypeVar, cast
 import asyncio
+import sys
 
 from aiopath.path import AsyncPath as Path
 from pathlib import Path as SyncPath
 
 from mcp.server.fastmcp import FastMCP
+
+
+ROOT = SyncPath(__file__).parent.parent.parent.parent.parent
+MCP_VENV = ROOT / 'mcp-server/.venv'
+MCP_SRC = ROOT/ 'mcp-server/src'
+CORE_SRC = ROOT / 'zabob-modules/src'''
+COMMON_SRC = ROOT / 'houdini/zcommon/src'
+
+for p in (MCP_VENV, MCP_SRC, CORE_SRC, COMMON_SRC):
+    if not p.exists():
+        print(f"Error: {p} does not exist. Please run 'zabob setup' first.", file=sys.stderr)
+        sys.exit(1)
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))  # type: ignore[no-redef]
 
 from zabob.core import JsonData
 

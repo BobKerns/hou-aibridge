@@ -3,12 +3,23 @@ Specify analysis tables via dataclasses
 '''
 
 from dataclasses import Field, fields, is_dataclass
-from types import GenericAlias, UnionType
-from typing import get_origin, get_args, Union
+from typing import Generic, get_origin, get_args, TypeAlias, TypeVar
+from types import UnionType, GenericAlias
 
-from zabob.common.common_utils import if_true
+from zabob.common import AnalysisDBItem
+from zabob.common.common_utils import value
 
-class AnalysisTableDescriptor:
+D = TypeVar('D', bound=AnalysisDBItem)
+
+ForeignKeyConstraint: TypeAlias = tuple[tuple[str, ...], str, tuple[str, ...]]
+
+'''
+Foreign key constraint definition for analysis tables.
+It is a tuple of the form:
+    (local_names, ref_table, ref_columns)
+'''
+
+class AnalysisTableDescriptor(Generic[D]):
     """
     Descriptor for analysis tables defined as dataclasses.
     Provides a method to convert the dataclass to a SQLite
@@ -34,7 +45,43 @@ class AnalysisTableDescriptor:
     convert to a string using str(value).
     """
 
-    def map_type(self, field_type: type|UnionType|GenericAlias|str) -> tuple[str, bool]:
+    __table_name: str
+    @property
+    def table_name(self) -> str:
+        """Get the name of the analysis table."""
+        return self.__table_name
+
+    __dataclass: type[D]
+    @property
+    def dataclass(self) -> type[D]:
+        """Get the dataclass type of the analysis table."""
+        return self.__dataclass
+
+    __primary_key: tuple[str, ...]
+    @property
+    def primary_key(self) -> tuple[str, ...]:
+        """Get the primary key fields of the analysis table."""
+        return self.__primary_key
+
+    __foreign_keys: tuple[ForeignKeyConstraint, ...]
+    @property
+    def foreign_keys(self) -> tuple[ForeignKeyConstraint, ...]:
+        """Get the foreign key constraints of the analysis table."""
+        return self.__foreign_keys
+
+    def __init__(self, dataclass: type[D], primary_key: tuple[str, ...] = ()
+                 , foreign_keys: tuple[ForeignKeyConstraint, ...] = ()):
+        if not is_dataclass(dataclass):
+            raise ValueError(f"{dataclass} is not a dataclass")
+        self.__table_name = dataclass.__name__.lower()
+        self.__dataclass = dataclass
+        if not primary_key:
+            # Default to the first field as primary key if none specified
+            primary_key = (fields(dataclass)[0].name,)
+        self.__primary_key = primary_key
+        self.__foreign_keys = foreign_keys
+
+    def _map_type(self, field_type: type|UnionType|GenericAlias|str) -> tuple[str, bool]:
         """Map Python type to SQLite type and nullable flag."""
         origin = get_origin(field_type)
 
@@ -44,7 +91,7 @@ class AnalysisTableDescriptor:
             if type(None) in args:
                 # It's Optional, get the non-None type
                 actual_type = next(t for t in args if t is not type(None))
-                sql_type, _ =self. map_type(actual_type)
+                sql_type, _ =self. _map_type(actual_type)
                 return sql_type, True
 
         # Map basic types
@@ -59,9 +106,9 @@ class AnalysisTableDescriptor:
             return "TEXT", False
 
 
-    def field_to_column_def(self, field: Field) -> str:
+    def _field_to_column_def(self, field: Field) -> str:
         """Convert a dataclass field to a SQLite column definition."""
-        sql_type, nullable = self.map_type(field.type)
+        sql_type, nullable = self._map_type(field.type)
         col_def = f"{field.name} {sql_type}"
 
         if nullable:
@@ -71,49 +118,37 @@ class AnalysisTableDescriptor:
 
         return col_def
 
-
-    def dataclass_to_sqlite_ddl(
+    @property
+    def ddl(
         self,
-        cls: type,
-        primary_key: tuple[str, ...] | None = None,
-        foreign_keys: dict[str, tuple[str, str]] | None = None
     ) -> str:
         """
         Convert a dataclass to a SQLite CREATE TABLE DDL statement.
 
-        Args:
-            cls: The dataclass type
-            primary_key: Tuple of field names to use as primary key. If None, uses first field.
-            foreign_keys: Dict mapping field names to (table, column) tuples for foreign key constraints
-
         Returns:
             SQLite CREATE TABLE statement
         """
-        if not is_dataclass(cls):
-            raise ValueError(f"{cls} is not a dataclass")
-
-        table_name = cls.__name__.lower()
-        dataclass_fields = fields(cls)
+        dataclass_fields = fields(class_or_instance=self.dataclass)
 
         if not dataclass_fields:
-            raise ValueError(f"{cls} has no fields")
-
-        # Default primary key is first field
-        if primary_key is None:
-            primary_key = (dataclass_fields[0].name,)
-
-        columns = [
-            self.field_to_column_def(field)
-            for field in dataclass_fields
-        ]
+            raise ValueError(f"{self.dataclass} has no fields")
 
         # Build CREATE TABLE statement
-        ddl = ",\n".join((
-            f"CREATE TABLE {table_name} (",
-            *(f" .   {col}" for col in columns),
-            f"    PRIMARY KEY ({', '.join(primary_key)}) ON CONFLICT REPLACE",
-            *(f"    FOREIGN KEY ({field_name}) REFERENCES {ref_table}({ref_column})"
-              for field_name, (ref_table, ref_column) in (foreign_keys or {}).items()),
-        )) + "\n) STRICT;"
+        return "\n".join((
+            f"CREATE TABLE {self.table_name} (",
+            ",\n".join((
+                    *(
+                        f"    {col}"
+                        for field in dataclass_fields
+                        for col in value(self._field_to_column_def(field))
+                    ),
+                    f"    PRIMARY KEY ({', '.join(self.primary_key)}) ON CONFLICT REPLACE",
+                    *(f"    FOREIGN KEY ({field_expr}) REFERENCES {ref_table}({ref_expr})"
+                        for field_names, ref_table, ref_column in self.foreign_keys
+                        for field_expr in value(", ".join(field_names))
+                        for ref_expr in value(", ".join(ref_column))
+                        ),
+                )),
+            ") STRICT;"
+        ))
 
-        return ddl

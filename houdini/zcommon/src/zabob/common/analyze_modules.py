@@ -87,7 +87,7 @@ from zabob.common.analysis_types import (
 )
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    VERBOSE, environment, get_name, prevent_atexit, prevent_exit, none_or, values
+    DEBUG, VERBOSE, environment, get_name, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
 from zabob.common.overload_collector import (
@@ -457,7 +457,7 @@ def _yield_function_signatures(module_name: str, func_name: str,
         AnalysisFunctionSignature instances for both implementations and overloads if found
     """
     # Add debug logging
-    print(f"DEBUG: Looking for overloads of {module_name}.{func_name}")
+    DEBUG(f"Looking for overloads of {module_name}.{func_name}")
 
     # Always try to create a signature from the function object first
     # This ensures we get a signature even if there's no overload info
@@ -468,7 +468,7 @@ def _yield_function_signatures(module_name: str, func_name: str,
     overload_info = get_overload_for_function(module_name=module_name, func_name=func_name)
 
     if overload_info:
-        print(f"DEBUG: Found overload info with {len(overload_info.signatures)} signatures")
+        DEBUG(f"Found overload info with {len(overload_info.signatures)} signatures")
 
         # Create entries for each overload signature
         for i, sig_info in enumerate(overload_info.signatures):
@@ -487,7 +487,7 @@ def _yield_function_signatures(module_name: str, func_name: str,
                     parent_name=parent_data.name,
                     parent_type=parent_data.type
                 )
-                print(f"DEBUG: Created overload signature #{i+1} for {simple_func_name}")
+                DEBUG(f"Created overload signature #{i+1} for {simple_func_name}")
 
         # If there's an implementation, add that too
         if overload_info.implementation and overload_info.implementation.signature:
@@ -505,19 +505,19 @@ def _yield_function_signatures(module_name: str, func_name: str,
                 parent_name=parent_data.name,
                 parent_type=parent_data.type
             )
-            print(f"DEBUG: Created implementation signature for {simple_func_name} from overload info")
+            DEBUG(f"Created implementation signature for {simple_func_name} from overload info")
             signature_created = True
 
         # Clean up after processing
         remove_overload_info(module_name, func_name)
     else:
-        print(f"DEBUG: No overload info found for {module_name}.{func_name}")
+        DEBUG(f"No overload info found for {module_name}.{func_name}")
 
     # If we haven't created a signature from overloads, try to create one from the function object
     if not signature_created and func_obj is not None:
         try:
             sig = inspect.signature(func_obj)
-            print(f"DEBUG: Successfully inspected signature: {sig}")
+            DEBUG(f"Successfully inspected signature: {sig}")
 
             params = _convert_signature_to_params(sig)
 
@@ -529,7 +529,7 @@ def _yield_function_signatures(module_name: str, func_name: str,
                 if 'return' in type_hints:
                     return_type = str(type_hints['return'])
             except Exception as e:
-                print(f"DEBUG: Error getting type hints: {e}")
+                DEBUG(f"Error getting type hints: {e}")
 
             yield AnalysisFunctionSignature(
                 func_name=simple_func_name,
@@ -541,10 +541,10 @@ def _yield_function_signatures(module_name: str, func_name: str,
                 parent_name=parent_data.name,
                 parent_type=parent_data.type
             )
-            print(f"DEBUG: Created signature for {simple_func_name} from direct inspection")
+            DEBUG(f"Created signature for {simple_func_name} from direct inspection")
 
         except Exception as e:
-            print(f"DEBUG: Failed to inspect function directly: {e}")
+            DEBUG(f"Failed to inspect function directly: {e}")
 
 def _load_class(cls, parent: HoudiniStaticData,
                 seen: set[str],

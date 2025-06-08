@@ -13,6 +13,8 @@ from typing import Any, Callable, get_type_hints
 from inspect import Parameter, Signature
 from pathlib import Path
 
+from zabob.common.common_utils import DEBUG
+
 # Define a fallback signature for uninspectable functions
 FALLBACK_SIGNATURE = Signature(
     parameters=[
@@ -94,7 +96,7 @@ def capture_overload(func):
         key = (module_name, func_name)
 
         # Add debug logging
-        print(f"DEBUG: Capturing overload for {module_name}.{func_name}")
+        DEBUG(f"Capturing overload for {module_name}.{func_name}")
 
         # Create frame info to get file and line number
         cur_frame = inspect.currentframe()
@@ -128,7 +130,7 @@ def capture_overload(func):
         )
 
         # Add more debug information
-        print(f"DEBUG: Added overload signature to registry, now has {len(overload_registry[key].signatures)} signatures")
+        DEBUG(f"Added overload signature to registry, now has {len(overload_registry[key].signatures)} signatures")
 
     # Call the original overload decorator to maintain normal typing behavior
     if original_overload:

@@ -2,10 +2,10 @@
 Specify analysis tables via dataclasses
 '''
 
-from collections.abc import Callable, Collection, Container, Sequence, Mapping
+from collections.abc import Callable
 from dataclasses import Field, fields, is_dataclass
 from functools import cache
-from typing import Generic, NamedTuple, get_origin, get_args, TypeAlias, TypeVar, Any, Union
+from typing import Generic, NamedTuple, get_origin, get_args, TypeAlias, TypeVar, Any, Union, Literal
 from types import UnionType, GenericAlias
 from pathlib import Path
 import json
@@ -32,6 +32,7 @@ class AnalysisFieldSpec(NamedTuple):
     name: str
     py_type: TypeExpression
     db_type: str
+    declared_type: TypeExpression
     is_json: bool
     nullable: bool
     coerce: Callable[[Any], Any]
@@ -132,6 +133,17 @@ class AnalysisTableDescriptor(Generic[D]):
                 actual_type = Union[*(t for t in args if t is not type(None))]
                 sql_type, actual_type, _ =self. _map_type(actual_type)
                 return sql_type, actual_type, True
+            if all(t in (int, float, bool, str, JsonData, JsonAtomic,
+                            JsonAtomicNonNull, JsonArray, JsonObject,
+                            dict, list, tuple)
+                       for t in (get_origin(a)
+                                 for a in get_args(field_type))):
+                return "TEXT", JsonData, False
+        if all(t is Literal or issubclass(t,  (int, float, bool, str, list, dict, tuple))
+            for t in (get_origin(a)
+                    for a in get_args(field_type))
+                       if t is not None):
+            return "TEXT", JsonData, False
         actual_type = (
             origin
             or getattr(field_type, '__value__', None)  # Handle GenericAlias
@@ -145,7 +157,7 @@ class AnalysisTableDescriptor(Generic[D]):
         elif actual_type is str:
             return "TEXT", actual_type, False
         elif actual_type in (JsonAtomic, JsonAtomicNonNull, JsonData, JsonDataNonNull,
-                            JsonArray, JsonObject, dict, list):
+                            JsonArray, JsonObject, dict, list, tuple):
             # jsonb is not supported in older sqlite versions (including the one shipped
             # with MacOS), so we use TEXT for JSON data.) jsonb needs 3.45+.
             #return "BLOB", JsonData, True
@@ -170,8 +182,9 @@ class AnalysisTableDescriptor(Generic[D]):
             name=field.name,
             db_type=sql_type,
             py_type=actual_type,
+            declared_type=field.type,
             is_json=actual_type in (JsonData, JsonDataNonNull, JsonAtomic, JsonAtomicNonNull, JsonArray, JsonObject,
-                                    dict, list),
+                                    dict, list, tuple),
             nullable=nullable,
             coerce=self._converter(actual_type, nullable)
         )
@@ -198,7 +211,7 @@ class AnalysisTableDescriptor(Generic[D]):
         if actual_type is str:
             return get_name
         if actual_type in (JsonData, JsonDataNonNull):
-            return json.dumps
+            return json_converter
         # Path types
         if actual_type in (Path, Path|None):
             return str
@@ -314,3 +327,24 @@ class AnalysisTableDescriptor(Generic[D]):
         values = self.db_values(instance)
         cursor.execute(self.insert_stmt, values)
 
+def json_converter(obj: JsonObject) -> str:
+    """
+    Convert an object to a JSON string for SQLite storage.
+    Handles Path objects and other serializable types.
+    """
+    return json.dumps(obj, cls=JsonDataEncoder)
+
+class JsonDataEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder for handling AnalysisDBItem dataclasses.
+    Converts dataclass instances to dictionaries for JSON serialization.
+    """
+    def default(self, o: Any) -> Any:
+        match o:
+            case tuple()|set():
+                return list(o)
+            case Path():
+                return str(o)
+            case int()|str()|float()|bool()|list()|dict() :
+                return super().default(o)  # Fallback to default serialization
+        return get_name(o)

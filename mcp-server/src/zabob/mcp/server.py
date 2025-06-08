@@ -18,18 +18,10 @@
 # ]
 # ///
 '''
-A prototype MCP server for the AIBridge project.
-
-This will ultimately communicate with the VSCode extension to provide answers to queries and perform tool actions.
-
-For now, it will just return responses from the responses folder.
-
-It should target Python 3.11+ and use the recommended types such as 'list' and 'dict' instead of 'List' and 'Dict'.
-It should use the 'mcp' library rather than reimplementing it on top of FastAPI, specifically the 'mcp.server.fastmcp' module.
-
+An MCP server for the Zabob project.
 '''
 
-from collections.abc import AsyncGenerator, AsyncIterable, Awaitable
+from collections.abc import AsyncGenerator, AsyncIterable, Awaitable, AsyncIterator
 import json
 from typing import Any, TypeVar, cast, TypedDict
 import asyncio
@@ -37,6 +29,7 @@ import sys
 import click
 import httpx
 import logging
+from contextlib import asynccontextmanager
 
 from aiopath.path import AsyncPath as Path
 from pathlib import Path as SyncPath
@@ -101,7 +94,33 @@ INSTRUCTIONS_PATH = SyncPath(__file__).parent / "instructions.md"
 with open(INSTRUCTIONS_PATH, "r", encoding="utf-8") as f:
     INSTRUCTIONS = f.read()
 
-mcp = FastMCP("zabob", instructions=INSTRUCTIONS)
+@asynccontextmanager
+async def app_lifespan(server: FastMCP) -> AsyncIterator[None]:
+    """Manage application lifecycle - initialize responses on startup."""
+    try:
+        # Initialize responses and prompts during startup
+        # This awaits the listing of responses, but not their loading.
+        # That happens at the point of first use, or on exit.
+        await load_responses()
+        yield
+    finally:
+        # Cancel any remaining tasks for graceful shutdown
+        current_task = asyncio.current_task()
+        tasks = [task for task in asyncio.all_tasks() if task != current_task and not task.done()]
+        if tasks:
+            for task in tasks:
+                task.cancel()
+            # Wait a short time for tasks to cleanup
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=2.0
+                )
+            except asyncio.TimeoutError:
+                # Tasks didn't cleanup in time, but that's okay
+                pass
+
+mcp = FastMCP("zabob", instructions=INSTRUCTIONS, lifespan=app_lifespan)
 
 RESPONSES: dict[str, Awaitable[JsonData|str]] =  {}
 PROMPTS: dict[str, Awaitable[JsonData|str]] =  {}
@@ -695,8 +714,6 @@ async def prompt(prompt: str, data: dict[str, Any]) -> dict[str, Any]:
     if not prompt:
         return {"error": "No prompt provided."}
     return {"response": await PROMPTS.get(prompt, awaitable_value("No response found."))}
-
-asyncio.run(load_responses())
 
 @click.command()
 @click.option('--help-tools', is_flag=True, help='Show detailed information about available MCP tools and exit')

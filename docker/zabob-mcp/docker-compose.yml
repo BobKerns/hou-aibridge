@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  zabob-mcp:
+    image: docker-zabob-mcp:latest
+    container_name: zabob-mcp-server
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    # Uncomment the ports section if you need to expose the MCP server
+    # ports:
+    #   - "8080:8080"
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Uncomment to mount local database for development
+    # volumes:
+    #   - ./dev_out:/app/dev_out

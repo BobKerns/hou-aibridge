@@ -12,6 +12,7 @@ from pathlib import Path
 from enum import StrEnum
 from dataclasses import dataclass
 import builtins
+from shutil import RegistryError
 from typing import Any, Literal, Protocol, TypeVar, TypedDict, NotRequired, Union
 
 from zabob.common.common_types import JsonData
@@ -185,3 +186,9 @@ class AnalysisFunctionSignature(AnalysisDBItem):
         # Ensure overload_index is 0 for non-overloaded functions
         if not self.is_overload:
             self.overload_index = 0
+
+@dataclass
+class PDGRegistryInfo(AnalysisDBItem):
+    """Information about a PDG node type"""
+    name: str
+    registry: str

@@ -11,7 +11,7 @@ from typing import IO
 
 from zabob.common.analysis_types import (
     AnalysisDBItem, AnalysisDBWriter, HoudiniStaticData, ModuleData,
-    NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo, AnalysisFunctionSignature,
+    NodeCategoryInfo, NodeTypeInfo, PDGRegistryInfo, ParmTemplateInfo, AnalysisFunctionSignature,
 )
 from zabob.common.common_utils import (
     T, VERBOSE, Condition, get_name, none_or, trace as _trace,
@@ -80,6 +80,11 @@ tables: dict[type, AnalysisTableDescriptor] = {
                     ('name', 'type'),
                 ),
             ),
+        ),
+        AnalysisTableDescriptor[PDGRegistryInfo](
+            PDGRegistryInfo,
+            table_name='pdg_registry',
+            primary_key=('name', 'registry'),
         ),
     )
 }

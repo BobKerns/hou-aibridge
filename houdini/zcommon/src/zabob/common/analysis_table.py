@@ -281,7 +281,24 @@ class AnalysisTableDescriptor(Generic[D]):
         field_info = self.field_map.get(field_name)
         if field_info is None:
             raise ValueError(f"Field {field_name} not found in {self.dataclass.__name__}")
-        return field_info.coerce(val)
+
+        try:
+            return field_info.coerce(val)
+        except Exception as e:
+            # Provide detailed error information for debugging
+            error_msg = (
+                f"Failed to coerce value for field '{field_name}' in {self.dataclass.__name__}:\n"
+                f"  Value: {val!r} (type: {type(val).__name__})\n"
+                f"  Field config:\n"
+                f"    - declared_type: {field_info.declared_type}\n"
+                f"    - py_type: {field_info.py_type}\n"
+                f"    - db_type: {field_info.db_type}\n"
+                f"    - is_json: {field_info.is_json}\n"
+                f"    - nullable: {field_info.nullable}\n"
+                f"    - coerce function: {field_info.coerce}\n"
+                f"  Original error: {e}"
+            )
+            raise ValueError(error_msg) from e
 
     @property
     @cache

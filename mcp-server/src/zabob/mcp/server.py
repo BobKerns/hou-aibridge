@@ -23,6 +23,7 @@ import json
 from typing import Any, TypeVar, cast
 import asyncio
 import sys
+import argparse
 
 from aiopath.path import AsyncPath as Path
 from pathlib import Path as SyncPath
@@ -31,12 +32,12 @@ from mcp.server.fastmcp import FastMCP
 
 
 ROOT = SyncPath(__file__).parent.parent.parent.parent.parent
-MCP_VENV = ROOT / 'mcp-server/.venv'
 MCP_SRC = ROOT/ 'mcp-server/src'
-CORE_SRC = ROOT / 'zabob-modules/src'''
+CORE_SRC = ROOT / 'zabob-modules/src'
 COMMON_SRC = ROOT / 'houdini/zcommon/src'
 
-for p in (MCP_VENV, MCP_SRC, CORE_SRC, COMMON_SRC):
+# Check for source directories (but not .venv in Docker)
+for p in (MCP_SRC, CORE_SRC, COMMON_SRC):
     if not p.exists():
         print(f"Error: {p} does not exist. Please run 'zabob setup' first.", file=sys.stderr)
         sys.exit(1)
@@ -287,7 +288,62 @@ async def prompt(prompt: str, data: dict[str, Any]) -> dict[str, Any]:
 asyncio.run(load_responses())
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Zabob MCP Server - AI agent for Houdini assistance",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"""
+Available MCP Tools:
+  • get_functions_returning_nodes    - Find functions that return Houdini node objects
+  • search_functions                 - Search functions by keyword in name or docstring
+  • get_primitive_functions          - Find functions related to primitive operations
+  • get_modules_summary              - Get summary of all Houdini modules with function counts
+  • search_node_types               - Search node types by keyword
+  • get_node_types_by_category      - Get node types filtered by category (Sop, Object, Dop, etc.)
+  • get_database_stats              - Get statistics about the Houdini database contents
+  • query_response                  - Handle general queries (legacy tool)
 
+Database: {db.db_path if hasattr(db, 'db_path') else 'Not initialized'}
+
+Usage:
+  This server starts an MCP (Model Context Protocol) server that provides
+  AI agents with access to comprehensive Houdini Python API information.
+
+  The server waits for MCP client connections and responds to tool requests
+  with data from the Houdini modules database.
+"""
+    )
+
+    parser.add_argument(
+        '--help-tools',
+        action='store_true',
+        help='Show detailed information about available MCP tools and exit'
+    )
+
+    args = parser.parse_args()
+
+    if args.help_tools:
+        print("🔧 Zabob MCP Server - Available Tools:\n")
+        tools = [
+            ("get_functions_returning_nodes", "Find functions that return Houdini node objects"),
+            ("search_functions", "Search functions by keyword (requires: keyword, optional: limit)"),
+            ("get_primitive_functions", "Find functions related to primitive operations"),
+            ("get_modules_summary", "Get summary of all Houdini modules with function counts"),
+            ("search_node_types", "Search node types by keyword (requires: keyword, optional: limit)"),
+            ("get_node_types_by_category", "Get node types by category (optional: category)"),
+            ("get_database_stats", "Get statistics about the Houdini database contents"),
+            ("query_response", "Handle general queries (requires: query)")
+        ]
+
+        for tool_name, description in tools:
+            print(f"  {tool_name:30} - {description}")
+
+        print(f"\n📊 Database: {db.db_path if hasattr(db, 'db_path') else 'Not initialized'}")
+        print("\n🚀 To start the MCP server, run without arguments.")
+        return
+
+    print("🚀 Starting Zabob MCP Server...")
+    print(f"📊 Database: {db.db_path if hasattr(db, 'db_path') else 'Not initialized'}")
+    print("🔗 Waiting for MCP client connections...")
     mcp.run()
 
 if __name__ == "__main__":

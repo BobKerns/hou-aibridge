@@ -456,19 +456,25 @@ def _yield_function_signatures(module_name: str, func_name: str,
     Yields:
         AnalysisFunctionSignature instances for both implementations and overloads if found
     """
-    # Don't pass func_obj since it might not have __module__ attribute
-    # Just rely on module_name and func_name which we know from context
+    # Add debug logging
+    print(f"DEBUG: Looking for overloads of {module_name}.{func_name}")
+
+    # Always try to create a signature from the function object first
+    # This ensures we get a signature even if there's no overload info
+    simple_func_name = func_name.split('.')[-1]
+    signature_created = False
+
+    # Check for overload information first
     overload_info = get_overload_for_function(module_name=module_name, func_name=func_name)
 
     if overload_info:
-        # First create entries for each overload signature
+        print(f"DEBUG: Found overload info with {len(overload_info.signatures)} signatures")
+
+        # Create entries for each overload signature
         for i, sig_info in enumerate(overload_info.signatures):
             if sig_info.signature:
                 params = _convert_signature_to_params(sig_info.signature)
                 return_type = str(sig_info.type_hints.get('return', 'Any'))
-
-                # Extract just the function name (last part after the dot)
-                simple_func_name = func_name.split('.')[-1]
 
                 yield AnalysisFunctionSignature(
                     func_name=simple_func_name,
@@ -481,15 +487,13 @@ def _yield_function_signatures(module_name: str, func_name: str,
                     parent_name=parent_data.name,
                     parent_type=parent_data.type
                 )
+                print(f"DEBUG: Created overload signature #{i+1} for {simple_func_name}")
 
         # If there's an implementation, add that too
         if overload_info.implementation and overload_info.implementation.signature:
             impl = overload_info.implementation
             params = _convert_signature_to_params(impl.signature)
             return_type = str(impl.type_hints.get('return', 'Any'))
-
-            # Extract just the function name (last part after the dot)
-            simple_func_name = func_name.split('.')[-1]
 
             yield AnalysisFunctionSignature(
                 func_name=simple_func_name,
@@ -501,11 +505,47 @@ def _yield_function_signatures(module_name: str, func_name: str,
                 parent_name=parent_data.name,
                 parent_type=parent_data.type
             )
+            print(f"DEBUG: Created implementation signature for {simple_func_name} from overload info")
+            signature_created = True
 
         # Clean up after processing
         remove_overload_info(module_name, func_name)
+    else:
+        print(f"DEBUG: No overload info found for {module_name}.{func_name}")
 
-# Update return type annotations in function signatures:
+    # If we haven't created a signature from overloads, try to create one from the function object
+    if not signature_created and func_obj is not None:
+        try:
+            sig = inspect.signature(func_obj)
+            print(f"DEBUG: Successfully inspected signature: {sig}")
+
+            params = _convert_signature_to_params(sig)
+
+            # Try to get return type hint if available
+            return_type = "Any"
+            try:
+                from typing import get_type_hints
+                type_hints = get_type_hints(func_obj)
+                if 'return' in type_hints:
+                    return_type = str(type_hints['return'])
+            except Exception as e:
+                print(f"DEBUG: Error getting type hints: {e}")
+
+            yield AnalysisFunctionSignature(
+                func_name=simple_func_name,
+                parameters=params,
+                return_type=return_type,
+                is_overload=False,
+                file_path=None,  # We don't have this info for direct inspection
+                line_number=None,
+                parent_name=parent_data.name,
+                parent_type=parent_data.type
+            )
+            print(f"DEBUG: Created signature for {simple_func_name} from direct inspection")
+
+        except Exception as e:
+            print(f"DEBUG: Failed to inspect function directly: {e}")
+
 def _load_class(cls, parent: HoudiniStaticData,
                 seen: set[str],
                 queue: deque[tuple[HoudiniStaticData, ModuleType]],

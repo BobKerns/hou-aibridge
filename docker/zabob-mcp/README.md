@@ -60,6 +60,8 @@ The server provides the following MCP tools:
 - `search_node_types` - Search node types by keyword
 - `get_node_types_by_category` - Get node types filtered by category (Sop, Object, Dop, etc.)
 - `get_database_stats` - Get statistics about the Houdini database contents
+- `get_pdg_registry` - Get PDG (TOPs) registry entries, optionally filtered by type
+- `search_pdg_registry` - Search PDG registry entries by keyword
 - `query_response` - Handle general queries (legacy tool)
 
 ## Multi-stage Build

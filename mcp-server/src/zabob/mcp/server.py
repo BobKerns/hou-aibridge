@@ -256,6 +256,46 @@ async def get_database_stats():
     except Exception as e:
         return {"error": f"Database query failed: {str(e)}"}
 
+@mcp.tool("get_pdg_registry")
+async def get_pdg_registry(registry_type: str | None = None):
+    """Get PDG (TOPs) registry entries, optionally filtered by registry type (Node, Scheduler, Service, etc.)."""
+    try:
+        with db:
+            entries = db.get_pdg_registry(registry_type)
+            return {
+                "entries": [
+                    {
+                        "name": entry.name,
+                        "registry": entry.registry
+                    }
+                    for entry in entries
+                ],
+                "count": len(entries),
+                "registry_type": registry_type or "all"
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("search_pdg_registry")
+async def search_pdg_registry(keyword: str, limit: int = 50):
+    """Search PDG registry entries by keyword in name."""
+    try:
+        with db:
+            entries = db.search_pdg_registry(keyword, limit)
+            return {
+                "entries": [
+                    {
+                        "name": entry.name,
+                        "registry": entry.registry
+                    }
+                    for entry in entries
+                ],
+                "count": len(entries),
+                "keyword": keyword
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
 @mcp.tool("query_response")
 async def query_response(query: str):
     """Handle a general query and return a canned response (legacy tool)."""
@@ -300,6 +340,8 @@ def main(help_tools: bool = False):
     • search_node_types               - Search node types by keyword
     • get_node_types_by_category      - Get node types filtered by category (Sop, Object, Dop, etc.)
     • get_database_stats              - Get statistics about the Houdini database contents
+    • get_pdg_registry                - Get PDG registry entries
+    • search_pdg_registry             - Search PDG registry entries by keyword
     • query_response                  - Handle general queries (legacy tool)
 
     Database: {db.db_path if hasattr(db, 'db_path') else 'Not initialized'}
@@ -327,6 +369,8 @@ def main(help_tools: bool = False):
             ("search_node_types", "Search node types by keyword (requires: keyword, optional: limit)"),
             ("get_node_types_by_category", "Get node types by category (optional: category)"),
             ("get_database_stats", "Get statistics about the Houdini database contents"),
+            ("get_pdg_registry", "Get PDG registry entries (optional: registry_type)"),
+            ("search_pdg_registry", "Search PDG registry entries by keyword (requires: keyword, optional: limit)"),
             ("query_response", "Handle general queries (requires: query)")
         ]
 

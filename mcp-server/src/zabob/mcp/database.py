@@ -7,7 +7,7 @@ and return structured information about modules, functions, node types, etc.
 
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 from dataclasses import dataclass
 import sys
 
@@ -31,7 +31,7 @@ class FunctionInfo:
     parent_name: str
     parent_type: str
     datatype: str
-    docstring: Optional[str]
+    docstring: str | None
     returns_nodes: bool = False
 
 
@@ -39,8 +39,8 @@ class FunctionInfo:
 class ModuleInfo:
     """Information about a Houdini module."""
     name: str
-    directory: Optional[str]
-    file: Optional[str]
+    directory: str | None
+    file: str | None
     status: str
     function_count: int
 
@@ -58,17 +58,24 @@ class NodeTypeInfo:
     is_manager: bool
 
 
+@dataclass
+class PDGRegistryInfo:
+    """Information about a PDG registry entry."""
+    name: str
+    registry: str
+
+
 class HoudiniDatabase:
     """Interface to the Houdini analysis database."""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         """Initialize database connection."""
         if db_path is None:
             # Try to find the database in the standard locations
             db_path = self._find_database()
 
         self.db_path = db_path
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection | None = None
 
     def _find_database(self) -> Path:
         """Find the Houdini database in standard locations."""
@@ -261,7 +268,7 @@ class HoudiniDatabase:
 
         return results
 
-    def get_node_types_by_category(self, category: Optional[str] = None) -> List[NodeTypeInfo]:
+    def get_node_types_by_category(self, category: str | None = None) -> List[NodeTypeInfo]:
         """Get node types, optionally filtered by category."""
         conn = self.connect()
         cursor = conn.cursor()
@@ -378,4 +385,76 @@ class HoudiniDatabase:
         cursor.execute("SELECT COUNT(*) FROM houdini_categories")
         stats['categories'] = cursor.fetchone()[0]
 
+        # Count PDG registry entries
+        cursor.execute("SELECT COUNT(*) FROM pdg_registry")
+        stats['pdg_registry_entries'] = cursor.fetchone()[0]
+
         return stats
+
+    def get_pdg_registry(self, registry_type: str | None = None) -> List[PDGRegistryInfo]:
+        """Get PDG registry entries, optionally filtered by registry type."""
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        if registry_type:
+            query = """
+            SELECT name, registry
+            FROM pdg_registry
+            WHERE registry = ?
+            ORDER BY name
+            """
+            cursor.execute(query, (registry_type,))
+        else:
+            query = """
+            SELECT name, registry
+            FROM pdg_registry
+            ORDER BY registry, name
+            """
+            cursor.execute(query)
+
+        results = []
+        for row in cursor.fetchall():
+            pdg_info = PDGRegistryInfo(
+                name=row['name'],
+                registry=row['registry']
+            )
+            results.append(pdg_info)
+
+        return results
+
+    def search_pdg_registry(self, keyword: str, limit: int = 50) -> List[PDGRegistryInfo]:
+        """Search PDG registry entries by keyword in name."""
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        query = """
+        SELECT name, registry
+        FROM pdg_registry
+        WHERE name LIKE ?
+        ORDER BY
+            CASE
+                WHEN name = ? THEN 1
+                WHEN name LIKE ? THEN 2
+                WHEN name LIKE ? THEN 3
+                ELSE 4
+            END,
+            registry, name
+        LIMIT ?
+        """
+
+        search_pattern = f"%{keyword}%"
+        exact_match = keyword
+        starts_with = f"{keyword}%"
+        ends_with = f"%{keyword}"
+
+        cursor.execute(query, (search_pattern, exact_match, starts_with, ends_with, limit))
+
+        results = []
+        for row in cursor.fetchall():
+            pdg_info = PDGRegistryInfo(
+                name=row['name'],
+                registry=row['registry']
+            )
+            results.append(pdg_info)
+
+        return results

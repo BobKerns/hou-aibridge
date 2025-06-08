@@ -2,6 +2,23 @@
 
 This directory contains demo scripts showcasing the capabilities of the Zabob MCP server for CGI artists, particularly those learning PDG workflows in Houdini.
 
+## 🌐 NEW: Web Search Integration
+
+**Enhanced with live web search capabilities!** The MCP server now combines:
+
+- 📊 **Static database knowledge** (comprehensive Houdini API)
+- 🌐 **Live web search** (DuckDuckGo API integration)
+- 📚 **Official documentation** (SideFX docs fetching)
+- 🧭 **Real-time guidance** (tutorials and examples)
+
+### Web-Enhanced Tools:
+
+- `enhanced_search_node_types` - Node search + live documentation
+- `enhanced_search_functions` - Function search + code examples
+- `web_search_houdini` - Direct Houdini web search
+- `fetch_houdini_docs` - Official SideFX documentation
+- `pdg_workflow_assistant` - PDG guidance + tutorials
+
 ## Demo Files
 
 ### 📋 `DEMO_SCRIPT.md`
@@ -26,6 +43,34 @@ python quick_demo.py
 - Demonstrates each tool with real results
 - Shows current database statistics
 - Perfect for initial validation
+
+### 🌐 `live_web_search_demo.py` **NEW!**
+
+**Web Search Integration Demo** showcasing enhanced capabilities:
+
+```bash
+cd /Users/rwk/p/zabob/mcp-server
+python live_web_search_demo.py
+```
+
+- Demonstrates DuckDuckGo API integration
+- Shows enhanced node/function search with live docs
+- Tests official SideFX documentation fetching
+- PDG workflow assistance with web guidance
+
+### 🚀 `web_integration_showcase.py` **NEW!**
+
+**Quick Overview** of web search integration
+benefits:
+
+```bash
+cd /Users/rwk/p/zabob/mcp-server
+python web_integration_showcase.py
+```
+
+- Before/after comparison
+- Integration feature highlights
+- Success metrics and capabilities
 
 ### 🎭 `interactive_demo.py`
 

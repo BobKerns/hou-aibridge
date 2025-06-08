@@ -26,7 +26,7 @@ It is a tuple of the form:
     (local_names, ref_table, ref_columns)
 '''
 
-TypeExpression: TypeAlias = str|type|UnionType|GenericAlias|type[UnionType]
+TypeExpression: TypeAlias = str|type|UnionType|GenericAlias|type[UnionType]|type[JsonData]
 
 class AnalysisFieldSpec(NamedTuple):
     name: str
@@ -125,17 +125,18 @@ class AnalysisTableDescriptor(Generic[D]):
         """Map Python type to SQLite type and nullable flag."""
         origin = get_origin(field_type)
 
-        # Check if it's Optional (Union with None)
-        if origin is UnionType:
+        # Check if it's Optional (Union with None) - handle both old and new Union types
+        if origin is UnionType or (hasattr(origin, '__name__') and 'Union' in str(origin)):
             args = get_args(field_type)
             if type(None) in args:
                 # It's Optional, get the non-None type
                 actual_type = Union[*(t for t in args if t is not type(None))]
-                sql_type, actual_type, _ =self. _map_type(actual_type)
+                sql_type, actual_type, _ = self._map_type(actual_type)
                 return sql_type, actual_type, True
-            # For non-Optional unions, check if it's a JSON container type
-            if is_jsonable(field_type):
-                return "TEXT", JsonData, False
+            # For non-Optional unions, check if any type in the union requires JSON serialization
+            # Check for actual container types, not type aliases
+            if any(self._requires_json_serialization(arg) for arg in args):
+                return "TEXT", JsonData, True
 
         actual_type = (
             origin
@@ -156,7 +157,7 @@ class AnalysisTableDescriptor(Generic[D]):
 
         # Check for explicit JSON container types that need JSON serialization
         elif actual_type in (JsonAtomic, JsonAtomicNonNull, JsonData, JsonDataNonNull,
-                            JsonArray, JsonObject, dict, list, tuple):
+                            JsonArray, JsonObject, dict, list, tuple, set, frozenset):
             # These are actual container types that need JSON serialization
             return "TEXT", JsonData, True
 
@@ -183,7 +184,7 @@ class AnalysisTableDescriptor(Generic[D]):
             py_type=actual_type,
             declared_type=field.type,
             is_json=actual_type in (JsonData, JsonDataNonNull, JsonAtomic, JsonAtomicNonNull, JsonArray, JsonObject,
-                                    dict, list, tuple),
+                                    dict, list, tuple, set, frozenset),
             nullable=nullable,
             coerce=self._converter(actual_type, nullable)
         )
@@ -217,7 +218,7 @@ class AnalysisTableDescriptor(Generic[D]):
 
         # JSON container types - use JSON converter
         if actual_type in (JsonData, JsonDataNonNull, JsonAtomic, JsonAtomicNonNull,
-                          JsonArray, JsonObject, dict, list, tuple):
+                          JsonArray, JsonObject, dict, list, tuple, set, frozenset):
             return json_converter
 
         # Everything else (enums, type objects, etc.) - use get_name for string conversion
@@ -349,6 +350,27 @@ class AnalysisTableDescriptor(Generic[D]):
         values = self.db_values(instance)
         cursor.execute(self.insert_stmt, values)
 
+    def _requires_json_serialization(self, field_type: TypeExpression) -> bool:
+        """
+        Check if a type requires JSON serialization.
+        This checks for actual container types like dict, list, tuple, set, frozenset,
+        as well as generic types like list['JsonData'], dict[str, 'JsonData'], etc.
+        """
+        origin = get_origin(field_type)
+        actual_type = origin or field_type
+
+        # Check for concrete container types that need JSON serialization
+        # This handles both plain types (list, dict) and generic types (list[T], dict[K,V])
+        if actual_type in (dict, list, tuple, set, frozenset):
+            return True
+
+        # Check for explicit JSON type aliases
+        if actual_type in (JsonData, JsonDataNonNull, JsonAtomic, JsonAtomicNonNull,
+                          JsonArray, JsonObject):
+            return True
+
+        return False
+
 def json_converter(obj: JsonObject) -> str:
     """
     Convert an object to a JSON string for SQLite storage.
@@ -411,9 +433,14 @@ def is_jsonable(ft: TypeExpression):
     Returns:
         bool: True if the type is JSON serializable, False otherwise
     """
-    return all(t is Literal or issubclass(t,  (
-        int, float, bool, str, list, dict, tuple, frozenset,
-        Path, type, GenericAlias, UnionType))
-            for t in (get_origin(a)
-                    for a in get_args(ft))
-                       if t is not None)
+    args = get_args(ft)
+    if not args:
+        # Not a Union type, check the type itself
+        origin = get_origin(ft)
+        actual_type = origin or ft
+        return actual_type in (int, float, bool, str, list, dict, tuple, frozenset, Path, type) or actual_type is Literal
+
+    # For Union types, check if any type requires JSON serialization
+    return any(t is Literal or (
+        get_origin(t) or t) in (int, float, bool, str, list, dict, tuple, frozenset, Path, type, GenericAlias, UnionType)
+        for t in args)

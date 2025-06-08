@@ -2,6 +2,10 @@
 Common utilities for zabob houdini tools.
 '''
 
+from zabob.common.common_types import (
+    JsonAtomicNonNull, JsonAtomic, JsonArray, JsonObject,
+    JsonDataNonNull, JsonData,
+)
 from zabob.common.analysis_types import (
     EntryType, HoudiniStaticData, ModuleData, AnalysisDBItem, AnalysisDBWriter,
     NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo,
@@ -35,10 +39,10 @@ from zabob.common.common_utils import (
     _version, Level, LEVELS,
     DEBUG, INFO, QUIET, SILENT, VERBOSE,
     environment, prevent_atexit, prevent_exit,
-    none_or, values, not_none, not_none1, not_none2,
+    none_or, not_none, not_none1, not_none2,
     if_true, if_false, get_name,
     do_all, do_until, do_while, find_first, find_first_not,
-    trace, trace_,
+    trace, trace_, value, values,
     do_yield, call_yield, do_yielder, call_yielder,
 
 )
@@ -49,8 +53,7 @@ from zabob.common.find_houdini import (
 )
 from zabob.common.infinite_mock import InfiniteMock
 from zabob.common.analyze_modules import (
-    analyze_modules, save_static_data_to_db,
-    modules_in_path, import_or_warn,
+    analyze_modules, modules_in_path, import_or_warn,
 )
 from zabob.common.detect_env import (
     detect_environment,
@@ -60,6 +63,12 @@ from zabob.common.detect_env import (
 )
 
 __all__ = (
+    "JsonAtomicNonNull",
+    "JsonAtomic",
+    "JsonArray",
+    "JsonObject",
+    "JsonDataNonNull",
+    "JsonData",
     "EntryType",
     "HoudiniStaticData",
     "ModuleData",
@@ -102,6 +111,7 @@ __all__ = (
     "prevent_atexit",
     "prevent_exit",
     "none_or",
+    "value",
     "values",
     "not_none",
     "not_none1",
@@ -130,7 +140,6 @@ __all__ = (
     "import_or_warn",
     "modules_in_path",
     "analyze_modules",
-    "save_static_data_to_db",
     "detect_environment",
     "is_development",
     "is_packaged",

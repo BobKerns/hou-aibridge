@@ -352,3 +352,8 @@ dev_out/**
 !dev_out/.gitattributes
 !dev_out/.vscode
 !dev_out/.vscode/**
+
+# SQLite database shared memory and write-ahead log files
+*.db-shm
+*.db-wal
+

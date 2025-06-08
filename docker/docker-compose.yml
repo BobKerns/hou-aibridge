@@ -19,6 +19,15 @@ services:
     ports:
       - "5678:5678"
 
+  zabob-mcp:
+    build:
+      context: ..
+      dockerfile: docker/zabob-mcp/Dockerfile
+    volumes:
+      - ../dev_out:/app/dev_out:ro
+    stdin_open: true
+    tty: true
+
 secrets:
   sidefx_credentials:
     file: ./sidefx_credentials.env

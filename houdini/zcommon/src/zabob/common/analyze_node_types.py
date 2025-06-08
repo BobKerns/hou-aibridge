@@ -19,6 +19,8 @@ from zabob.common.analysis_types import (
 )
 from zabob.common.analysis_db import analysis_db
 from zabob.common.analyze_modules import analyze_modules, modules_in_path
+from zabob.common.pdg_analyzer import analyze_pdg
+from zabob.common.timer import timer
 
 
 def _category_info(name: str, category: hou.NodeTypeCategory):
@@ -103,8 +105,8 @@ def _parm_template_info(node_type: hou.NodeType, parm: hou.ParmTemplate):
         """
         return parm.defaultValue() if hasattr(parm, 'defaultValue') else None # type: ignore
     yield ParmTemplateInfo(
-        type_name=node_type.name(),
-        type_category=node_type.category().name(),
+        node_type_name=node_type.name(),
+        node_type_category=node_type.category().name(),
         name=parm.name(),
         type=type(parm),
         template_type=parm.type(),
@@ -161,11 +163,15 @@ def do_analysis(db_path: Path|None=None,
     """
     done = done or set()
     ignore = ignore or {}
-    with analysis_db(db_path=db_path, connection=connection, write=True) as db:
-        yield from analyze_categories()
-        print('Analyzing modules...')
-        yield from analyze_modules(include=modules_in_path(sys.path,
-                                                           done=done,
-                                                           ignore=ignore),
-                                   done=done,
-                                   ignore=ignore,)
+    with timer('Analyzing') as t:
+        with analysis_db(db_path=db_path, connection=connection, write=True) as db:
+            t('Analyzing node types...')
+            yield from analyze_categories()
+            t('Analyzing Top registry...')
+            yield from analyze_pdg()
+            t('Analyzing modules...')
+            yield from analyze_modules(include=modules_in_path(sys.path,
+                                                            done=done,
+                                                            ignore=ignore),
+                                    done=done,
+                                    ignore=ignore,)

@@ -39,12 +39,6 @@ HOUDINI_DEFAULT_CACHE_DIR: Final[Path] = Path(os.getenv("CACHE_DIRECTORY", Path.
 HOUDINI_VERSIONS_CACHE: Final[Path] = HOUDINI_DEFAULT_CACHE_DIR / HOUDINI_VERSIONS_CACHE_NAME
 HOUDINI_INSTALLERS_DIR: Final[Path] = HOUDINI_DEFAULT_CACHE_DIR / "installers"
 
-type JsonAtomicNonNull = str|int|float|bool
-type JsonAtomic = JsonAtomicNonNull|None
-type JsonArray = list['JsonData']
-type JsonObject = dict[str, JsonData]
-type JsonDataNonNull = JsonArray|JsonObject|JsonAtomicNonNull
-type JsonData = JsonDataNonNull|None
 
 type Architecture = Literal['arm64', 'x86_64']
 type PlatformUI= Literal['linux', 'windows', 'macos']

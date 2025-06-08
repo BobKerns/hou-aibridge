@@ -55,6 +55,13 @@ class Level(StrEnum):
         """
         return LEVELS.index(self) >= LEVELS.index(Level.level)
 
+    def __bool__(self) -> bool:
+        """
+        Check if the logging level is enabled.
+        This allows the level to be used in boolean contexts.
+        """
+        return self.enabled
+
     def __call__(self, message: str) -> None:
         """
         Output a message at the specified logging level.
@@ -228,6 +235,31 @@ def not_none2(value1: T|None, value2: T|None) -> Generator[T, None, None]:
         yield value2
 
 
+def value(arg: T) -> Generator[T, None, None]:
+    """
+    Generator that yields the given argument.
+    A substitute for a tuple that can be more clear about intent.
+
+    Useful in generators to yield an intermediate value.
+
+    Example:
+        >>> def trouble():
+        >>> ...     return [
+        >>>     (f'{ref}-bug', f'{ref}-{fix}')
+        >>>     for id in range(10)
+        >>>     for repo in ('repo1', 'repo2')
+        >>>     for ref in value(f'{repo}-{id}')
+        >>> ]
+
+    Args:
+        arg (T|None): The value to yield.
+
+    Yields:
+        T: The value from the argument.
+    """
+    yield arg
+
+
 def values(*args: T) -> Generator[T, None, None]:
     """
     Generator that yields all the values from the given arguments.
@@ -251,7 +283,7 @@ def if_true(condition: bool, value: T) -> Generator[T, None, None]:
         value (T): The value to return if the condition is `True`.
 
     Yields:
-        T|None: The value if the condition is `True`, otherwise `None`.
+        T: The value if the condition is `True`.
     """
     if condition:
         yield value
@@ -264,7 +296,7 @@ def if_false(condition: bool, value: T) -> Generator[T, None, None]:
         value (T): The value to return if the condition is `False`.
 
     Yields:
-        T|None: The value if the condition is `False`, otherwise `None`.
+        T: The value if the condition is `False`.
     """
     if not condition:
         yield value
@@ -285,7 +317,7 @@ def get_name(d: Any) -> str:
     Args:
         d (Any): The object to get the name of.
     Returns:
-        str|None: The name of the object, or `None` if it has no name.
+        str: The name of the object.
     '''
     match d:
         case Enum():
@@ -294,6 +326,9 @@ def get_name(d: Any) -> str:
             return str(d)
         case None:
             return "None"
+        case Exception():
+            # If the object is an Exception, return its class name.
+            return d.__class__.__name__
         case _ if hasattr(d, '__name__'):
             return str(d.__name__)
         case _ if hasattr(d, 'name') and isinstance(d.name, str):
@@ -334,13 +369,16 @@ def get_name(d: Any) -> str:
         setattr(d, '__name__', n)
         return n
     except AttributeError:
-        if isinstance(d, Hashable):
-           # If the object is hashable, store the name in a weak dictionary.
-           _names[d] = n
-           return n
-        else:
-           # If we can't save the name, generate one based on the id.
-           return f"{typename}_{id(d):x}"
+        match d:
+            case _ if isinstance(d, Hashable):
+                # If the object is hashable, store the name in a weak dictionary.
+                try:
+                    _names[d] = n
+                    return n
+                except TypeError:
+                    pass
+        # If we can't save the name, generate one based on the id.
+        return f"{typename}_{id(d):x}"
 
 Condition: TypeAlias = Callable[[T], bool]|bool|None
 '''

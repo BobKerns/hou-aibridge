@@ -19,7 +19,10 @@ dependencies = [
     "pedantic>=2.1.9",
     "psutil>=7.0.0",
     "python-dotenv>=1.1.0",
+    "requests>=2.32.0",
+    "semver>=3.0.0",
     "sqlite-vec>=0.1.7a2",
+    "tomlkit>=0.12.1",
     "uvicorn>=0.34.2",
     "zabob-common",
 ]

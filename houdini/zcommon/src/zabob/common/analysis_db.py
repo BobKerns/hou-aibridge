@@ -11,13 +11,14 @@ from typing import IO
 
 from zabob.common.analysis_types import (
     AnalysisDBItem, AnalysisDBWriter, HoudiniStaticData, ModuleData,
-    NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo,
+    NodeCategoryInfo, NodeTypeInfo, ParmTemplateInfo, AnalysisFunctionSignature,
 )
 from zabob.common.common_utils import (
     T, VERBOSE, Condition, get_name, none_or, trace as _trace,
 )
 from zabob.common.timer import timer
 from zabob.common.analysis_table import AnalysisTableDescriptor
+
 
 tables: dict[type, AnalysisTableDescriptor] = {
     table.dataclass: table
@@ -68,6 +69,18 @@ tables: dict[type, AnalysisTableDescriptor] = {
                 ),
             )
         ),
+        AnalysisTableDescriptor[AnalysisFunctionSignature](
+            AnalysisFunctionSignature,
+            table_name='function_signatures',
+            primary_key=('func_name', 'parent_name', 'parent_type', 'is_overload', 'overload_index'),
+            foreign_keys=(
+                (
+                    ('parent_name', 'parent_type'),
+                    'houdini_module_data',
+                    ('name', 'type'),
+                ),
+            ),
+        ),
     )
 }
 
@@ -109,7 +122,7 @@ def analysis_db(db_path: Path|None=None,
             print('Initializing tables...')
             for table in tables.values():
                 conn.execute(table.ddl)
-            # Write-Aahead Logging (WAL) mode permits concurrent reads and writes,
+            # Write-Ahead Logging (WAL) mode permits concurrent reads and writes,
             # which is useful for long-running operations like this.
             # It also allows the database to be accessed by multiple processes, so
             # long as they are on the same machine.
@@ -299,3 +312,58 @@ def get_stored_modules(db_path: Path|None=None,
                     yield row[0]
         except sqlite3.Error as e:
             print(f"Error retrieving stored modules: {e}", file=sys.stderr)
+
+
+def get_function_overloads(module_pattern: str|None = None,
+                          func_pattern: str|None = None,
+                          db_path: Path|None = None,
+                          connection: sqlite3.Connection|None = None) -> list[dict]:
+    """
+    Retrieve function overload information from the database.
+
+    Args:
+        module_pattern: SQL LIKE pattern to filter module names
+        func_pattern: SQL LIKE pattern to filter function names
+        db_path: Path to the database file
+        connection: Existing database connection to use
+
+    Returns:
+        List of dictionaries containing overload information
+    """
+    import json
+
+    with analysis_db(db_path=db_path, connection=connection) as conn:
+        cursor = conn.cursor()
+
+        # Build the query
+        query = "SELECT module_name, func_name, signature_json, is_implementation, file_path, line_number FROM function_overloads"
+        params = []
+
+        where_clauses = []
+        if module_pattern:
+            where_clauses.append("module_name LIKE ?")
+            params.append(module_pattern)
+        if func_pattern:
+            where_clauses.append("func_name LIKE ?")
+            params.append(func_pattern)
+
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
+
+        cursor.execute(query, params)
+
+        results = []
+        for row in cursor.fetchall():
+            module_name, func_name, signature_json, is_implementation, file_path, line_number = row
+            signature_data = json.loads(signature_json)
+
+            results.append({
+                'module_name': module_name,
+                'func_name': func_name,
+                'signature': signature_data,
+                'is_implementation': bool(is_implementation),
+                'file_path': file_path,
+                'line_number': line_number
+            })
+
+        return results

@@ -26,7 +26,7 @@ It is a tuple of the form:
     (local_names, ref_table, ref_columns)
 '''
 
-TypeExpression: TypeAlias = str|type|UnionType|GenericAlias
+TypeExpression: TypeAlias = str|type|UnionType|GenericAlias|type[UnionType]
 
 class AnalysisFieldSpec(NamedTuple):
     name: str
@@ -138,13 +138,13 @@ class AnalysisTableDescriptor(Generic[D]):
             or field_type
         )
         # Map basic types
-        if field_type in (int, bool):
-            return "INTEGER", field_type, False
-        elif field_type is float:
-            return "REAL", field_type, False
-        elif field_type is str:
-            return "TEXT", field_type, False
-        elif field_type in (JsonAtomic, JsonAtomicNonNull, JsonData, JsonDataNonNull,
+        if actual_type in (int, bool):
+            return "INTEGER", actual_type, False
+        elif actual_type is float:
+            return "REAL", actual_type, False
+        elif actual_type is str:
+            return "TEXT", actual_type, False
+        elif actual_type in (JsonAtomic, JsonAtomicNonNull, JsonData, JsonDataNonNull,
                             JsonArray, JsonObject, dict, list):
             # jsonb is not supported in older sqlite versions (including the one shipped
             # with MacOS), so we use TEXT for JSON data.) jsonb needs 3.45+.
@@ -152,7 +152,7 @@ class AnalysisTableDescriptor(Generic[D]):
             return "TEXT", JsonData, True
         else:
             # Default to TEXT for unknown types
-            return "TEXT", field_type, False
+            return "TEXT", actual_type, False
 
     def _field_info(self, field: Field) -> AnalysisFieldSpec:
         """

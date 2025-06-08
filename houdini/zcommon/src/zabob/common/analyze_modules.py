@@ -78,17 +78,21 @@ from typing import Any
 import warnings
 from collections import deque
 from tempfile import TemporaryDirectory
+import inspect
 
-import sqlite3
 
 from zabob.common.infinite_mock import InfiniteMock
-from zabob.common.analysis_db import analysis_db, analysis_db_writer, get_stored_modules
-from zabob.common.analysis_types import EntryType, HoudiniStaticData, ModuleData
+from zabob.common.analysis_types import (
+    EntryType, HoudiniStaticData, ModuleData, AnalysisFunctionSignature, ParameterSpec
+)
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    VERBOSE, do_all, environment, get_name, prevent_atexit, prevent_exit, none_or, values
+    VERBOSE, environment, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
+from zabob.common.overload_collector import (
+    collect_overloads, get_overload_for_function, remove_overload_info
+)
 
 
 def reject(m: ModuleType|ModuleData,
@@ -251,16 +255,17 @@ def import_or_warn(module_name: str|ModuleData, file: Path|None=None) -> Generat
             with prevent_exit():
                 with prevent_atexit():
                     VERBOSE(f"Importing {module_name}...")
-                    with warnings.catch_warnings():
-                        warnings.filterwarnings('ignore',
-                                                message='pyside_type_init:_resolve_value',
-                                                category=RuntimeWarning)
-                        warnings.simplefilter('ignore', DeprecationWarning)
-                        module = import_module(module_name)
-                        if ismodule(module):
-                            yield module
-                        else:
-                            raise TypeError(f"{module_name} is not a module, skipping")
+                    with collect_overloads():
+                        with warnings.catch_warnings():
+                            warnings.filterwarnings('ignore',
+                                                    message='pyside_type_init:_resolve_value',
+                                                    category=RuntimeWarning)
+                            warnings.simplefilter('ignore', DeprecationWarning)
+                            module = import_module(module_name)
+                            if ismodule(module):
+                                yield module
+                            else:
+                                raise TypeError(f"{module_name} is not a module, skipping")
     except Exception as e:
         if "attempted to exit" in str(e):
             print(f"Warning: Module {module_name} attempted to exit, skipping", file=sys.stderr)
@@ -417,12 +422,96 @@ def _mk_datum(item: Any, type: EntryType, parent: HoudiniStaticData|None=None, n
         parent_type=parent.type if parent else None
     )
 
+def _convert_signature_to_params(sig: inspect.Signature) -> list[ParameterSpec]:
+    """
+    Convert an inspect.Signature object to a list of ParameterSpec dictionaries.
+    """
+    params = []
+    for name, param in sig.parameters.items():
+        param_spec: ParameterSpec = {
+            'name': name,
+            'type': str(param.annotation) if param.annotation is not inspect.Parameter.empty else 'Any',
+            'kind': str(param.kind).split('.')[-1],  # Extract name from enum
+        }
+
+        if param.default is not inspect.Parameter.empty:
+            param_spec['default'] = str(param.default)
+            param_spec['is_optional'] = True
+
+        params.append(param_spec)
+    return params
+
+def _yield_function_signatures(module_name: str, func_name: str,
+                              parent_data: HoudiniStaticData,
+                              func_obj: Any | None = None) -> Generator[AnalysisFunctionSignature, None, None]:
+    """
+    Check for and yield function signature information.
+
+    Args:
+        module_name: Base module name
+        func_name: Fully qualified function name (including parent classes)
+        parent_data: Parent data for creating signature entries
+        func_obj: The actual function object (preferred for accurate lookup)
+
+    Yields:
+        AnalysisFunctionSignature instances for both implementations and overloads if found
+    """
+    # Don't pass func_obj since it might not have __module__ attribute
+    # Just rely on module_name and func_name which we know from context
+    overload_info = get_overload_for_function(module_name=module_name, func_name=func_name)
+
+    if overload_info:
+        # First create entries for each overload signature
+        for i, sig_info in enumerate(overload_info.signatures):
+            if sig_info.signature:
+                params = _convert_signature_to_params(sig_info.signature)
+                return_type = str(sig_info.type_hints.get('return', 'Any'))
+
+                # Extract just the function name (last part after the dot)
+                simple_func_name = func_name.split('.')[-1]
+
+                yield AnalysisFunctionSignature(
+                    func_name=simple_func_name,
+                    parameters=params,
+                    return_type=return_type,
+                    is_overload=True,
+                    overload_index=i+1,
+                    file_path=sig_info.file_path,
+                    line_number=sig_info.line_number,
+                    parent_name=parent_data.name,
+                    parent_type=parent_data.type
+                )
+
+        # If there's an implementation, add that too
+        if overload_info.implementation and overload_info.implementation.signature:
+            impl = overload_info.implementation
+            params = _convert_signature_to_params(impl.signature)
+            return_type = str(impl.type_hints.get('return', 'Any'))
+
+            # Extract just the function name (last part after the dot)
+            simple_func_name = func_name.split('.')[-1]
+
+            yield AnalysisFunctionSignature(
+                func_name=simple_func_name,
+                parameters=params,
+                return_type=return_type,
+                is_overload=False,
+                file_path=impl.file_path,
+                line_number=impl.line_number,
+                parent_name=parent_data.name,
+                parent_type=parent_data.type
+            )
+
+        # Clean up after processing
+        remove_overload_info(module_name, func_name)
+
+# Update return type annotations in function signatures:
 def _load_class(cls, parent: HoudiniStaticData,
                 seen: set[str],
                 queue: deque[tuple[HoudiniStaticData, ModuleType]],
                 queued: set[ModuleType],
                 name: str|None=None,
-                ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
+                ) -> Generator[HoudiniStaticData|ModuleData|AnalysisFunctionSignature, None, None]:
     """
     Load class members and their static data.
     Args:
@@ -486,10 +575,17 @@ def _load_class(cls, parent: HoudiniStaticData,
                             parent=class_data,
                             name=member_name)
         else:
-            yield _mk_datum(member, type,
+            member_data = _mk_datum(member, type,
                             parent=class_data,
                             name=member_name)
+            yield member_data
 
+            # Check for overloads after yielding the function/method
+            if type in (EntryType.METHOD, EntryType.FUNCTION):
+                # For methods, use the full qualified name to ensure uniqueness
+                qualified_name = f"{cls.__module__}.{cls.__name__}.{member_name}"
+                # Pass the base module name and fully qualified function name
+                yield from _yield_function_signatures(cls.__module__, qualified_name, member_data, member)
 
 def _load_module(module,
                 seen: set[Any],
@@ -499,7 +595,7 @@ def _load_module(module,
                 queued: set[ModuleType],
                 parent: HoudiniStaticData|None=None,
                 top: bool = True,
-                ) ->Generator[HoudiniStaticData|ModuleData, None, None]:
+                ) -> Generator[HoudiniStaticData|ModuleData|AnalysisFunctionSignature, None, None]:
     """
     Load a module and its members, yielding HoudiniStaticData instances for each item.
     Args:
@@ -547,9 +643,14 @@ def _load_module(module,
                                     queue=queue,
                                     queued=queued,)
         elif isfunction(member):
-            yield _mk_datum(member, EntryType.FUNCTION,
+            func_data = _mk_datum(member, EntryType.FUNCTION,
                             parent=module_data,
                             name=member_name)
+            yield func_data
+
+            # Check for overloads after yielding the function
+            qualified_name = f"{module.__name__}.{member_name}"
+            yield from _yield_function_signatures(module.__name__, qualified_name, func_data, member)
         elif isinstance(member, (Enum, hou.EnumValue)):
             yield _mk_datum(member, EntryType.ENUM,
                             parent=module_data,
@@ -559,10 +660,14 @@ def _load_module(module,
             or ismethoddescriptor(member)
             or isinstance(member, builtin_function_or_method)
         ):
-            # Extracted directly from a module, it's just another callable.
-            yield _mk_datum(member, EntryType.FUNCTION,
+            func_data = _mk_datum(member, EntryType.FUNCTION,
                             parent=module_data,
                             name=member_name)
+            yield func_data
+
+            # Check for overloads after yielding the function
+            qualified_name = f"{module.__name__}.{member_name}"
+            yield from _yield_function_signatures(module.__name__, qualified_name, func_data, member)
         else:
             yield _mk_datum(member, EntryType.OBJECT,
                             parent=module_data,
@@ -588,7 +693,7 @@ def _load_module(module,
 def analyze_modules(include: Iterable[ModuleType|ModuleData],
                     ignore: Mapping[str, str]|None = None,
                     done: Iterable[str]= (),
-                    ) -> Generator[HoudiniStaticData|ModuleData, Any, None]:
+                    ) -> Generator[HoudiniStaticData|ModuleData|AnalysisFunctionSignature, Any, None]:
     """
     Extract static data from Houdini 20.5 regarding modules, classes, functions, and constants
     etc. exposed by the hou module.

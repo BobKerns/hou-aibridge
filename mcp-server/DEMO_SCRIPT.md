@@ -1,4 +1,5 @@
 # Zabob MCP Server Demo Script
+
 ## For CGI Artists: Making Houdini's Python API Accessible
 
 *Target Audience: Professional CGI artist learning PDG workflows*
@@ -20,6 +21,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `get_primitive_functions`
 
 **Expected Response**: Functions like:
+
 - `hou.Geometry.globPrims()` - Select primitives by pattern
 - `hou.Geometry.primGroups()` - Get primitive groups
 - `hou.PrimGroup.add()` - Add primitives to groups
@@ -36,6 +38,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `get_functions_returning_nodes`
 
 **Expected Response**: Essential node creation functions:
+
 - `hou.Node.createNode()` - Create child nodes
 - `hou.ObjNode.createNode()` - Create object-level nodes
 - `hou.SopNode.createOutputNode()` - Chain SOP nodes
@@ -52,6 +55,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `search_node_types` with keyword "deform"
 
 **Expected Response**: Node types like:
+
 - `lattice` - Lattice deformation
 - `wiredeform` - Wire deformation
 - `benddeform` - Bend deformation
@@ -72,6 +76,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `search_pdg_registry` with keyword "file"
 
 **Expected Response**: PDG entries like:
+
 - `filecompress` (Node) - Compress files
 - `filecopy` (Node) - Copy files
 - `filedecompress` (Node) - Decompress files
@@ -94,6 +99,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `search_functions` with keyword "attribute"
 
 **Expected Response**: Functions like:
+
 - `hou.Geometry.addAttrib()` - Create new attributes
 - `hou.Point.setAttribValue()` - Set point attributes
 - `hou.Geometry.findPointAttrib()` - Find existing attributes
@@ -114,6 +120,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `get_modules_summary`
 
 **Expected Response**: Module breakdown showing:
+
 - `hou` - Main module (800+ functions)
 - `houapi` - Core API functions
 - `hutil` - Utility functions
@@ -131,6 +138,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `search_functions` with keyword "TOP"
 
 **Expected Response**: Functions for:
+
 - TOP network creation
 - Work item management
 - Scheduler configuration
@@ -151,6 +159,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `search_functions` with keyword "cook"
 
 **Expected Response**: Functions like:
+
 - `hou.Node.cook()` - Force node evaluation
 - `hou.SopNode.geometry()` - Get cooked geometry
 - `hou.Geometry.freeze()` - Cache geometry state
@@ -167,6 +176,7 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 **Demo the tool**: `get_database_stats`
 
 **Expected Response**: Complete statistics:
+
 - 131 PDG registry entries
 - 2000+ functions documented
 - 500+ node types cataloged
@@ -180,22 +190,25 @@ The Zabob MCP server provides AI agents with comprehensive access to Houdini's P
 ## Key Demo Talking Points
 
 ### 🎯 **For the CGI Professional**
+
 - **Familiar concepts, new interface**: Translates SOP workflows into Python
 - **Discovery over memorization**: Find functionality instead of memorizing syntax
 - **PDG demystified**: Makes procedural dependency graphs more approachable
 - **Production-ready**: Based on actual Houdini 20.5.584 documentation
 
 ### 🚀 **Time-Saving Benefits**
+
 - **Instant API lookup**: No more browsing endless documentation
 - **Contextual search**: Find exactly what you need when you need it
 - **Pattern recognition**: See how similar operations work across different contexts
 - **Confidence building**: Reduces intimidation factor of complex APIs
 
 ### 🔧 **Technical Advantages**
+
 - **Always current**: Database reflects actual Houdini installation
 - **Comprehensive coverage**: Functions, nodes, PDG registry, modules
 - **Intelligent search**: Ranked results put best matches first
-- **Structured output**: Clean, parseable responses for AI integration
+- **Structured output**: Clean, parsable responses for AI integration
 
 ---
 

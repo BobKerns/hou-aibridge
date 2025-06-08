@@ -148,17 +148,17 @@ async def vscode_websearchforcopilot_webSearch(query: str, num_results: int = 5)
                 "no_html": "1",
                 "skip_disambig": "1"
             }
-            
+
             response = await client.get(
                 "https://api.duckduckgo.com/",
                 params=params,
                 timeout=10.0
             )
-            
+
             if response.status_code == 200:
                 data = response.json()
                 results = []
-                
+
                 # Extract abstract/definition if available
                 if data.get("Abstract"):
                     results.append({
@@ -166,7 +166,7 @@ async def vscode_websearchforcopilot_webSearch(query: str, num_results: int = 5)
                         "url": data.get("AbstractURL", ""),
                         "snippet": data.get("Abstract", "")[:300]
                     })
-                
+
                 # Extract related topics
                 for topic in data.get("RelatedTopics", [])[:num_results-len(results)]:
                     if isinstance(topic, dict) and "Text" in topic:
@@ -175,7 +175,7 @@ async def vscode_websearchforcopilot_webSearch(query: str, num_results: int = 5)
                             "url": topic.get("FirstURL", ""),
                             "snippet": topic.get("Text", "")[:200]
                         })
-                
+
                 # If no results, create a basic search result
                 if not results:
                     results.append({
@@ -183,7 +183,7 @@ async def vscode_websearchforcopilot_webSearch(query: str, num_results: int = 5)
                         "url": f"https://duckduckgo.com/?q={query.replace(' ', '+')}",
                         "snippet": f"No direct results found. Try searching on DuckDuckGo for more information about '{query}'."
                     })
-                
+
                 return {
                     "query": query,
                     "results": results[:num_results],
@@ -200,7 +200,7 @@ async def vscode_websearchforcopilot_webSearch(query: str, num_results: int = 5)
                     }],
                     "error": None
                 }
-                
+
     except Exception as e:
         logging.error(f"Web search failed: {e}")
         return {
@@ -491,7 +491,7 @@ async def web_search_houdini(query: str, num_results: int = 5):
         # Enhance query with Houdini context
         enhanced_query = f"Houdini 3D software {query}"
         search_results = await vscode_websearchforcopilot_webSearch(enhanced_query, num_results)
-        
+
         return {
             "original_query": query,
             "enhanced_query": enhanced_query,
@@ -509,15 +509,15 @@ async def fetch_houdini_docs(doc_type: str, node_name: str = "", function_name: 
 
     try:
         urls = []
-        
+
         if doc_type == "node" and node_name:
             # Try common node categories
             for category in ['sop', 'top', 'object', 'dop', 'chop', 'cop2']:
                 urls.append(f"https://www.sidefx.com/docs/houdini/nodes/{category}/{node_name}.html")
-        
+
         elif doc_type == "function" and function_name:
             urls.append(f"https://www.sidefx.com/docs/houdini/hom/hou/{function_name}.html")
-        
+
         elif doc_type == "tutorial":
             # Search for tutorials
             tutorial_query = f"Houdini tutorial {node_name or function_name}"
@@ -527,7 +527,7 @@ async def fetch_houdini_docs(doc_type: str, node_name: str = "", function_name: 
                 "search_query": tutorial_query,
                 "tutorial_results": search_results.get("results", [])[:5]
             }
-        
+
         if urls:
             content = await fetch_webpage(urls, f"{doc_type} documentation")
             return {
@@ -538,7 +538,7 @@ async def fetch_houdini_docs(doc_type: str, node_name: str = "", function_name: 
             }
         else:
             return {"error": "Invalid parameters for documentation fetch."}
-            
+
     except Exception as e:
         return {"error": f"Documentation fetch failed: {str(e)}"}
 

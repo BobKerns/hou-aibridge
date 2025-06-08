@@ -319,6 +319,7 @@ topnettoolutils
 toptoolutils
 transientconstraint
 uiutils
+uninspectable
 usdinlinelayermenu
 usdprimicons
 usdrenderers

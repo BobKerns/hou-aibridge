@@ -277,9 +277,11 @@
         "markdownlint.config": {
             "MD041": false,
             "MD013": false,
+            "MD026": false,
+            "MD036": false,
         },
         "vscode-decompiler.tool.ghidra.path": "/opt/homebrew/Caskroom/ghidra/11.3.2-20250415/ghidra_11.3.2_PUBLIC/support/analyzeHeadless",
-        "sqlite3-editor.ui.columnFilter.list.maxTableRecords": 10000,
+        "sqlite3-editor.ui.columnFilter.list.maxTableRecords": 10000
     },
     "extensions": {
         "recommendations": [
@@ -290,6 +292,5 @@
             "davidhewitt.shebang-language-associator",
             "YuTengjing.open-in-external-app"
         ]
-
-    },
+    }
 }

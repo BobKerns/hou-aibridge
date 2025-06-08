@@ -12,7 +12,10 @@ from pathlib import Path
 from enum import StrEnum
 from dataclasses import dataclass
 import builtins
-from typing import Any, Literal, Protocol, TypeVar
+from shutil import RegistryError
+from typing import Any, Literal, Protocol, TypeVar, TypedDict, NotRequired, Union
+
+from zabob.common.common_types import JsonData
 
 
 T = TypeVar('T')
@@ -21,15 +24,16 @@ class EntryType(StrEnum):
     """
     Enum for entry types in the Houdini static data.
     """
-    MODULE = 'module'
-    CLASS = 'class'
-    FUNCTION = 'function'
-    METHOD = 'method'
-    ENUM = 'enum'
-    CONSTANT = 'constant'
-    OBJECT = 'object'
-    ATTRIBUTE = 'attribute'
-    ENUM_TYPE = 'EnumType'
+    MODULE = 'MODULE'
+    CLASS = 'CLASS'
+    FUNCTION = 'FUNCTION'
+    METHOD = 'METHOD'
+    ENUM = 'ENUM'
+    CONSTANT = 'CONSTANT'
+    OBJECT = 'OBJECT'
+    ATTRIBUTE = 'ATTRIBUTE'
+    ENUM_TYPE = 'ENUMTYPE'
+    OVERLOAD = 'OVERLOAD'  # Add overload type
 
 
 @dataclass
@@ -132,20 +136,59 @@ class NodeTypeInfo(AnalysisDBItem):
     deprecation_version: str|None
 
 
-
 @dataclass
 class ParmTemplateInfo(AnalysisDBItem):
     """
     Data class to hold information about a Houdini parameter template.
     """
-    type_name: str
-    type_category: str
+    node_type_name: str
+    node_type_category: str
     name: str
     type: builtins.type
     template_type: str
-    defaultValue: Any
+    defaultValue: JsonData
     label: str
     help: str
     script: str
     script_language: str
     tags: dict[str, str]
+
+
+class ParameterSpec(TypedDict):
+    """
+    TypedDict for representing a function parameter specification.
+    Used in function signature information embedded in JSON.
+
+    Only the 'name', 'type', and 'kind' fields are required.
+    Other fields are present only when applicable.
+    """
+    name: str  # Always present
+    type: str  # Always present
+    kind: str  # Always present - POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, VAR_POSITIONAL, KEYWORD_ONLY, VAR_KEYWORD
+    is_optional: NotRequired[bool]  # Present only when parameter can be omitted
+    default: NotRequired[JsonData]  # Present only when parameter has a default value
+
+
+@dataclass
+class AnalysisFunctionSignature(AnalysisDBItem):
+    """Function signature information for a function or method."""
+    func_name: str
+    parameters: list[ParameterSpec]
+    return_type: str
+    parent_name: str
+    parent_type: str
+    is_overload: bool = False
+    overload_index: int | None = None
+    file_path: str | None = None
+    line_number: int | None = None
+
+    def __post_init__(self):
+        # Ensure overload_index is 0 for non-overloaded functions
+        if not self.is_overload:
+            self.overload_index = 0
+
+@dataclass
+class PDGRegistryInfo(AnalysisDBItem):
+    """Information about a PDG node type"""
+    name: str
+    registry: str

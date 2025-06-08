@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "/Applications/Houdini/Houdini20.5.584/Frameworks/Houdini.framework/Resources/houdini/python3.11libs"
+    ]
+}

@@ -14,19 +14,19 @@ interface IHoudiniChatResult extends vscode.ChatResult {
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-    const response_path = path.join(context.extensionPath, 'm/hou_aibridge/responses');
+    const response_path = path.join(context.extensionPath, '../mcp-server/src/zabob/mcp/responses');
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "hou-aibridge" is now active!');
+	console.log('Congratulations, your extension "zabob" is now active!');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('hou-aibridge.helloWorld', () => {
+	const disposable = vscode.commands.registerCommand('zabob.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from hou_aibridge!');
+		vscode.window.showInformationMessage('Hello World from Zabob!');
     });
 
     const chatHandler: vscode.ChatRequestHandler = async (
@@ -51,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             };
         };
-    const zabob = vscode.chat.createChatParticipant('hou-aibridge.zabob', chatHandler);
+    const zabob = vscode.chat.createChatParticipant('zabob.agent', chatHandler);
     const icon_dk = vscode.Uri.joinPath(context.extensionUri, 'docs/images/zabob.jpg');
     const icon_lt = vscode.Uri.joinPath(context.extensionUri, 'docs/images/zabob-neutral-bg.jpg');
     zabob.iconPath = {

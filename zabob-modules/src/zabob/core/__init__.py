@@ -10,6 +10,10 @@ from contextlib import suppress
 from zabob.common import (
     detect_environment, is_development, is_packaged,
 )
+from zabob.core.core_types import (
+    JsonArray, JsonObject, JsonAtomic, JsonData,
+    JsonAtomicNonNull, JsonDataNonNull,
+)
 from zabob.core.utils import (
     repo_relative, find_git, same_commit, is_clean,
 )
@@ -64,6 +68,16 @@ This is the version of the package as specified in the package.json file.
 """
 
 __all__: Final[tuple[str, ...]] = (
+    "JsonArray",
+    "JsonObject",
+    "JsonAtomic",
+    "JsonData",
+    "JsonAtomicNonNull",
+    "JsonDataNonNull",
+    "repo_relative",
+    "find_git",
+    "same_commit",
+    "is_clean",
     "ZABOB_MODULES_DIR",
     "ZABOB_ROOT",
     "ZABOB_PACKAGE_FILE",

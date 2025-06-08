@@ -118,6 +118,7 @@ ipynb
 ipython
 ishouenumtype
 jscoverage
+jsonable
 jspm
 keysyms
 keytar

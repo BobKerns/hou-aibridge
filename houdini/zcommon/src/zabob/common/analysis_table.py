@@ -133,16 +133,9 @@ class AnalysisTableDescriptor(Generic[D]):
                 actual_type = Union[*(t for t in args if t is not type(None))]
                 sql_type, actual_type, _ =self. _map_type(actual_type)
                 return sql_type, actual_type, True
-            if all(t in (int, float, bool, str, JsonData, JsonAtomic,
-                            JsonAtomicNonNull, JsonArray, JsonObject,
-                            dict, list, tuple)
-                       for t in (get_origin(a)
-                                 for a in get_args(field_type))):
+            if is_jsonable(field_type):
                 return "TEXT", JsonData, False
-        if all(t is Literal or issubclass(t,  (int, float, bool, str, list, dict, tuple))
-            for t in (get_origin(a)
-                    for a in get_args(field_type))
-                       if t is not None):
+        if is_jsonable(field_type):
             return "TEXT", JsonData, False
         actual_type = (
             origin
@@ -348,3 +341,17 @@ class JsonDataEncoder(json.JSONEncoder):
             case int()|str()|float()|bool()|list()|dict() :
                 return super().default(o)  # Fallback to default serialization
         return get_name(o)
+
+def is_jsonable(ft: TypeExpression):
+    """
+    Check if a type expression is JSON serializable.
+    This checks if the type is a basic type, a Literal, or a Union of basic types.
+    The basic types include int, float, bool, str, list, dict, tuple,
+    and any type that we convert to JSON (see `JsonDataEncoder`).
+    """
+    return all(t is Literal or issubclass(t,  (
+        int, float, bool, str, list, dict, tuple,
+        Path, type, GenericAlias, UnionType))
+            for t in (get_origin(a)
+                    for a in get_args(ft))
+                       if t is not None)

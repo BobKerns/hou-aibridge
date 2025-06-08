@@ -3,10 +3,6 @@ Analyze PDG (TOPs) node types, services, and work item structures.
 Provides data extraction for the procedural dependency graph components.
 """
 
-from pathlib import Path
-import sched
-from typing import Any
-from dataclasses import dataclass
 from collections.abc import Generator
 
 import pdg

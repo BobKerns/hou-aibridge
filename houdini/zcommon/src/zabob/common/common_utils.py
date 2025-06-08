@@ -245,7 +245,7 @@ def value(arg: T) -> Generator[T, None, None]:
     Example:
         >>> def trouble():
         >>> ...     return [
-        >>>     (f'{ref}-bug', f'{ref}-fix}')
+        >>>     (f'{ref}-bug', f'{ref}-{fix}')
         >>>     for id in range(10)
         >>>     for repo in ('repo1', 'repo2')
         >>>     for ref in value(f'{repo}-{id}')

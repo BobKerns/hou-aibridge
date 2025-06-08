@@ -268,7 +268,7 @@ class DataRetriever:
                         child_item["children"] = self._get_children(cursor, child_name, max_depth - 1)
                     return child_item
 
-                result["cildren"] = [
+                result["children"] = [
                     make_child(child_row)
                     for child_row in cursor.fetchall()
                 ]

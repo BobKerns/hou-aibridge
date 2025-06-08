@@ -1104,7 +1104,10 @@ dependencies = [
     { name = "pedantic" },
     { name = "psutil" },
     { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "semver" },
     { name = "sqlite-vec" },
+    { name = "tomlkit" },
     { name = "uvicorn" },
     { name = "zabob-common" },
 ]
@@ -1122,7 +1125,10 @@ requires-dist = [
     { name = "pedantic", specifier = ">=2.1.9" },
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
+    { name = "requests", specifier = ">=2.32.0" },
+    { name = "semver", specifier = ">=3.0.0" },
     { name = "sqlite-vec", specifier = ">=0.1.7a2" },
+    { name = "tomlkit", specifier = ">=0.12.1" },
     { name = "uvicorn", specifier = ">=0.34.2" },
     { name = "zabob-common", editable = "../houdini/zcommon" },
 ]

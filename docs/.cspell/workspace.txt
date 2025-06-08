@@ -72,6 +72,7 @@ fastio
 fastmcp
 fbxexportpreset
 fontconfig
+frozensets
 furtoolutils
 gasresizedynamic
 Geohashing
@@ -277,6 +278,7 @@ sceneviewerhooks
 scrapy
 sdata
 sdist
+serializability
 sesinetd
 setdlopenflags
 setuptools

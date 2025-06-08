@@ -330,11 +330,27 @@ def json_converter(obj: JsonObject) -> str:
 class JsonDataEncoder(json.JSONEncoder):
     """
     Custom JSON encoder for handling AnalysisDBItem dataclasses.
-    Converts dataclass instances to dictionaries for JSON serialization.
+
+    This is responsible for converting objects we may find in python
+    data structures to JSON-serializable types. For example, it
+    converts tuples, sets, and frozensets to lists, and Path objects
+    and types to their string representations.
+
+    It will be used to serialize data that that is declared as a
+    JsonData type or similar, identified as a JSON field, but runtime
+    data may not conform to the declared type.
+
+    To a limited extent, we allow declarations of types we know
+    can be converted to JSON. This helps with type compatibility;
+    for example, we can declare a field as list[Path] and it will
+    be serialized as a list of strings. The `AnalysisTableDescriptor`
+    class is responsible for recognizing such types. This class handles
+    conversion of those types and more to JSON, for example, a `Path`
+    encountered at any level of the data structure will be converted.
     """
     def default(self, o: Any) -> Any:
         match o:
-            case tuple()|set():
+            case tuple()|set()|frozenset():  # Fixed syntax error with missing parenthesis
                 return list(o)
             case Path():
                 return str(o)
@@ -348,9 +364,26 @@ def is_jsonable(ft: TypeExpression):
     This checks if the type is a basic type, a Literal, or a Union of basic types.
     The basic types include int, float, bool, str, list, dict, tuple,
     and any type that we convert to JSON (see `JsonDataEncoder`).
+
+    None has already been removed from the Union type. This is just confirming
+    that the resulting union type is JSON serializable.
+
+    This is not a general check for JSON serializability, nor a type analysis.
+    The goal is to enable use of types specifically for the table definition classes,
+    that are used to define the analysis tables. To allow for good type checking,
+    a subset of types is used that are known to be JSON serializable
+    and can be used in the analysis tables as JSON data. This is part of the process
+    of recognizing those fields, to pass to the database as JSON data.
+
+    It is only relevant at the top level during defining the analysis tables.
+
+    Args:
+        ft: The type expression to check
+    Returns:
+        bool: True if the type is JSON serializable, False otherwise
     """
     return all(t is Literal or issubclass(t,  (
-        int, float, bool, str, list, dict, tuple,
+        int, float, bool, str, list, dict, tuple, frozenset,
         Path, type, GenericAlias, UnionType))
             for t in (get_origin(a)
                     for a in get_args(ft))

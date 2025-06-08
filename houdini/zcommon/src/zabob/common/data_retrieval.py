@@ -253,7 +253,7 @@ class DataRetriever:
 
                 cursor.execute(child_query, (name,))
 
-                for child_row in cursor.fetchall():
+                def make_child(child_row):
                     child_name, child_type, child_datatype, child_docstring = child_row
 
                     child_item = {
@@ -266,8 +266,12 @@ class DataRetriever:
                     # Recursively get children of children if depth allows
                     if max_depth > 1:
                         child_item["children"] = self._get_children(cursor, child_name, max_depth - 1)
+                    return child_item
 
-                    result["children"].append(child_item)
+                result["cildren"] = [
+                    make_child(child_row)
+                    for child_row in cursor.fetchall()
+                ]
 
             # Get sibling items (other items with the same parent)
             if parent_name:
@@ -280,15 +284,19 @@ class DataRetriever:
 
                 cursor.execute(sibling_query, (parent_name, name))
 
-                for sibling_row in cursor.fetchall():
+                def make_sibling(sibling_row):
                     sibling_name, sibling_type, sibling_datatype, sibling_docstring = sibling_row
-
-                    result["siblings"].append({
+                    return {
                         "name": sibling_name,
                         "type": sibling_type,
                         "datatype": sibling_datatype,
                         "docstring": sibling_docstring
-                    })
+                    }
+
+                result["siblings"] = [
+                    make_sibling(sibling_row)
+                    for sibling_row in cursor.fetchall()
+                ]
 
             return result
 

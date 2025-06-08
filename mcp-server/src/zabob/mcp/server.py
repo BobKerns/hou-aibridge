@@ -27,6 +27,7 @@ from aiopath.path import AsyncPath as Path
 from pathlib import Path as SyncPath
 
 from mcp.server.fastmcp import FastMCP
+from zabob.mcp.database import HoudiniDatabase, FunctionInfo, ModuleInfo, NodeTypeInfo
 
 
 ROOT = SyncPath(__file__).parent.parent.parent.parent.parent
@@ -93,9 +94,168 @@ def awaitable_value(value: T) -> Awaitable[T]:
         yield  value
     return anext(aiter(wrapper()))
 
+# Initialize database connection
+db = HoudiniDatabase()
+
+@mcp.tool("get_functions_returning_nodes")
+async def get_functions_returning_nodes():
+    """Find functions that return Houdini node objects."""
+    try:
+        with db:
+            functions = db.get_functions_returning_nodes()
+            return {
+                "functions": [
+                    {
+                        "name": f.name,
+                        "module": f.module,
+                        "datatype": f.datatype,
+                        "docstring": f.docstring[:200] + "..." if f.docstring and len(f.docstring) > 200 else f.docstring
+                    }
+                    for f in functions
+                ],
+                "count": len(functions)
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("search_functions")
+async def search_functions(keyword: str, limit: int = 20):
+    """Search for functions by keyword in name or docstring."""
+    if not keyword:
+        return {"error": "No keyword provided."}
+
+    try:
+        with db:
+            functions = db.search_functions_by_keyword(keyword, limit)
+            return {
+                "keyword": keyword,
+                "functions": [
+                    {
+                        "name": f.name,
+                        "module": f.module,
+                        "datatype": f.datatype,
+                        "docstring": f.docstring[:200] + "..." if f.docstring and len(f.docstring) > 200 else f.docstring
+                    }
+                    for f in functions
+                ],
+                "count": len(functions)
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("get_primitive_functions")
+async def get_primitive_functions():
+    """Find functions related to primitive operations (selection, manipulation, etc.)."""
+    try:
+        with db:
+            functions = db.get_primitive_related_functions()
+            return {
+                "functions": [
+                    {
+                        "name": f.name,
+                        "module": f.module,
+                        "datatype": f.datatype,
+                        "docstring": f.docstring[:200] + "..." if f.docstring and len(f.docstring) > 200 else f.docstring
+                    }
+                    for f in functions
+                ],
+                "count": len(functions)
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("get_modules_summary")
+async def get_modules_summary():
+    """Get a summary of all Houdini modules with function counts."""
+    try:
+        with db:
+            modules = db.get_modules_summary()
+            return {
+                "modules": [
+                    {
+                        "name": m.name,
+                        "status": m.status,
+                        "function_count": m.function_count,
+                        "file": m.file
+                    }
+                    for m in modules[:50]  # Limit to first 50 for readability
+                ],
+                "total_count": len(modules)
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("search_node_types")
+async def search_node_types(keyword: str, limit: int = 20):
+    """Search for node types by keyword in name or description."""
+    if not keyword:
+        return {"error": "No keyword provided."}
+
+    try:
+        with db:
+            node_types = db.search_node_types(keyword, limit)
+            return {
+                "keyword": keyword,
+                "node_types": [
+                    {
+                        "name": nt.name,
+                        "category": nt.category,
+                        "description": nt.description,
+                        "inputs": f"{nt.min_inputs}-{nt.max_inputs}",
+                        "outputs": nt.max_outputs,
+                        "is_generator": nt.is_generator
+                    }
+                    for nt in node_types
+                ],
+                "count": len(node_types)
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("get_node_types_by_category")
+async def get_node_types_by_category(category: str = ""):
+    """Get node types, optionally filtered by category (e.g., 'Sop', 'Object', 'Dop')."""
+    try:
+        with db:
+            if category:
+                node_types = db.get_node_types_by_category(category)
+            else:
+                node_types = db.get_node_types_by_category()[:50]  # Limit if no category
+
+            return {
+                "category": category or "all",
+                "node_types": [
+                    {
+                        "name": nt.name,
+                        "category": nt.category,
+                        "description": nt.description,
+                        "inputs": f"{nt.min_inputs}-{nt.max_inputs}",
+                        "outputs": nt.max_outputs,
+                        "is_generator": nt.is_generator
+                    }
+                    for nt in node_types
+                ],
+                "count": len(node_types)
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
+@mcp.tool("get_database_stats")
+async def get_database_stats():
+    """Get statistics about the Houdini database contents."""
+    try:
+        with db:
+            stats = db.get_database_stats()
+            return {
+                "database_path": str(db.db_path),
+                "statistics": stats
+            }
+    except Exception as e:
+        return {"error": f"Database query failed: {str(e)}"}
+
 @mcp.tool("query_response")
 async def query_response(query: str):
-    """Handle a query and return a canned response."""
+    """Handle a general query and return a canned response (legacy tool)."""
     return {"response": f'{RESPONSES_DIR}.json'}
     if not query:
         return {"error": "No query provided."}

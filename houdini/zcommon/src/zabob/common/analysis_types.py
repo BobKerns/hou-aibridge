@@ -23,16 +23,16 @@ class EntryType(StrEnum):
     """
     Enum for entry types in the Houdini static data.
     """
-    MODULE = 'module'
-    CLASS = 'class'
-    FUNCTION = 'function'
-    METHOD = 'method'
-    ENUM = 'enum'
-    CONSTANT = 'constant'
-    OBJECT = 'object'
-    ATTRIBUTE = 'attribute'
-    ENUM_TYPE = 'EnumType'
-    OVERLOAD = 'overload'  # Add overload type
+    MODULE = 'MODULE'
+    CLASS = 'CLASS'
+    FUNCTION = 'FUNCTION'
+    METHOD = 'METHOD'
+    ENUM = 'ENUM'
+    CONSTANT = 'CONSTANT'
+    OBJECT = 'OBJECT'
+    ATTRIBUTE = 'ATTRIBUTE'
+    ENUM_TYPE = 'ENUMTYPE'
+    OVERLOAD = 'OVERLOAD'  # Add overload type
 
 
 @dataclass

@@ -133,30 +133,36 @@ class AnalysisTableDescriptor(Generic[D]):
                 actual_type = Union[*(t for t in args if t is not type(None))]
                 sql_type, actual_type, _ =self. _map_type(actual_type)
                 return sql_type, actual_type, True
+            # For non-Optional unions, check if it's a JSON container type
             if is_jsonable(field_type):
                 return "TEXT", JsonData, False
-        if is_jsonable(field_type):
-            return "TEXT", JsonData, False
+
         actual_type = (
             origin
             or getattr(field_type, '__value__', None)  # Handle GenericAlias
             or field_type
         )
-        # Map basic types
+
+        # Map basic types first
         if actual_type in (int, bool):
             return "INTEGER", actual_type, False
         elif actual_type is float:
             return "REAL", actual_type, False
         elif actual_type is str:
             return "TEXT", actual_type, False
+        elif actual_type is Path:
+            # Path objects need special handling - we want the full path string
+            return "TEXT", Path, False
+
+        # Check for explicit JSON container types that need JSON serialization
         elif actual_type in (JsonAtomic, JsonAtomicNonNull, JsonData, JsonDataNonNull,
                             JsonArray, JsonObject, dict, list, tuple):
-            # jsonb is not supported in older sqlite versions (including the one shipped
-            # with MacOS), so we use TEXT for JSON data.) jsonb needs 3.45+.
-            #return "BLOB", JsonData, True
+            # These are actual container types that need JSON serialization
             return "TEXT", JsonData, True
+
+        # Everything else defaults to TEXT with string conversion
+        # This includes enums, type objects, and other non-container types
         else:
-            # Default to TEXT for unknown types
             return "TEXT", actual_type, False
 
     def _field_info(self, field: Field) -> AnalysisFieldSpec:
@@ -197,18 +203,24 @@ class AnalysisTableDescriptor(Generic[D]):
                     return None
                 return converter(val)
             return nullable_converter
+
         # Primitive types that need no conversion
         if actual_type in (int, float, bool):
             return actual_type
 
         if actual_type is str:
-            return get_name
-        if actual_type in (JsonData, JsonDataNonNull):
-            return json_converter
-        # Path types
-        if actual_type in (Path, Path|None):
+            return get_name  # Use get_name instead of str for consistency
+
+        # Path objects need special handling - convert to full path string
+        if actual_type is Path:
             return str
-        # Other types we are treating as named objects.
+
+        # JSON container types - use JSON converter
+        if actual_type in (JsonData, JsonDataNonNull, JsonAtomic, JsonAtomicNonNull,
+                          JsonArray, JsonObject, dict, list, tuple):
+            return json_converter
+
+        # Everything else (enums, type objects, etc.) - use get_name for string conversion
         return get_name
 
     def _field_to_column_def(self, field: Field) -> str:

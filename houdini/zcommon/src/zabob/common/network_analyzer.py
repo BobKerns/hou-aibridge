@@ -40,7 +40,12 @@ def analyze_network(network_path: str, recursive: bool = True) -> Generator[Netw
         Information about the network and its nodes
     """
     # Implementation will traverse hou.node(network_path) and its children
-    # ...
+    yield NetworkInfo(
+        network_path=network_path,
+        network_type="sop",  # Example type, should be determined dynamically
+        nodes=[],
+        parent_network=None
+    )
 
 def collect_current_hip_data(db_path: Path|None = None) -> int:
     """
@@ -51,3 +56,4 @@ def collect_current_hip_data(db_path: Path|None = None) -> int:
     """
     # Implementation
     # ...
+    return 0

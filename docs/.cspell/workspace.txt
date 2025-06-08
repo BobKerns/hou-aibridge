@@ -8,9 +8,11 @@ amodio
 anyio
 assetgallery
 assettools
+attribwrangle
 autorig
 backgroundrenderer
 bakeanimation
+benddeform
 brushpanel
 bvhviewer
 canvaseventtypes
@@ -40,6 +42,7 @@ defaulttools
 devel
 digitalassetsupport
 direnv
+disambig
 dmypy
 dockerized
 dopclothproxy
@@ -91,6 +94,7 @@ hengine
 hhdir
 hjsonrpc
 hnac
+houapi
 houcppportion
 houdinicore
 houdiniengineutils
@@ -159,8 +163,10 @@ loptoolutils
 loputils
 lpetags
 Mapzen
+markdownify
 markserv
 materiallinker
+meshio
 Microbundle
 mkdocs
 mmdc
@@ -320,6 +326,7 @@ toolprompts
 toolutils
 topnettoolutils
 toptoolutils
+trafilatura
 transientconstraint
 uiutils
 uninspectable
@@ -341,8 +348,10 @@ vscodeignore
 vscpp
 vuepress
 webassets
+websearchforcopilot
 whitelist
 wikipages
+wiredeform
 wscript
 xfixes
 xinerama

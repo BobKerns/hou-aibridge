@@ -1,3 +1,4 @@
+#!/usr/bin/env uv run --script
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
@@ -19,7 +20,7 @@
 
 from collections.abc import AsyncGenerator, AsyncIterable, Awaitable
 import json
-from typing import Any, TypeAlias, TypeVar, cast
+from typing import Any, TypeVar, cast
 import asyncio
 import sys
 
@@ -27,7 +28,6 @@ from aiopath.path import AsyncPath as Path
 from pathlib import Path as SyncPath
 
 from mcp.server.fastmcp import FastMCP
-from zabob.mcp.database import HoudiniDatabase, FunctionInfo, ModuleInfo, NodeTypeInfo
 
 
 ROOT = SyncPath(__file__).parent.parent.parent.parent.parent
@@ -44,6 +44,7 @@ for p in (MCP_VENV, MCP_SRC, CORE_SRC, COMMON_SRC):
         sys.path.insert(0, str(p))  # type: ignore[no-redef]
 
 from zabob.core import JsonData
+from zabob.mcp.database import HoudiniDatabase
 
 '''
 A prototype MCP server for the AIBridge project.

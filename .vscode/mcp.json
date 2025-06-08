@@ -1,0 +1,8 @@
+{
+    "mcpServers": {
+        "zabob-dev": {
+            "command": "/Users/rwk/.local/bin/uv",
+            "args": ["run", "/Users/rwk/p/zabob/mcp-server/src/zabob/mcp/server.py"]
+        }
+    }
+}

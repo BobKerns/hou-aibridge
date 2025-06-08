@@ -87,7 +87,7 @@ from zabob.common.analysis_types import (
 )
 from zabob.common.common_paths import ZABOB_ROOT
 from zabob.common.common_utils import (
-    VERBOSE, environment, prevent_atexit, prevent_exit, none_or, values
+    VERBOSE, environment, get_name, prevent_atexit, prevent_exit, none_or, values
 )
 from zabob.common.timer import timer
 from zabob.common.overload_collector import (
@@ -430,8 +430,8 @@ def _convert_signature_to_params(sig: inspect.Signature) -> list[ParameterSpec]:
     for name, param in sig.parameters.items():
         param_spec: ParameterSpec = {
             'name': name,
-            'type': str(param.annotation) if param.annotation is not inspect.Parameter.empty else 'Any',
-            'kind': str(param.kind).split('.')[-1],  # Extract name from enum
+            'type': get_name(param.annotation) if param.annotation is not inspect.Parameter.empty else 'Any',
+            'kind': get_name(param.kind).split('.')[-1],  # Extract name from enum
         }
 
         if param.default is not inspect.Parameter.empty:

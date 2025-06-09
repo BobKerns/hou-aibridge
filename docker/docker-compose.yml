@@ -3,6 +3,9 @@ services:
     build:
       context: ./houdini-20.5
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
       args:
         HOUDINI_VERSION: 20.5.584
         HOUDINI_ARCH: arm64
@@ -23,6 +26,9 @@ services:
     build:
       context: ..
       dockerfile: docker/zabob-mcp/Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
     volumes:
       - ../dev_out:/app/dev_out:ro
     stdin_open: true

@@ -1,3 +1,5 @@
+![Zabob and city banner](../docs/images/zabob-banner.jpg)
+
 # 🌐 Web Search Integration - Complete!
 
 ## Overview

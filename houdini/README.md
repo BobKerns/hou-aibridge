@@ -1,3 +1,5 @@
+![Zabob and city banner](../docs/images/zabob-banner.jpg)
+
 # Houdini connector subprojects
 
 This folder groups the houdini-version-specific connector subprojects.

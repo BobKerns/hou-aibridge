@@ -1,3 +1,5 @@
+![Zabob and city banner](../docs/images/zabob-banner.jpg)
+
 # Zabob MCP Server - Real Data Implementation
 
 ## Overview

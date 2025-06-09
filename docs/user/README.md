@@ -1,3 +1,5 @@
+![Zabob and city banner](../images/zabob-banner.jpg)
+
 # User Documentation
 
 Welcome to the Zabob project user documentation! This section contains guides for end users who want to use Zabob with their AI assistants.

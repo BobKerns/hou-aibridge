@@ -1,3 +1,5 @@
+![Zabob and city banner](../images/zabob-banner.jpg)
+
 # Setting up Claude (and other AI assistants) with Zabob MCP Server via Docker
 
 This guide shows you how to configure Claude Desktop and other MCP-compatible AI assistants to use the Zabob MCP server running in Docker.

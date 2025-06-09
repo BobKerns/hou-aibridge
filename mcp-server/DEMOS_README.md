@@ -1,3 +1,5 @@
+![Zabob and city banner](../docs/images/zabob-banner.jpg)
+
 # Zabob MCP Server Demos
 
 This directory contains demo scripts showcasing the capabilities of the Zabob MCP server for CGI artists, particularly those learning PDG workflows in Houdini.

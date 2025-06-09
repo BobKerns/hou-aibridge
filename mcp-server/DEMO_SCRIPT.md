@@ -1,3 +1,5 @@
+![Zabob and city banner](../docs/images/zabob-banner.jpg)
+
 # Zabob MCP Server Demo Script
 
 ## For CGI Artists: Making Houdini's Python API Accessible

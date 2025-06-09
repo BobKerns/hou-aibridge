@@ -1,3 +1,5 @@
+![Zabob and city banner](docs/images/zabob-banner.jpg)
+
 # Understanding Package Naming Across Different TOML Sections
 
 `pyproject.toml` can be very confusing. One particularly confusing point is when to use dot notation, when to use hyphens, and when to use underscores. Here's Claude 3.7 Sonnet's explanation:

@@ -1,10 +1,13 @@
-# Zabob: The AI Bri## Features
+# Zabob: The AI Bridge to Houdini Magic
+
+## Features
 
 * 🔗 Connects Claude, Copilot, and other MCP-aware chat interfaces to Houdini knowledge
 * 🐳 Multi-architecture Docker support (Intel x86_64 and ARM64)
 * 🎯 Easy setup with pre-built Docker images
 * 📚 Access to Houdini documentation and node information
-* 🛠️ Extensible MCP server architectureHoudini SFX
+* 🛠️ Extensible MCP server architecture
+* 🧠 Detailed knowledge of Houdini SFX environment
 
 ![Zabob in front of a future city](docs/images/zabob-holodeck-text.jpg)
 
@@ -34,7 +37,7 @@ Then configure your AI assistant to connect to the MCP server. Full instructions
 ## Features
 
 * 🔗 Connects Claude, Copilot, and other MCP-aware chat interfaces to Houdini knowledge
-* 🐳 Multi-architecture Docker support (Intel x86_64 and ARM64)  
+* 🐳 Multi-architecture Docker support (Intel x86_64 and ARM64)
 * 🎯 Easy setup with pre-built Docker images
 * 📚 Access to Houdini documentation and node information
 * 🛠️ Extensible MCP server architecture

@@ -1,14 +1,46 @@
-# Zabob: The AI Bridge to Houdini SFX
+# Zabob: The AI Bridge to Houdini Magic
+
+## Features
+
+* 🔗 Connects Claude, Copilot, and other MCP-aware chat interfaces to Houdini knowledge
+* 🐳 Multi-architecture Docker support (Intel x86_64 and ARM64)
+* 🎯 Easy setup with pre-built Docker images
+* 📚 Access to Houdini documentation and node information
+* 🛠️ Extensible MCP server architecture
+* 🧠 Detailed knowledge of Houdini SFX environment
 
 ![Zabob in front of a future city](docs/images/zabob-holodeck-text.jpg)
 
 This is a bridge from Copilot in VS Code, or any MCP-capable client, to knowledge about Houdini and Houdini networks.
 
-Just setting up the project; more to come.
+## Quick Start 🚀
+
+Want to use Zabob with Claude or another AI assistant right now?
+
+👉 **[Follow our Docker setup guide](docs/user/claude-docker-setup.md)**
+
+Just add this to your Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "zabob": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "bobkerns/mcp-server:latest"]
+    }
+  }
+}
+```
+
+Then configure your AI assistant to connect to the MCP server. Full instructions in the [user documentation](docs/user/README.md).
 
 ## Features
 
-* Connects Copilot and other MCP-aware chat interfaces to Houdini knowledge.
+* 🔗 Connects Claude, Copilot, and other MCP-aware chat interfaces to Houdini knowledge
+* 🐳 Multi-architecture Docker support (Intel x86_64 and ARM64)
+* 🎯 Easy setup with pre-built Docker images
+* 📚 Access to Houdini documentation and node information
+* 🛠️ Extensible MCP server architecture
 
 ## Requirements
 
